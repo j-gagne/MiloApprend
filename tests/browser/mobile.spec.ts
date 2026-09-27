@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { mockSpeech } from './speech-mock';
+﻿import { test, expect } from '@playwright/test';
+import { mockSpeech } from './legacy-speech-mock';
 
 test('petit iPhone : défilement libre hors blocs, page stable pendant le glissement', async ({ page, context }) => {
   await mockSpeech(page);

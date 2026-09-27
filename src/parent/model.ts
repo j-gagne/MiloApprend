@@ -1,12 +1,16 @@
 import type { CompletionActivity, LearningProgram, LearningUnit, SchoolWeek, Segmentation } from '../content/model.ts';
 import { missingIndexes } from '../content/model.ts';
 import { parentActivities } from './activities.ts';
+import type { ExerciseScope } from '../content/model.ts';
+import type { ReadingSpeed } from '../services/audio-settings.ts';
 
 export interface ParentWeek extends SchoolWeek { readonly id: string }
 
 export interface ParentData {
   readonly version: 2;
   readonly activeWeek?: number;
+  readonly exerciseScope?: ExerciseScope;
+  readonly readingSpeed?: ReadingSpeed;
   readonly unitEnabled: Readonly<Record<string, boolean>>;
   readonly activityEnabled: Readonly<Record<string, boolean>>;
   readonly customUnits: readonly LearningUnit[];
@@ -33,7 +37,7 @@ export function effectiveProgram(seed: LearningProgram, parent: ParentData): Lea
   for (const activity of parent.activities) activities.set(activity.id, activity);
   const weeks = [...seed.weeks, ...parent.customWeeks.filter((week) => !seed.weeks.some((item) => item.number === week.number))]
     .sort((a, b) => a.number - b.number);
-  return { ...seed, weeks, units, activities: [...activities.values()].map((activity) => ({ ...activity,
+  return { ...seed, weeks, units, activityEnabled: parent.activityEnabled, activities: [...activities.values()].map((activity) => ({ ...activity,
     enabled: parent.activityEnabled[activity.id] ?? activity.enabled })) };
 }
 

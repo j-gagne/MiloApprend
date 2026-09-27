@@ -120,3 +120,9 @@ L'audit et les contrats de compatibilité sont décrits dans [docs/architecture-
 Depuis l’accueil, toucher **Parents**, recopier les trois chiffres écrits en lettres, puis Valider. **Programme** permet de créer des semaines, lettres, syllabes, mots et phrases ; chaque semaine affiche seulement ses nouveautés. Chaque mot ou phrase peut avoir une **construction facultative**, composée de blocs de contenu appris ou de texte visible. **Exercices** crée, modifie ou duplique plusieurs activités pour la même cible. Les phrases utilisent le moteur et l’audio existants. Les changements Parent persistent séparément du seed et des aventures enfant ; les anciennes sauvegardes restent lisibles.
 
 Le reset confirmé efface uniquement les personnalisations Parent. Les données sont propres au navigateur et à l’adresse du site ; aucun transfert entre appareils. Voir [docs/parent-space.md](docs/parent-space.md) pour les détails, le stockage et les limites de cette V1.
+
+## Espace Parent V1.3
+
+Une construction explicite valide produit maintenant ses exercices standards automatiquement, sans sauvegarder toutes les variantes. Exercices distingue les automatiques et les personnalisés ; Réglages ajoute le choix des semaines pratiquées et la vitesse de lecture. Les phrases acceptent une ponctuation finale absente des blocs et le même média facultatif que les mots. Le seed et les sauvegardes existantes sont conservés.
+
+Voir le [guide Parent](docs/parent-space.md), l'[architecture V1.3](docs/architecture-activities.md) et le [rapport de validation](docs/rapport-v1.3.md). La vitesse normale réellement présente au début de V1.3 était 0.60 : elle reste le défaut.

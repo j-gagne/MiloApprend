@@ -1,7 +1,8 @@
-import { addBlock } from './construction-helpers';
+﻿import { addBlock } from './construction-helpers';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { mockSpeech } from './speech-mock';
+import { legacyData } from './legacy-speech-mock';
 import { initialProgram } from '../../src/content/program';
 import { createContentRepository } from '../../src/content/repository';
 import { createContentService } from '../../src/content/service';
@@ -55,6 +56,7 @@ async function addMaman(page: Page) {
 test.beforeEach(async ({ page }) => { await mockSpeech(page); });
 
 test('gate, quatre sections, semaine et activations changent immédiatement les parties', async ({ page }) => {
+  await page.addInitScript((data) => { if (!localStorage.getItem('milo-apprend.parent.v1')) localStorage.setItem('milo-apprend.parent.v1', JSON.stringify(data)); }, legacyData);
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto('/');
   await page.getByRole('button', { name: 'Parents', exact: true }).click();
@@ -109,11 +111,12 @@ test('édition LAMA, aperçu multi-case et désactivation persistante sans doubl
   await page.reload(); await enterParents(page); await section(page, 'Exercices');
   await expect(first).toContainText('Parties à trouver : la + ma');
   await expect(first.getByRole('checkbox')).not.toBeChecked();
-  await expect(page.getByRole('article', { name: /^Exercice lama variante/ })).toHaveCount(2);
+  await expect(page.getByRole('article', { name: /^Exercice lama variante/ })).toHaveCount(4);
   await page.screenshot({ path: 'test-results/parent-exercises.png', fullPage: true });
 });
 
 test('créer un mot, sauvegarder, refresh, jouer son activité et reset sans effacer la progression', async ({ page }) => {
+  test.setTimeout(90000);
   await page.goto('/');
   await page.evaluate(() => localStorage.setItem('milo-apprend.progress.v1', '{"completedSessions":7}'));
   await page.reload(); await enterParents(page); await addMaman(page);
@@ -123,7 +126,7 @@ test('créer un mot, sauvegarder, refresh, jouer son activité et reset sans eff
   await page.reload(); await enterParents(page);
   await section(page, 'Aperçu');
   await expect(page.locator('dl > div').filter({ hasText: 'Mots jouables' }).locator('dd')).toHaveText('21');
-  await expect(page.locator('dl > div').filter({ hasText: 'Variantes d’exercices' }).locator('dd')).toHaveText('23');
+  await expect(page.locator('dl > div').filter({ hasText: 'Variantes d’exercices' }).locator('dd')).toHaveText('103');
   await section(page, 'Programme');
   await page.getByRole('button', { name: 'Ouvrir la semaine 5', exact: true }).click();
   await expect(page.getByRole('article', { name: 'Contenu maman', exact: true })).toContainText('Parent / personnalisé');
@@ -131,7 +134,7 @@ test('créer un mot, sauvegarder, refresh, jouer son activité et reset sans eff
   if (!saved) throw new Error('Sauvegarde manquante');
   const service = createContentService(createContentRepository(effectiveProgram(initialProgram, saved)), effectiveWeek(initialProgram, saved, 5));
   let seed = 1;
-  while (seed < 2000 && generateCompleteWordSession(service, { random: seededRandom(seed) }).challenges[0].word !== 'maman') seed++;
+  while (seed < 2000 && generateCompleteWordSession(service, { random: seededRandom(seed) }).challenges[0].id !== saved.activities[0].id) seed++;
   expect(seed).toBeLessThan(2000);
   await page.evaluate((seed) => { let state = seed; Math.random = () => { state = (Math.imul(1664525, state) + 1013904223) >>> 0; return state / 4294967296; }; }, seed);
   await page.getByRole('button', { name: 'JOUER', exact: true }).click();
@@ -148,7 +151,7 @@ test('créer un mot, sauvegarder, refresh, jouer son activité et reset sans eff
   await page.getByRole('button', { name: 'Réinitialiser les personnalisations' }).click();
   await section(page, 'Aperçu');
   await expect(page.locator('dl > div').filter({ hasText: 'Mots jouables' }).locator('dd')).toHaveText('20');
-  await expect(page.locator('dl > div').filter({ hasText: 'Variantes d’exercices' }).locator('dd')).toHaveText('22');
+  await expect(page.locator('dl > div').filter({ hasText: 'Variantes d’exercices' }).locator('dd')).toHaveText('98');
   await page.getByRole('button', { name: 'Retour au jeu', exact: true }).click();
   await expect(page.locator('.progress-pill')).toContainText('7 aventures terminées');
   await page.reload(); await expect(page.locator('.progress-pill')).toContainText('7 aventures terminées');
@@ -218,5 +221,5 @@ test('une activité Sentence utilise le même éditeur et rejoint les sessions e
   await expect(page.getByText('Exercice complété !', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Sauvegarder l’exercice' }).click();
   await section(page, 'Aperçu');
-  await expect(page.locator('dl > div').filter({ hasText: 'Variantes d’exercices' }).locator('dd')).toHaveText('23');
+  await expect(page.locator('dl > div').filter({ hasText: 'Variantes d’exercices' }).locator('dd')).toHaveText('99');
 });

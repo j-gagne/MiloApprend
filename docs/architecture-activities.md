@@ -1,42 +1,58 @@
-﻿# Architecture des activités — V1.2
+﻿# Architecture des activités — V1.3
 
-## Audit initial
+## Audit V1.2 et distinctions
 
-Word possédait plusieurs `segmentations` alternatives et des variantes historiques `completeWord`. Sentence était distincte et pouvait déjà être ciblée par une `CompletionActivity` inline, mais n’avait pas de construction de contenu ; l’adaptateur des sessions excluait explicitement les phrases. L’éditeur Parent exposait le tableau de constructions alternatives, d’où la confusion LA / VA / ge. Le moteur multi-case et l’audio complet étaient déjà réutilisables.
+L'audit a porté sur les modèles, constructions, activités historiques/Parent, validateurs, adaptateurs, générateur de sessions, fusion, stockage, éditeurs, aperçu, moteur, audio, médias et tests. V1.2 avait déjà un plateau multi-case commun, des références stables, un service de contenu injectable et un service audio indépendant du moteur. Il n'était pas nécessaire de créer un second moteur.
 
-## Contrats conservés et extensions
+| Concept | Responsabilité | Persistance |
+|---|---|---|
+| Contenu pédagogique | Ce que Milo apprend : LearningUnit, graphie, audio, introduction, activation | Seed ou customUnits Parent |
+| Construction | Blocs explicitement choisis pour décrire la cible | Première Segmentation de Word/Sentence, ou override seed |
+| Activité personnalisée | CompletionActivity explicite, cases et distracteurs choisis | activities Parent ; configurations seed conservées |
+| Exercice automatique | CompletionActivity dérivée, sans nouveau contenu pédagogique | Non persistée ; seul l'override enabled est enregistré |
 
-- `CompletionParameters` conserve `missingSegmentIndex` historique ou `missingSegmentIndexes`, jamais les deux. Les réponses viennent des blocs référencés.
-- `CompletionActivity` référence un Word **ou** une Sentence par `targetId` et sa construction par `segmentationId`. La forme inline `segmentation` reste compatible ; fournir les deux est invalide.
-- Sentence reçoit `segmentations?`, de même type que Word. Parent n’expose que la construction principale. Les alternatives historiques ne sont pas supprimées.
-- `Segmentation` conserve `id`, `segments`, `availableFromWeek?`. Les champs optionnels `gaps` et `surface` conservent les espaces et graphies exacts d’une phrase.
-- Les segments restent `{ unitId }`, `{ literal, note }` ou l’ancien `{ separator }`. Seul `unitId` peut être une réponse ; espaces et ponctuation ne deviennent jamais des unités.
+La V1.2 acceptait uniquement Word et Sentence comme cibles de complétion. `CompletionTarget` ajoute Syllable. Une syllabe donne un plateau à une case référençant cette même unité ; aucun faux Word, aucune décomposition de syllabe et aucune nouvelle unité. Lettres, mots-outils et sons ne deviennent pas automatiquement des cibles dans cette version.
 
-`content/construction.ts` centralise la résolution des graphies, la reconstruction, l’alignement des blocs explicitement choisis sur une phrase et la sélection de la construction principale. Aucune syllabe, mot ou réponse n’est inféré. La phrase originale demeure la source des espaces et de la typographie. Le validateur refuse des graphies de surface qui ne correspondent pas aux références.
+## Catalogue d'activités
 
-Word sans construction et Sentence sans construction sont valides comme contenu ; une activité sans construction valide est rejetée. La reconstruction des mots garde la comparaison NFC/casse/espaces qui corrige LILA ; celle des phrases est exacte. Les références, semaines, désactivations, doublons et réponses visibles interdites utilisent les validateurs communs.
+`content/activity-catalog.ts` centralise la projection historique et les variantes dérivées. `parentActivities` reste une projection **explicite** de compatibilité pour les opérations de sauvegarde, suppression et remappage. Les dérivées ne sont jamais transformées en centaines d'activités persistées.
 
-## Adaptation et rendu
+Pour N blocs pédagogiques, la construction principale produit chaque case seule et toutes les cases ensemble : N + 1 variantes si N > 1, une seule si N = 1, zéro si N = 0. Aucun sous-ensemble intermédiaire automatique. Les littéraux/séparateurs ne sont jamais cachés ni introduits dans les choix. Construction absente/invalide : aucun exercice automatique jouable. Les alternatives historiques restent accessibles aux activités explicites, sans réintroduire plusieurs constructions Parent.
 
-`activityToExercise` valide et produit un `CompletionExercise` avec cible typée et `CompletionBoard`. `getCompleteWordChallenges` accepte désormais les deux types. Les champs historiques `word`/`wordId` du défi portent le texte/ID de la cible par compatibilité ; `targetType` la distingue, sans transformer une Sentence en Word. Aucun nouveau mini-jeu ni moteur n’est créé.
+Les distracteurs viennent uniquement d'unités existantes, activées et apprises à la semaine considérée. Choix déterministe de deux graphies distinctes au maximum, priorité au type des réponses attendues puis ordre du catalogue. Les graphies des bonnes réponses et les doublons NFC/casse sont exclus. Un seul distracteur suffit si le catalogue est limité ; sans distracteur admissible, pas d'exercice. Aucun contenu n'est inventé. Les validateurs communs contrôlent ensuite chaque variante.
 
-`placeAnswer`, `isSlotCorrect`, `isComplete` sont inchangés. Chaque case est corrigée par index, quel que soit l’ordre des dépôts. Les choix restent réutilisables. Les réponses partielles ne terminent pas le défi.
+Identité : `generated:<targetId>:<constructionId>:missing:<index-index>`. La construction d'une syllabe utilise `self`. Identité stable entre sessions, refresh et changements de semaine ; pas de RNG. Les index désignent des positions de la construction courante : réordonner une construction conserve les préférences de positions, tandis que recréer une construction avec un nouvel ID crée de nouvelles identités. Ces IDs ne sont pas encore un historique statistique versionné.
 
-`CompletionLine` est partagé entre aperçu Parent et jeu enfant. Les mots conservent leurs blocs existants. Pour les phrases, les espaces séparent des groupes qui peuvent revenir à la ligne ; la ponctuation reste attachée au groupe voisin. Les séparateurs inline des anciennes activités restent rendus correctement. Les mêmes `AnswerTile`, Pointer Events et alternatives clavier servent aux deux types.
+Déduplication : cible + séquence exacte des blocs + index manquants triés. Une activité explicite équivalente prend priorité, même désactivée ou temporairement indisponible : sa configuration ne doit pas être contournée par l'automatique. Les distracteurs personnalisés sont donc conservés. Les activités explicites historiques distinctes restent préservées, même si deux configurations ont les mêmes cases ; une session ne choisit jamais deux fois leur cible. Une personnalisation d'une automatique crée un nouvel ID Parent et remplace son équivalent dérivé au prochain calcul ; la supprimer restaure la variante dérivée et son éventuel override.
 
-Le générateur de session reçoit simplement des candidats supplémentaires, applique la même semaine et la même stratégie (cinq cibles distinctes, environ trois récentes/deux révisions), sans répéter une cible pour remplir une série.
+Les overrides `ParentData.activityEnabled[id]` restent de simples booléens. `effectiveProgram` les transmet au catalogue et applique toujours les overrides des activités explicites. Le mode administration peut présenter les automatiques futures avec leur indisponibilité ; le pool enfant reste strictement borné par activeWeek.
 
-Le service audio n’est pas modifié : `audioText` de la cible complète passe par le même appel au début, après erreur, à la réussite complète et à la réécoute. La pause, le muet et le remplacement d’une lecture restent identiques.
+## Phrases et présentation
 
-## Fusion, sauvegardes et édition
+`Sentence.display` est le texte original du modèle réel (pas de nouveau champ `text`). La reconstruction exacte reste exigée sauf un suffixe terminal manquant composé de `.`, `!`, `?`, `…`, éventuellement combinés et entourés d'espaces. `terminalSuffix` exige que le texte reconstruit soit un préfixe exact : les virgules/apostrophes internes ou les mots manquants ne sont jamais réparés.
 
-```text
-seed inchangé + unités/semaines Parent + overrides de construction/activation + activités
-→ effectiveProgram → repository → service → session → moteur existant
-```
+`Il + a + lu` et `Il + a + lu + .` sont valides pour `Il a lu.`. L'adaptateur ajoute le suffixe absent comme segment d'affichage, après les blocs. Aucun slot n'y pointe ; il n'entre pas dans les réponses et ne double pas une ponctuation déjà présente. `gaps` reste réservé aux espaces ; `surface` correspond aux graphies des références. Le texte audio n'est pas modifié.
 
-Les constructions du seed sont surchargées par `ParentData.constructions` ; celles du contenu personnalisé restent dans les unités. Même store, même clé, JSON version 2 à champs optionnels, lecture V1 conservée. Aucun besoin de vider localStorage. Le reset restaure le seed sans effacer les aventures enfant.
+`activityToExercise` et `getCompleteWordChallenges` alimentent toujours CompletionBoard, CompletionLine, placeAnswer, isComplete et les mêmes gestes. Les validations historiques Word restent exécutées. Les champs word/wordId du défi conservent leur nom de compatibilité mais targetType distingue mot, phrase et syllabe.
 
-`saveParentUnit` remappe les cases des activités référencées lors d’un réordonnancement. Supprimer une réponse exige une nouvelle configuration ; aucune réponse de remplacement n’est choisie. Les alternatives et activités inline historiques sont conservées. Une récupération des anciennes constructions partielles n’est proposée qu’en brouillon, sans réécriture silencieuse.
+`Sentence.imageAsset?` réutilise exactement ImageAsset de Word : emoji, src/label ou absence. L'aperçu et l'enfant utilisent WordImage, y compris son fallback. Aucun upload ou cloud.
 
-Limitation : plusieurs constructions alternatives par cible ne sont pas exposées dans Parent V1.2. Une future interface devra offrir ajout, modification, suppression, sélection par activité et validation. Voir [parent-space.md](parent-space.md) pour le parcours, les exemples JSON, la persistance et les résultats des validations.
+## Semaine de contenu et semaines d'exercices
+
+`activeWeek` autorise cumulativement le contenu appris, y compris réponses, références et distracteurs. `exerciseScope` sélectionne uniquement les semaines d'introduction des **cibles**. Le service expose ce réglage indépendant ; le générateur le filtre après validation/déduplication du pool.
+
+Par défaut : `{ mode: 'all', selectedWeeks: [] }`. Le mode `selected-weeks` n'affecte jamais Programme, les constructions, les distracteurs ou l'aperçu Parent. Une cible semaine 5 peut demander LA semaine 3 même si seule la semaine 5 est cochée. Une sélection vide ou exclusivement future/inconnue donne zéro défi ; le bouton JOUER est désactivé, sans emprunter de contenu futur. Passer au mode sélectionné initialise la semaine active si aucune préférence n'existe.
+
+Le générateur garde la RNG injectable, cinq textes de cibles distincts, environ trois de la dernière introduction admissible et deux de révision. Si une catégorie manque, il complète avec d'autres cibles distinctes ; si le pool total est insuffisant, il raccourcit avec avertissement. Choisir une seule semaine rend toutes ses cibles admissibles dans cette catégorie. Le filtrage n'est pas une restriction des composants de contenu.
+
+## Audio, persistance et prochaines versions
+
+L'audit du fichier réel a trouvé `SPEECH_RATE = 0.60`, contrairement à l'ancienne documentation évoquant 0.78. La valeur normale reste donc **0.60**. `services/audio-settings.ts` centralise Lente 0.45, Normale 0.60, Rapide 0.78. `readingSpeed?` est persisté ; App configure une fois le service lors du chargement/changement de réglage. Aucun taux ne circule dans les composants de jeu. Pitch/volume restent 1 ; fichiers audio à vitesse relative au débit normal, priorité fichier conservée. Les événements, sélection de voix françaises, déclenchement direct dans le geste, muet et annulation/remplacement sont conservés.
+
+Même clé `milo-apprend.parent.v1`, même version 2 ; champs optionnels `exerciseScope`, `readingSpeed` et imageAsset Sentence. Lecture V1 toujours disponible. Les anciennes données sans champs gardent révision complète et débit actuel. Le store contrôle les nouveaux champs ; aucune purge, migration destructive ni modification de la progression enfant. Les constructions et activités existantes gardent leurs IDs.
+
+Tentatives : placeAnswer retourne accepted/complete ; le composant a un compteur d'erreurs destiné au feedback, remis à zéro après un placement accepté. Ce n'est pas un bilan de défi. Pour la future version, prévoir un accumulateur d'événements par activityId (tentative, erreur, aide, réussite) et un stockage dédié ; aucune modification nécessaire au moteur maintenant, aucun scoring ajouté.
+
+Synchronisation : le service actuel gère start/end/error, sans repères de blocs. La spécification Web Speech décrit boundary aux frontières de mots/phrases et charIndex/elapsedTime lorsque le moteur les fournit ; elle ne garantit pas des frontières de syllabes pédagogiques. On ne peut donc pas déduire une synchronisation syllabique fiable de ces événements seuls. Une future solution devra vérifier les voix/appareils ou employer des enregistrements annotés et exposer les repères via l'abstraction audio. Aucun délai arbitraire ni surlignage ajouté. Source : [spécification Web Speech, événements de synthèse](https://webaudio.github.io/web-speech-api/#speechsynthesisutterance-events).
+
+Les réponses restent réutilisables, aucun mode multicible, personnage, police, backend ou nouvelle animation. Voir [parent-space.md](parent-space.md) pour les parcours et [rapport-v1.3.md](rapport-v1.3.md) pour les validations finales.

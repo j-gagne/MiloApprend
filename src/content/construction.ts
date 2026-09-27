@@ -36,6 +36,22 @@ export function sentenceConstruction(program: LearningProgram, text: string, con
   return { ...construction, gaps, surface };
 }
 
+// Seul le suffixe terminal exact peut être fourni par le texte original.
+export function terminalSuffix(text: string, reconstructed: string): string {
+  if (!reconstructed || !text.startsWith(reconstructed)) return '';
+  const rest = text.slice(reconstructed.length);
+  return /^\s*[.!?…]+\s*$/u.test(rest) ? rest : '';
+}
+export function displayConstruction(program: LearningProgram, target: LearningUnit, construction: Segmentation): string {
+  const text = constructionText(program, construction);
+  return text + (target.type === 'sentence' ? terminalSuffix(target.display, text) : '');
+}
+export function unusedBlocks(units: readonly LearningUnit[], blocks: readonly PedagogicalSegment[], editing?: number, showUsed = false): readonly LearningUnit[] {
+  const current = editing === undefined ? undefined : blocks[editing];
+  return units.filter((unit) => showUsed || (current && 'unitId' in current && current.unitId === unit.id)
+    || !blocks.some((block) => 'unitId' in block && block.unitId === unit.id));
+}
+
 export function replacePrimary<T extends Word | Sentence>(unit: T, construction?: Segmentation): T {
   const previous = unit.segmentations ?? [];
   return { ...unit, segmentations: construction ? [construction, ...previous.slice(1)]

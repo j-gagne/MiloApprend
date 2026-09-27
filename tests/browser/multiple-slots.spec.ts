@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 import type { Page, Locator } from '@playwright/test';
-import { mockSpeech } from './speech-mock';
+import { mockSpeech } from './legacy-speech-mock';
 
 async function startLama(page: Page) {
   await mockSpeech(page);

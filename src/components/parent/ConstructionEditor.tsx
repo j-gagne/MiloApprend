@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import type { LearningProgram, PedagogicalSegment, Segmentation, Word, Sentence } from '../../content/model';
-import { blockText, constructionText, moveBlock, sentenceConstruction } from '../../content/construction';
+import { blockText, displayConstruction, unusedBlocks, moveBlock, sentenceConstruction } from '../../content/construction';
 import { comparableText } from '../../content/text';
 import { isAvailable } from '../../content/selectors';
 import { isAnswerUnit } from '../../content/validation';
@@ -13,19 +13,21 @@ export function ConstructionEditor({ program, target, construction, onChange }: 
   const [unitId, setUnitId] = useState('');
   const [literal, setLiteral] = useState('');
   const [search, setSearch] = useState('');
+  const [showUsed, setShowUsed] = useState(false);
   const blocks = construction?.segments ?? [];
-  const allowed = program.units.filter((unit) => unit.id !== target.id && isAnswerUnit(unit) && isAvailable(program, unit, target.introducedInWeek));
+  const allowed = unusedBlocks(program.units.filter((unit) => unit.id !== target.id && isAnswerUnit(unit)
+    && isAvailable(program, unit, target.introducedInWeek)), blocks, editing, showUsed);
   function update(next: readonly PedagogicalSegment[]) {
     const value = { ...construction, id: construction?.id ?? newParentId('segmentation'), segments: next };
     onChange(next.length ? target.type === 'sentence' ? sentenceConstruction(program, target.display, value) : value : undefined);
   }
   function edit(index: number) {
-    setEditing(index); const block = blocks[index]; setSearch('');
+    setEditing(index); const block = blocks[index]; setSearch(''); setShowUsed(false);
     setType(block && 'unitId' in block ? 'learned' : block ? 'visible' : 'learned');
     setUnitId(block && 'unitId' in block ? block.unitId : '');
     setLiteral(block && !('unitId' in block) ? blockText(program, block) : '');
   }
-  const reconstructed = construction ? constructionText(program, construction) : '';
+  const reconstructed = construction ? displayConstruction(program, target, construction) : '';
   const correct = target.type === 'sentence' ? reconstructed === target.display : comparableText(reconstructed) === comparableText(target.display);
   return <section aria-label="Construction">
     <h3>{target.type === 'sentence' ? 'Construction de la phrase' : 'Construction du mot'}</h3>
@@ -45,6 +47,7 @@ export function ConstructionEditor({ program, target, construction, onChange }: 
     {editing !== undefined && <div className="parent-card" aria-label="Éditeur de bloc">
       <label>Type de bloc<select aria-label="Type de bloc" value={type} onChange={(event) => setType(event.target.value)}><option value="learned">Contenu appris</option><option value="visible">Texte visible</option></select></label>
       {type === 'learned' ? <>
+        <label><input type="checkbox" checked={showUsed} onChange={(event) => { setShowUsed(event.target.checked); setUnitId(''); }} />Afficher les éléments déjà utilisés</label>
         <label>Rechercher un contenu<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
         <label>Contenu appris<select aria-label="Contenu appris" value={unitId} onChange={(event) => setUnitId(event.target.value)}><option value="">Choisir un contenu admissible</option>
           {allowed.filter((unit) => comparableText(unit.display).includes(comparableText(search))).map((unit) => <option key={unit.id} value={unit.id}>{unit.display} · {unit.type}</option>)}

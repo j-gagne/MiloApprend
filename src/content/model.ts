@@ -21,6 +21,7 @@ export interface Syllable extends UnitBase { readonly type: 'syllable' }
 export interface ToolWord extends UnitBase { readonly type: 'tool-word' }
 export interface Sentence extends UnitBase {
   readonly type: 'sentence';
+  readonly imageAsset?: ImageAsset | null;
   readonly segmentations?: readonly Segmentation[];
   // Références facultatives : ne pas déduire automatiquement les unités d'une phrase.
   readonly unitIds?: readonly string[];
@@ -60,7 +61,7 @@ export interface CompleteWordVariant extends CompletionParameters {
 }
 
 // Configuration indépendante de React, stockable et éditable par le futur Parent.
-// La cible référencée doit être un Word ou une Sentence, qui restent distincts.
+// Word, Sentence et Syllable restent des types de cibles distincts.
 export interface CompletionActivity extends CompletionParameters {
   readonly type: 'complete-segments';
   readonly targetId: string;
@@ -88,6 +89,8 @@ export interface Word extends UnitBase {
 }
 
 export type LearningUnit = Letter | Sound | Syllable | Word | ToolWord | Sentence;
+export type CompletionTarget = Word | Sentence | Syllable;
+export interface ExerciseScope { readonly mode: 'all' | 'selected-weeks'; readonly selectedWeeks: readonly number[] }
 export interface SchoolWeek {
   readonly number: number;
   readonly label: string;
@@ -99,6 +102,7 @@ export interface LearningProgram {
   readonly weeks: readonly SchoolWeek[];
   readonly units: readonly LearningUnit[];
   readonly activities?: readonly CompletionActivity[];
+  readonly activityEnabled?: Readonly<Record<string, boolean>>;
 }
 
 export interface ContentIssue {

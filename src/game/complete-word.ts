@@ -27,7 +27,7 @@ export function placeAnswer(board: CompletionBoard, placements: Placements, slot
   return { accepted, placements: next, complete: isComplete(board, next) };
 }
 export interface Challenge {
-  targetType?: 'word' | 'sentence';
+  targetType?: 'word' | 'sentence' | 'syllable';
   gaps?: readonly string[];
   id: string;
   word: string;

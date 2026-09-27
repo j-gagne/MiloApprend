@@ -8,15 +8,17 @@ import { duplicateActivity, newParentId, removeCustomActivity } from '../../pare
 import type { ParentData } from '../../parent/model';
 import { initialProgram } from '../../content/program';
 import { primaryConstruction } from '../../content/construction';
+import { activityCatalog, isAutomatic, isCompletionTarget } from '../../content/activity-catalog';
+import type { CompletionTarget } from '../../content/model';
 
 interface Props { program: LearningProgram; data: ParentData; activeWeek: number; onChange: (data: ParentData) => boolean;
   onConstruct: (target: Word | Sentence) => void;
-  onEdit: (activity: CompletionActivity, target: Word | Sentence) => void }
+  onEdit: (activity: CompletionActivity, target: CompletionTarget) => void }
 export function Exercises({ program, data, activeWeek, onChange, onEdit, onConstruct }: Props) {
   const [adding, setAdding] = useState(false);
   const [targetId, setTargetId] = useState('');
   const [search, setSearch] = useState('');
-  const activities = parentActivities(program);
+  const activities = activityCatalog(program, activeWeek, true);
   const seedIds = new Set(parentActivities(initialProgram).map((item) => item.id));
   const target = program.units.find((unit) => unit.id === targetId);
   return <section aria-label="Exercices pédagogiques"><h2>Exercices</h2>
@@ -38,24 +40,27 @@ export function Exercises({ program, data, activeWeek, onChange, onEdit, onConst
           missingSegmentIndexes: [], distractorUnitIds: [] }, target);
       }}>Configurer l’exercice</button></div>}
     <label>Rechercher un exercice<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
-    {program.units.filter((unit): unit is Word | Sentence => (unit.type === 'word' || unit.type === 'sentence')
+    {program.units.filter((unit): unit is CompletionTarget => isCompletionTarget(unit)
       && unit.display.toLocaleLowerCase('fr').includes(search.toLocaleLowerCase('fr'))).map((unit) => {
       const group = activities.filter((activity) => activity.targetId === unit.id);
-      if (!group.length) return null;
+      if (!group.length) return <section key={unit.id} className="parent-group"><h3>{unit.display}</h3><p>{!primaryConstruction(unit) && unit.type !== 'syllable'
+        ? 'Aucun exercice automatique : construction non définie.' : 'Aucun exercice automatique admissible pour la semaine active.'}</p></section>;
       return <section key={unit.id} className="parent-group" aria-label={`Exercices du mot ${unit.display}`}><h3>{unit.display} · {group.length} exercice{group.length > 1 ? 's' : ''}</h3>
         {group.map((activity, index) => {
           const segmentation = activitySegmentation(program, activity);
           const errors = validateCompletionActivity({ ...program, activities }, activity, activeWeek).filter((issue) => issue.severity === 'error');
-          const custom = !seedIds.has(activity.id);
+          const automatic = isAutomatic(activity);
+          const custom = !automatic && !seedIds.has(activity.id);
           return <article key={activity.id} className="parent-card" aria-label={`Exercice ${unit.display} variante ${index + 1}`}>
-            <h4>{activity.label || `Variante ${index + 1}`}</h4><p>{unit.type === 'sentence' ? 'Phrase' : 'Mot'} · {custom ? 'Parent / personnalisé' : 'Programme initial'} · Semaine {activity.availableFromWeek ?? segmentation?.availableFromWeek ?? unit.introducedInWeek}</p>
+            {(index === 0 || isAutomatic(group[index - 1]) !== automatic) && <h4>{automatic ? 'Exercices automatiques' : 'Exercices personnalisés'}</h4>}
+            <h4>{activity.label || `Variante ${index + 1}`}</h4><p>{unit.type === 'sentence' ? 'Phrase' : unit.type === 'syllable' ? 'Syllabe' : 'Mot'} · {automatic ? 'Automatique' : custom ? 'Parent / personnalisé' : 'Programme initial'} · Semaine {activity.availableFromWeek ?? segmentation?.availableFromWeek ?? unit.introducedInWeek}</p>
             <p>Construction : {segmentation?.segments.map((segment) => segmentText(program, segment)).join(' + ') ?? 'Introuvable'}</p>
             <p>Parties à trouver : {missingIndexes(activity).map((i) => segmentation?.segments[i]).filter((part) => !!part).map((part) => segmentText(program, part)).join(' + ')}</p>
             <p>{errors.length ? 'Indisponible pour la semaine active' : 'Jouable'}</p>
             {!!errors.length && <details><summary>Voir les raisons</summary><ul>{errors.map((issue, i) => <li key={i}>{issue.message}</li>)}</ul></details>}
             <div className="parent-actions"><label><input type="checkbox" aria-label={`Activer l’exercice ${unit.display} variante ${index + 1}`} checked={activity.enabled !== false}
               onChange={(event) => onChange({ ...data, activityEnabled: { ...data.activityEnabled, [activity.id]: event.target.checked } })} />Activé</label>
-              <button onClick={() => onEdit(activity, unit)}>Modifier l’exercice</button>
+              <button onClick={() => onEdit(automatic ? duplicateActivity(activity) : activity, unit)}>{automatic ? 'Personnaliser l’exercice' : 'Modifier l’exercice'}</button>
               <button onClick={() => onEdit(duplicateActivity(activity), unit)}>Dupliquer l’exercice</button>
               {custom && <button onClick={() => { if (window.confirm(`Supprimer cet exercice de « ${unit.display} » ? Le mot sera conservé.`)) onChange(removeCustomActivity(data, initialProgram, activity.id)); }}>Supprimer l’exercice</button>}
             </div>

@@ -1,11 +1,11 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import { initialProgram } from '../src/content/program.ts';
 import { createContentRepository } from '../src/content/repository.ts';
 import { createContentService } from '../src/content/service.ts';
 import { validateProgram, validateCompleteWordVariant } from '../src/content/validation.ts';
-import { generateCompleteWordSession } from '../src/game/complete-word-session.ts';
-import { getCompleteWordChallenges } from '../src/game/complete-word-content.ts';
+import { generateCompleteWordSession } from './helpers/explicit-service.ts';
+import { getCompleteWordChallenges } from './helpers/explicit-service.ts';
 import type { LearningProgram, Word } from '../src/content/model.ts';
 import { missingIndexes } from '../src/content/model.ts';
 import { seededRandom } from './helpers/random.ts';

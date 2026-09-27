@@ -21,9 +21,10 @@ export function App() {
   const [screen, setScreen] = useState<'home' | 'game' | 'celebration' | 'gate' | 'parent'>('home');
   const [parent, setParent] = useState(() => parentStore.load());
   const service = useMemo(() => createContentService(createContentRepository(effectiveProgram(initialProgram, parent.data)),
-    effectiveWeek(initialProgram, parent.data, activeWeek)), [parent.data]);
+    effectiveWeek(initialProgram, parent.data, activeWeek), parent.data.exerciseScope), [parent.data]);
   const availableCount = useMemo(() => Math.min(COMPLETE_WORD_SESSION_STRATEGY.size,
-    new Set(getCompleteWordChallenges(service).challenges.map((challenge) => challenge.word)).size), [service]);
+    new Set(getCompleteWordChallenges(service).challenges.filter((challenge) => service.exerciseScope.mode === 'all'
+      || service.exerciseScope.selectedWeeks.includes(challenge.introducedInWeek)).map((challenge) => challenge.word)).size), [service]);
   const [progress, setProgress] = useState(() => progressStore.load());
   const [sound, setSound] = useState(true);
   const [saved, setSaved] = useState(true);
@@ -33,6 +34,7 @@ export function App() {
   const parentDirty = useRef(false);
 
   useEffect(() => { title.current?.focus(); }, [screen]);
+  useEffect(() => { gameAudio.setReadingSpeed(parent.data.readingSpeed); }, [parent.data.readingSpeed]);
   useEffect(() => () => gameAudio.stop(), []);
 
   const finish = useCallback(() => {

@@ -95,10 +95,10 @@ test('apostrophe, accents combinés et ponctuation sans unité inventée', () =>
   ] });
   assert.equal(constructionText(program, value), text); assert.deepEqual(errors(validateSegmentation(program, { ...target, display: text }, value, 5)), []);
 });
-test('phrase incomplète : aucune ponctuation inventée', () => {
+test('ponctuation terminale désormais facultative sans modifier les blocs', () => {
   const value = sentenceConstruction(program, target.display, { ...phrase, segments: phrase.segments.slice(0, 3) });
   assert.equal(constructionText(program, value), 'Il a lu');
-  assert.equal(errors(validateSegmentation(program, target, value, 5)).filter((issue) => issue.code === 'segmentation-mismatch').length, 1);
+  assert.equal(errors(validateSegmentation(program, target, value, 5)).filter((issue) => issue.code === 'segmentation-mismatch').length, 0);
 });
 test('espaces modifiés ou graphie falsifiée refusés', () => {
   assert.ok(errors(validateSegmentation(program, target, { ...phrase, gaps: ['', '', '', '', ''] }, 5)).length);

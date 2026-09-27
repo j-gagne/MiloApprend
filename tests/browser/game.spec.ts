@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { mockSpeech } from './speech-mock';
+﻿import { test, expect } from '@playwright/test';
+import { mockSpeech } from './legacy-speech-mock';
 
 test.beforeEach(async ({ page }) => { await mockSpeech(page); });
 

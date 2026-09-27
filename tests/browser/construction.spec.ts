@@ -85,7 +85,7 @@ for (const width of [390, 1280]) test(`V1.2 blocs, construction facultative et p
   await page.getByRole('article', { name: 'Exercice Il a lu. variante 1', exact: true }).getByRole('button', { name: 'Dupliquer l’exercice' }).click();
   await page.getByLabel('Trouver a (bloc 2)', { exact: true }).check(); await page.getByRole('button', { name: 'Sauvegarder l’exercice' }).click();
   await page.reload(); await parents(page); await tab(page, 'Exercices');
-  await expect(page.getByRole('article', { name: /^Exercice Il a lu. variante/ })).toHaveCount(2);
+  await expect(page.getByRole('article', { name: /^Exercice Il a lu. variante/ })).toHaveCount(5);
   data = await stored(page); expect(data.constructions?.['sentence-il-a-lu'][0].gaps).toEqual(['', ' ', ' ', '', '']);
   const service = createContentService(createContentRepository(effectiveProgram(initialProgram, data)), 5);
   const second = data.activities.find((item) => item.targetId === 'sentence-il-a-lu' && item.missingSegmentIndexes?.length === 2)!;
@@ -118,9 +118,9 @@ for (const width of [390, 1280]) test(`V1.2 blocs, construction facultative et p
 for (const mode of ['tactile', 'souris', 'clavier', 'simple'] as const) test(`phrase enfant : ${mode}, correction et audio complet`, async ({ page }) => {
   await mockSpeech(page); await page.setViewportSize({ width: mode === 'souris' ? 1280 : 390, height: 844 });
   await page.addInitScript(({ key, data }) => localStorage.setItem(key, JSON.stringify(data)), { key, data: {
-    version: 2, activeWeek: 5, customWeeks: [], activityEnabled: {},
+    version: 2, activeWeek: 6, customWeeks: [{ id: 'parent-week-six', number: 6, label: 'Phrase isolée' }], exerciseScope: { mode: 'selected-weeks', selectedWeeks: [6] }, activityEnabled: {},
     unitEnabled: Object.fromEntries(initialProgram.units.filter((unit) => unit.type === 'word').map((unit) => [unit.id, false])),
-    customUnits: [{ id: 'parent-sentence-test', type: 'sentence', display: 'Il a lu.', audioText: 'Il a lu.', introducedInWeek: 5, enabled: true, tags: ['practice'],
+    customUnits: [{ id: 'parent-sentence-test', type: 'sentence', display: 'Il a lu.', audioText: 'Il a lu.', introducedInWeek: 6, enabled: true, tags: ['practice'],
       segmentations: [{ id: 'main', segments: [{ unitId: 'tool-word-Il' }, { unitId: 'letter-a' }, { unitId: 'syllable-lu' }, { literal: '.', note: 'Visible' }], gaps: ['', ' ', ' ', '', ''], surface: ['Il', 'a', 'lu', '.'] }] }],
     activities: [{ id: 'parent-activity-test', type: 'complete-segments', targetId: 'parent-sentence-test', segmentationId: 'main', missingSegmentIndexes: mode === 'simple' ? [2] : [1, 2], distractorUnitIds: ['syllable-ma'] }],
   } });

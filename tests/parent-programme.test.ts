@@ -64,11 +64,11 @@ test('semaine 6 dupliquée refusée', () => { assert.ok(weekError(program, week)
 test('semaine Parent peut devenir active', () => assert.equal(effectiveWeek(initialProgram, { ...data, activeWeek: 6 }, 5), 6));
 test('lettre Parent valide en semaine 6', () => assert.deepEqual(errors(validateParentUnit(program, letter)), []));
 test('syllabe Parent valide sans génération automatique', () => assert.deepEqual(errors(validateParentUnit(program, syllable)), []));
-test('mot Parent sans exercice conservé et non jouable', () => { assert.ok(program.units.some((unit) => unit.id === lila.id)); assert.ok(!challenges(6).some((item) => item.word === 'LILA')); });
+test('mot Parent avec construction devient automatiquement jouable', () => { assert.ok(program.units.some((unit) => unit.id === lila.id)); assert.ok(challenges(6).some((item) => item.word === 'LILA')); });
 test('phrase Parent sans exercice conservée et distincte', () => { assert.deepEqual(errors(validateParentUnit(program, sentence)), []); assert.ok(!challenges(6).some((item) => item.word === sentence.display)); });
 test('plusieurs exercices par mot sans copie de segmentation', () => {
   const copy = duplicateActivity(activity); const p = effectiveProgram(initialProgram, { ...data, activities: [activity, copy] });
-  assert.equal(challenges(6, p).filter((item) => item.word === 'LAVAGE').length, 2);
+  assert.equal(challenges(6, p).filter((item) => item.word === 'LAVAGE' && !item.id.startsWith('generated:')).length, 2);
   assert.equal(copy.segmentation, undefined); assert.equal(copy.segmentationId, 'parts');
 });
 test('duplication nouvel ID stable et configuration identique après reload', () => {
@@ -85,7 +85,7 @@ test('seed non muté et reset complet', () => {
   const before = JSON.stringify(initialProgram); effectiveProgram(initialProgram, data);
   assert.equal(JSON.stringify(initialProgram), before);
   const reset = effectiveProgram(initialProgram, emptyParentData()); assert.equal(reset.units.length, initialProgram.units.length); assert.deepEqual(reset.weeks, initialProgram.weeks);
-  assert.equal(challenges(5, reset).length, 22);
+  assert.equal(challenges(5, reset).filter((item) => !item.id.startsWith('generated:')).length, 22);
 });
 test('variantes seed et LAMA multi valides', () => { assert.deepEqual(errors(validateProgram(initialProgram)), []); assert.equal(challenges(5).find((item) => item.id === 'word-lama:deux-emplacements')?.slots.length, 2); });
 test('suppression semaine remplie bloquée, vide permise, seed protégé', () => {

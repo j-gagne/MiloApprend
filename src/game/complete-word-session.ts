@@ -37,7 +37,8 @@ export function generateCompleteWordSession(service: ContentService = contentSer
     strategy = COMPLETE_WORD_SESSION_STRATEGY;
   }
   const { size, recentCount } = strategy;
-  const candidates = eligible.challenges;
+  const candidates = eligible.challenges.filter((item) => service.exerciseScope.mode === 'all'
+    || service.exerciseScope.selectedWeeks.includes(item.introducedInWeek));
   // Grouper par texte évite également le même mot sous deux identifiants différents.
   const byWord = new Map<string, ContentChallenge[]>();
   for (const candidate of candidates) {

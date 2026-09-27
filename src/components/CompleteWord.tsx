@@ -95,12 +95,12 @@ export function CompleteWord({ onComplete, sound, challenges }: {
 
   return <main className={`game-screen${sentence ? ' sentence-game' : ''}`}>
     <EggProgress total={challenges.length} completed={index + Number(solved)} />
-    <h1 ref={heading} tabIndex={-1}>{sentence ? 'Complète la phrase' : 'Complète le mot'}</h1>
+    <h1 ref={heading} tabIndex={-1}>{sentence ? 'Complète la phrase' : challenge.targetType === 'syllable' ? 'Retrouve la syllabe' : 'Complète le mot'}</h1>
     <p className="instruction">{multiple ? 'Glisse chaque morceau dans sa case.' : 'Glisse le bon morceau dans la case.'}</p>
     <section className={`challenge-card ${solved ? 'is-solved' : ''}`} aria-label={`Défi ${index + 1}`}>
       <span className="card-sparkle sparkle-one" aria-hidden="true">✦</span>
       <span className="card-sparkle sparkle-two" aria-hidden="true">✦</span>
-      <WordImage key={challenge.id} image={challenge.image} />
+      {challenge.targetType !== 'syllable' && <WordImage key={challenge.id} image={challenge.image} />}
       <CompletionLine board={challenge} sentence={sentence} label={solved ? challenge.word : sentence ? 'Phrase à compléter' : 'Mot à compléter'}
         render={(segmentIndex) => {
           const segment = challenge.segments[segmentIndex];

@@ -5,6 +5,7 @@ import { placeAnswer } from '../../game/complete-word';
 import { gameAudio } from '../../services/audio';
 import { AnswerTile } from '../AnswerTile';
 import { CompletionLine } from '../CompletionLine';
+import { WordImage } from '../WordImage';
 
 export function ActivityPreview({ exercise }: { exercise: CompletionExercise }) {
   const [placements, setPlacements] = useState<Placements>({});
@@ -20,6 +21,8 @@ export function ActivityPreview({ exercise }: { exercise: CompletionExercise }) 
   }
   return <section className="parent-preview" aria-label="Aperçu interactif">
     <h3>Aperçu interactif</h3>
+    {exercise.target.imageAsset && <WordImage image={'emoji' in exercise.target.imageAsset ? exercise.target.imageAsset
+      : { ...exercise.target.imageAsset, emoji: '🖼️' }} />}
     <button type="button" onClick={() => { gameAudio.unlock(); void gameAudio.playWord(exercise.target.audioText); }}>Tester le son</button>
     <CompletionLine board={exercise} sentence={exercise.target.type === 'sentence'} className="parent-tokens" render={(index) => exercise.slots.some((slot) => slot.segmentIndex === index)
       ? <button ref={(element) => { if (element) slots.current.set(index, element); else slots.current.delete(index); }} type="button" key={index} aria-label={`Case aperçu ${index + 1}`} aria-pressed={selected === index}

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import type { CompletionActivity, LearningUnit, Sentence, Word } from '../../content/model';
+import type { CompletionActivity, LearningUnit, CompletionTarget } from '../../content/model';
 import type { ContentService } from '../../content/service';
 import { getCompleteWordChallenges } from '../../game/complete-word-content';
 import type { ParentData } from '../../parent/model';
@@ -9,12 +9,14 @@ import { ActivityEditor } from './ActivityEditor';
 import { UnitEditor } from './UnitEditor';
 import { Programme } from './Programme';
 import { Exercises } from './Exercises';
+import { gameAudio } from '../../services/audio';
+import { READING_SPEEDS, DEFAULT_READING_SPEED, type ReadingSpeed } from '../../services/audio-settings';
 
 interface Props { data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
   onExit: () => void; onDirtyChange: (dirty: boolean) => void }
 const tabs = ['Aperçu', 'Programme', 'Exercices', 'Réglages'] as const;
 type Tab = typeof tabs[number];
-interface Editing { activity: CompletionActivity; target: Word | Sentence }
+interface Editing { activity: CompletionActivity; target: CompletionTarget }
 
 export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyChange }: Props) {
   const [tab, setTab] = useState<Tab>('Aperçu');
@@ -22,6 +24,7 @@ export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyC
   const [unit, setUnit] = useState<LearningUnit>();
   const [returnToExercise, setReturnToExercise] = useState(false);
   const [dirty, setDirtyState] = useState(false);
+  useEffect(() => () => gameAudio.stop(), []);
   function setDirty(value: boolean) { setDirtyState(value); onDirtyChange(value); }
   useEffect(() => {
     if (!dirty) return;
@@ -62,7 +65,7 @@ export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyC
         <p>Les disponibilités suivent la semaine choisie et vos activations.</p><dl className="parent-stats">
           {[
             ['Semaine active', service.activeWeek], ['Mots disponibles', words.length],
-            ['Mots jouables', new Set(challenges.filter((item) => item.targetType !== 'sentence').map((item) => item.word)).size], ['Variantes d’exercices', challenges.length],
+            ['Mots jouables', new Set(challenges.filter((item) => item.targetType === 'word').map((item) => item.word)).size], ['Variantes d’exercices', challenges.length],
             ['Phrases', service.getAvailableSentences().length],
             ['Contenu de l’école (mots disponibles)', words.filter((word) => word.tags?.includes('school')).length],
             ['Contenu d’entraînement (mots disponibles)', words.filter((word) => word.tags?.includes('practice')).length],
@@ -78,6 +81,25 @@ export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyC
           {program.weeks.map((week) => <button key={week.number} aria-label={`Semaine ${week.number}`} aria-pressed={service.activeWeek === week.number}
             onClick={() => { onChange({ ...data, activeWeek: week.number }); setMessage(`Semaine ${week.number} sélectionnée pour les prochaines parties.`); }}>{week.number}</button>)}
         </div><p>Le contenu du jeu est cumulatif. Aucun contenu futur ne sera proposé comme réponse.</p></section>
+        <section className="parent-card"><h3>Exercices à pratiquer</h3>
+          <p>Ce réglage choisit les exercices proposés pendant une partie. Le contenu appris des semaines précédentes reste disponible.</p>
+          <label className="parent-scope-choice"><input type="radio" name="exercise-scope" checked={!data.exerciseScope || data.exerciseScope.mode === 'all'}
+            onChange={() => onChange({ ...data, exerciseScope: { mode: 'all', selectedWeeks: data.exerciseScope?.selectedWeeks ?? [] } })} />Révision complète</label>
+          <label className="parent-scope-choice"><input type="radio" name="exercise-scope" checked={data.exerciseScope?.mode === 'selected-weeks'}
+            onChange={() => onChange({ ...data, exerciseScope: { mode: 'selected-weeks', selectedWeeks: data.exerciseScope?.selectedWeeks.length ? data.exerciseScope.selectedWeeks : [service.activeWeek] } })} />Semaines sélectionnées</label>
+          {data.exerciseScope?.mode === 'selected-weeks' && <div className="parent-checks">{program.weeks.map((week) => <label key={week.number}>
+            <input type="checkbox" checked={data.exerciseScope!.selectedWeeks.includes(week.number)}
+              onChange={(event) => onChange({ ...data, exerciseScope: { mode: 'selected-weeks', selectedWeeks: event.target.checked
+                ? [...data.exerciseScope!.selectedWeeks, week.number] : data.exerciseScope!.selectedWeeks.filter((item) => item !== week.number) } })} />
+            Semaine {week.number}{week.number > service.activeWeek ? ' — contenu pas encore disponible' : ''}</label>)}</div>}
+          {data.exerciseScope?.mode === 'selected-weeks' && !data.exerciseScope.selectedWeeks.some((week) => week <= service.activeWeek && program.weeks.some((item) => item.number === week))
+            && <p role="status">Aucune semaine apprise sélectionnée : aucune partie ne sera proposée.</p>}
+        </section>
+        <section className="parent-card"><h3>Vitesse de lecture</h3><div className="parent-tokens">
+          {(Object.keys(READING_SPEEDS) as ReadingSpeed[]).map((speed) => <button key={speed} aria-pressed={(data.readingSpeed ?? DEFAULT_READING_SPEED) === speed}
+            onClick={() => { gameAudio.setReadingSpeed(speed); onChange({ ...data, readingSpeed: speed }); }}>{READING_SPEEDS[speed].label}</button>)}
+          <button onClick={() => { gameAudio.unlock(); const example = service.getAvailableWords()[0]; if (example) void gameAudio.playWord(example.audioText, example.audioAsset ?? undefined); }}>Écouter un exemple</button>
+        </div></section>
         <section className="parent-card"><h3>Revenir au programme initial</h3>
           <p>Supprime vos semaines, contenus, exercices et réglages personnalisés. Les aventures terminées de Milo seront conservées.</p>
           <button onClick={() => {

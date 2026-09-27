@@ -1,9 +1,10 @@
-import type { CompletionActivity, CompletionParameters, CompleteWordVariant, ContentIssue, LearningProgram, LearningUnit, Segmentation, Sentence, Word } from './model.ts';
+﻿import type { CompletionActivity, CompletionParameters, CompleteWordVariant, ContentIssue, LearningProgram, LearningUnit, Segmentation, Word } from './model.ts';
 import { missingIndexes } from './model.ts';
 import { isValidWeek } from './selectors.ts';
 import { comparableText } from './text.ts';
 import { activitySegmentation } from './activity-segmentation.ts';
-import { constructionText, blockText } from './construction.ts';
+import { displayConstruction, blockText } from './construction.ts';
+import type { CompletionTarget } from './model.ts';
 
 export function isAnswerUnit(unit: LearningUnit): boolean {
   return ['letter', 'syllable', 'word', 'tool-word'].includes(unit.type);
@@ -25,7 +26,7 @@ function referenceIssues(program: LearningProgram, id: string, week: number, pat
   return [];
 }
 
-export function validateSegmentation(program: LearningProgram, word: Word | Sentence, segmentation: Segmentation, week: number): ContentIssue[] {
+export function validateSegmentation(program: LearningProgram, word: CompletionTarget, segmentation: Segmentation, week: number): ContentIssue[] {
   const path = `${word.id}.segmentations.${segmentation.id}`;
   const issues: ContentIssue[] = [];
   const from = segmentation.availableFromWeek ?? word.introducedInWeek;
@@ -56,7 +57,7 @@ export function validateSegmentation(program: LearningProgram, word: Word | Sent
     || segmentation.surface.some((text, i) => comparableText(text) !== comparableText(blockText(program, segmentation.segments[i]))))) {
     issues.push(issue('invalid-surface', path, 'Les graphies doivent correspondre aux blocs choisis.'));
   }
-  const reconstructed = constructionText(program, segmentation);
+  const reconstructed = displayConstruction(program, word, segmentation);
   if (word.type === 'sentence' ? reconstructed !== word.display : comparableText(reconstructed) !== comparableText(word.display)) {
     issues.push(issue('segmentation-mismatch', path, `Construction incomplète : le résultat « ${reconstructed} » ne correspond pas à ${word.display}.`));
   }
@@ -76,7 +77,7 @@ export function validateCompleteWordVariant(program: LearningProgram, word: Word
   return [...issues, ...validateCompletion(program, word, segmentation, variant, week, path)];
 }
 
-function validateCompletion(program: LearningProgram, word: Word | Sentence, segmentation: Segmentation,
+function validateCompletion(program: LearningProgram, word: CompletionTarget, segmentation: Segmentation,
   variant: CompletionParameters, week: number, path: string): ContentIssue[] {
   const issues: ContentIssue[] = [];
   if (variant.enabled === false) issues.push(issue('disabled-exercise', path, 'Cette variante est désactivée.'));
@@ -130,10 +131,11 @@ export function validateCompletionActivity(program: LearningProgram, activity: C
     issues.push(issue('unknown-activity', path, 'Activité absente ou ambiguë dans le programme.'));
   }
   const target = program.units.find((unit) => unit.id === activity.targetId);
-  if (!target || (target.type !== 'word' && target.type !== 'sentence')) {
-    return [...issues, issue('invalid-target', path, 'La cible doit être un mot ou une phrase.')];
+  if (!target || (target.type !== 'word' && target.type !== 'sentence' && target.type !== 'syllable')) {
+    return [...issues, issue('invalid-target', path, 'La cible doit être un mot, une phrase ou une syllabe.')];
   }
   const segmentation = activitySegmentation(program, activity);
+  if (target.type === 'word' && target.text !== target.display) issues.push(issue('word-display-mismatch', path, 'text et display doivent représenter le même mot.'));
   if (!segmentation) return [...issues, issue('unknown-segmentation', path, 'Construction absente, ambiguë ou introuvable dans la cible.')];
   return [...issues, ...validateCompletion(program, target, segmentation, activity, week, path)];
 }

@@ -3,9 +3,11 @@ import { contentRepository } from './repository.ts';
 import { activeWeek } from './settings.ts';
 import * as selectors from './selectors.ts';
 import { validateProgram } from './validation.ts';
+import type { ExerciseScope } from './model.ts';
 
-export function createContentService(repository: ContentRepository, week = activeWeek) {
+export function createContentService(repository: ContentRepository, week = activeWeek, exerciseScope: ExerciseScope = { mode: 'all', selectedWeeks: [] }) {
   return {
+    exerciseScope,
     activeWeek: week,
     getProgram: () => repository.getProgram(),
     getAvailableLetters: (at = week) => selectors.getAvailableLetters(repository.getProgram(), at),

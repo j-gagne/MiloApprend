@@ -1,4 +1,4 @@
-# Milo apprend — règles permanentes
+﻿# Milo apprend — règles permanentes
 
 Les futures modifications importantes doivent respecter ce fichier.
 
@@ -26,13 +26,13 @@ Les futures modifications importantes doivent respecter ce fichier.
 - Ne jamais corriger silencieusement les données du matériel scolaire (notamment graphies, majuscules, accents ou phrases).
 - Conserver les mots dont la constructibilité n'est pas confirmée. Un segment littéral est du texte visible, même si sa graphie correspond à une unité future/désactivée. Il ne crée aucune unité, ne devient jamais automatiquement appris et ne peut être ni réponse ni distracteur. Seules les références à des unités apprises et admissibles peuvent être demandées.
 - Partager les validations structurées (`severity`, `code`, `path`, `message`) avec les futurs outils Parent. Signaler les avertissements sans bloquer l'application ; écarter les variantes invalides.
-- Garder les configurations d'exercice explicites : segmentation choisie, segment manquant, distracteurs référencés et variantes. Les images/audio peuvent être absents.
+- Conserver les configurations explicites et dériver les exercices standards dans content/activity-catalog.ts : chaque bloc pédagogique seul, puis tous ensemble, sans combinaison exhaustive ni nouveau contenu. IDs déterministes, overrides booléens et priorité aux activités explicites équivalentes. Les images/audio peuvent être absents.
 - Les nouveaux exercices peuvent fournir `missingSegmentIndexes` ; conserver la compatibilité avec `missingSegmentIndex`. Chaque case attend le segment référencé à son index, indépendamment de l'ordre des dépôts. Réussite seulement lorsque toutes les cases sont correctes.
-- Les activités génériques `LearningProgram.activities` référencent un mot ou une phrase distincts via `targetId`. Réutiliser la validation et le plateau de correction communs ; ne pas convertir une Sentence en Word. Espaces et ponctuation sont des séparateurs visibles, jamais des réponses. Voir `docs/architecture-activities.md`.
+- Les activités génériques `LearningProgram.activities` référencent un mot, une phrase ou une syllabe distincts via `targetId`. Réutiliser la validation et le plateau de correction communs ; ne pas convertir une Sentence en Word. Espaces et ponctuation sont des séparateurs visibles, jamais des réponses. Voir `docs/architecture-activities.md`.
 - Distinguer les mots scolaires (`school`) des mots d'entraînement autorisés (`practice`) avec les tags existants.
-- Générer une session via `game/complete-word-session.ts` à chaque JOUER/REJOUER : cinq cibles distinctes (Word ou Sentence), environ trois de la semaine d'introduction la plus récente disponible et deux de révision. Une nouvelle variante d'une ancienne cible reste de la révision. La RNG est injectable ; ne pas disperser `Math.random` dans les composants.
+- Générer une session via `game/complete-word-session.ts` à chaque JOUER/REJOUER : cinq cibles distinctes (Word, Sentence ou Syllable), environ trois de la semaine d'introduction la plus récente disponible et deux de révision. Une nouvelle variante d'une ancienne cible reste de la révision. La RNG est injectable ; ne pas disperser `Math.random` dans les composants.
 - Si moins de cinq mots sont admissibles, raccourcir la session avec un avertissement ; ne jamais répéter un mot ou emprunter du contenu futur pour la remplir.
-- L'espace Parent utilise `parent/model.ts` : seed + semaines/unités custom + overrides/activités = programme effectif. Programme décrit les nouveautés de chaque semaine ; Exercices référence Word ou Sentence via targetId/segmentationId. Parent V1.2 expose une seule construction facultative par cible, composée de blocs modifiables/retirables/réordonnables. Les alternatives historiques restent compatibles en interne. Les espaces exacts des phrases viennent du texte original après choix explicite des blocs ; aucune unité n'est inférée. Ne jamais modifier le seed depuis l'interface. `settings.ts` reste le défaut de semaine, l'override Parent est indépendant de la progression enfant.
+- L'espace Parent utilise `parent/model.ts` : seed + semaines/unités custom + overrides/activités = programme effectif. Programme décrit les nouveautés de chaque semaine ; Exercices référence Word ou Sentence via targetId/segmentationId. Parent expose une seule construction facultative par cible, composée de blocs modifiables/retirables/réordonnables. Les alternatives historiques restent compatibles en interne. Les espaces exacts des phrases viennent du texte original après choix explicite des blocs ; aucune unité n'est inférée. Ne jamais modifier le seed depuis l'interface. `settings.ts` reste le défaut de semaine, l'override Parent est indépendant de la progression enfant.
 - Persister uniquement les personnalisations via `services/parent-store.ts`, sans accès direct à localStorage dans les composants. La clé Parent est distincte de la progression enfant, que le reset ne doit jamais effacer. Confirmer suppression custom/reset ; aucun contenu seed n'est supprimable.
 - L'éditeur Parent produit des `CompletionActivity`, validées avant sauvegarde. Conserver les IDs des variantes éditées et les IDs stables du contenu custom. Word et Sentence utilisent le même moteur, rendu et service audio, avec lecture de la cible complète. Voir `docs/parent-space.md`.
 
@@ -47,3 +47,10 @@ Les futures modifications importantes doivent respecter ce fichier.
 - Première étape uniquement : accueil, activité `complete-word`, cinq défis, célébration, progression locale.
 - Ne pas ajouter comptes, paiement, services payants, reconnaissance vocale, espace parent complet ou autres jeux sans demande.
 - Vérifier TypeScript et le build après les modifications ; documenter les commandes et l'accès réseau local.
+
+## Compléments V1.3
+- exerciseScope filtre uniquement la semaine d'introduction des cibles en session ; activeWeek reste l'autorisation cumulative du contenu. Les éditeurs ne sont jamais filtrés par exerciseScope.
+- Les variantes standards ne sont pas persistées. Personnaliser crée une activité Parent ; désactiver une automatique ne stocke qu'un booléen dans activityEnabled.
+- Sentence.display conserve la ponctuation originale. Le suffixe terminal . ! ? … peut être absent des blocs ; la ponctuation interne reste explicite. Sentence.imageAsset réutilise ImageAsset.
+- La vitesse Parent est centralisée dans services/audio-settings.ts et appliquée dans le service audio. Défaut réel V1.2 préservé : 0.60 ; pitch et volume restent 1.
+- Même clé Parent et version 2 à champs optionnels ; jamais de purge des sauvegardes. Voir docs/architecture-activities.md et docs/parent-space.md.

@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { mockSpeech } from './speech-mock';
+﻿import { test, expect } from '@playwright/test';
+import { mockSpeech } from './legacy-speech-mock';
 
 test('lecture initiale unique, réécoutes et erreurs rapides remplacent la voix active', async ({ page }) => {
   await mockSpeech(page, ['fr-CA'], false);

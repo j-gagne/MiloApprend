@@ -1,4 +1,4 @@
-import { addBlock } from './construction-helpers';
+﻿import { addBlock } from './construction-helpers';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { mockSpeech } from './speech-mock';
@@ -62,7 +62,7 @@ for (const width of [390, 1280]) test(`Programme et Exercices A–G, persistance
   for (const text of ['R', 'RA', 'RE']) await expect(page.getByRole('article', { name: `Contenu ${text}`, exact: true })).toBeVisible();
   await expect(page.getByRole('article', { name: 'Contenu la', exact: true })).toHaveCount(0);
   await word(page, 'LILA', ['syllable-li', 'syllable-la']);
-  await tab(page, 'Exercices'); await expect(page.getByRole('article', { name: /^Exercice LILA/ })).toHaveCount(0);
+  await tab(page, 'Exercices'); await expect(page.getByRole('article', { name: /^Exercice LILA/ })).toHaveCount(3);
   await page.reload(); await parents(page); await openSix(page);
   await expect(page.getByRole('article', { name: 'Contenu LILA', exact: true })).toBeVisible();
   await word(page, 'LAVAGE', ['syllable-la', 'syllable-va'], 'ge');
@@ -77,7 +77,7 @@ for (const width of [390, 1280]) test(`Programme et Exercices A–G, persistance
   await page.getByRole('article', { name: 'Exercice LILA variante 1', exact: true }).getByRole('button', { name: 'Dupliquer l’exercice' }).click();
   await page.getByLabel('Trouver li (bloc 1)', { exact: true }).check();
   await page.getByRole('button', { name: 'Sauvegarder l’exercice' }).click();
-  await expect(page.getByRole('article', { name: /^Exercice LILA/ })).toHaveCount(2);
+  await expect(page.getByRole('article', { name: /^Exercice LILA/ })).toHaveCount(3);
   await exercise(page, 'LAVAGE'); await expect(page.getByLabel('Trouver ge (bloc 3)', { exact: true })).toBeDisabled();
   await expect(page.getByLabel('Trouver la (bloc 1)', { exact: true })).toBeEnabled();
   await page.getByLabel('Trouver va (bloc 2)', { exact: true }).check(); await distractors(page);
@@ -144,9 +144,9 @@ test('suppression d’une activité dupliquée conserve le mot et protège le se
   const copy = page.getByRole('article', { name: 'Exercice lama variante 3', exact: true });
   await expect(copy).toBeVisible();
   page.once('dialog', (dialog) => dialog.dismiss()); await copy.getByRole('button', { name: 'Supprimer l’exercice' }).click(); await expect(copy).toBeVisible();
-  page.once('dialog', (dialog) => dialog.accept()); await copy.getByRole('button', { name: 'Supprimer l’exercice' }).click(); await expect(copy).toHaveCount(0);
+  page.once('dialog', (dialog) => dialog.accept()); await copy.getByRole('button', { name: 'Supprimer l’exercice' }).click(); await expect(page.getByRole('button', { name: 'Supprimer l’exercice', exact: true })).toHaveCount(0);
   await page.reload(); await parents(page); await tab(page, 'Exercices');
-  await expect(page.getByRole('article', { name: /^Exercice lama variante/ })).toHaveCount(2);
+  await expect(page.getByRole('article', { name: /^Exercice lama variante/ })).toHaveCount(3);
   await tab(page, 'Programme'); await page.getByRole('button', { name: 'Ouvrir la semaine 3', exact: true }).click();
   await expect(page.getByRole('article', { name: 'Contenu lama', exact: true })).toBeVisible();
 });

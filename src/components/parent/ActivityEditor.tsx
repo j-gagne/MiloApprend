@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import type { CompletionActivity, LearningProgram, Sentence, Word } from '../../content/model';
+import type { CompletionActivity, LearningProgram, CompletionTarget } from '../../content/model';
 import { missingIndexes } from '../../content/model';
 import { activitySegmentation } from '../../content/activity-segmentation';
 import { comparableText } from '../../content/text';
@@ -11,7 +11,7 @@ import { activityToExercise } from '../../game/completion-content';
 import { segmentText, withActivity } from '../../parent/activities';
 import { ActivityPreview } from './ActivityPreview';
 
-interface Props { program: LearningProgram; activity: CompletionActivity; target: Word | Sentence;
+interface Props { program: LearningProgram; activity: CompletionActivity; target: CompletionTarget;
   onSave: (activity: CompletionActivity) => void; onCancel: () => void; onDirty: () => void }
 export function ActivityEditor({ program, activity, target, onSave, onCancel, onDirty }: Props) {
   const [draft, setDraft] = useState(activity);
@@ -45,7 +45,7 @@ export function ActivityEditor({ program, activity, target, onSave, onCancel, on
           {program.weeks.map((item) => <option key={item.number} value={item.number}>{item.number} — {item.label}</option>)}
         </select></label>
       </div>
-      <h3>{target.type === 'word' ? 'Construction du mot' : 'Construction de la phrase'}</h3><div className="parent-tokens">{segments.map((segment, index) => <span key={index}>{segmentText(program, segment)}</span>)}</div>
+      <h3>{target.type === 'word' ? 'Construction du mot' : target.type === 'sentence' ? 'Construction de la phrase' : 'Syllabe à retrouver'}</h3><div className="parent-tokens">{segments.map((segment, index) => <span key={index}>{segmentText(program, segment)}</span>)}</div>
       <fieldset><legend>Parties à trouver</legend><div className="parent-checks">{segments.map((segment, index) => {
         const eligible = 'unitId' in segment && allowed.some((unit) => unit.id === segment.unitId);
         return <label key={index}><input type="checkbox" checked={indexes.includes(index)} disabled={!eligible}

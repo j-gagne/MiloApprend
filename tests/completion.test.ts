@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import { initialProgram } from '../src/content/program.ts';
 import type { CompletionActivity, Word } from '../src/content/model.ts';
@@ -6,7 +6,7 @@ import { sentenceActivity, sentenceProgram } from './fixtures/sentence-activity.
 import { validateCompletionActivity, validateCompleteWordVariant, validateProgram } from '../src/content/validation.ts';
 import { createContentService } from '../src/content/service.ts';
 import { createContentRepository } from '../src/content/repository.ts';
-import { getCompleteWordChallenges } from '../src/game/complete-word-content.ts';
+import { getCompleteWordChallenges } from './helpers/explicit-service.ts';
 import { activityToExercise } from '../src/game/completion-content.ts';
 import { isComplete, isSlotCorrect, placeAnswer } from '../src/game/complete-word.ts';
 

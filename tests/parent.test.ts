@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import { initialProgram } from '../src/content/program.ts';
 import { activeWeek } from '../src/content/settings.ts';
@@ -8,8 +8,8 @@ import { createGate, checkGate } from '../src/parent/gate.ts';
 import { effectiveProgram, effectiveWeek, emptyParentData, newParentId, removeCustomWord, saveActivity } from '../src/parent/model.ts';
 import { parentActivities, withActivity } from '../src/parent/activities.ts';
 import { createParentStore, PARENT_STORAGE_KEY, parseParentData } from '../src/services/parent-store.ts';
-import { getCompleteWordChallenges } from '../src/game/complete-word-content.ts';
-import { generateCompleteWordSession } from '../src/game/complete-word-session.ts';
+import { getCompleteWordChallenges } from './helpers/explicit-service.ts';
+import { generateCompleteWordSession } from './helpers/explicit-service.ts';
 import { activityToExercise } from '../src/game/completion-content.ts';
 import { validateProgram } from '../src/content/validation.ts';
 import { sentenceActivity } from './fixtures/sentence-activity.ts';

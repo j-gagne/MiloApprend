@@ -4,6 +4,8 @@ import { activitySegmentation } from '../content/activity-segmentation.ts';
 import type { ContentService } from '../content/service.ts';
 import { validateCompletionActivity } from '../content/validation.ts';
 import type { Answer, CompletionBoard } from './complete-word.ts';
+import type { CompletionTarget, ImageAsset } from '../content/model.ts';
+import { constructionText, terminalSuffix } from '../content/construction.ts';
 
 // Conversion commune, uniquement après validation des références et des emplacements.
 export function toCompletionBoard(service: ContentService, segmentation: Segmentation, config: CompletionParameters): CompletionBoard {
@@ -28,7 +30,7 @@ export function toCompletionBoard(service: ContentService, segmentation: Segment
 
 export interface CompletionExercise extends CompletionBoard {
   readonly id: string;
-  readonly target: { readonly id: string; readonly type: 'word' | 'sentence'; readonly text: string; readonly audioText: string };
+  readonly target: { readonly id: string; readonly type: CompletionTarget['type']; readonly text: string; readonly audioText: string; readonly imageAsset?: ImageAsset | null };
 }
 
 export function activityToExercise(service: ContentService, activity: CompletionActivity, week = service.activeWeek): {
@@ -37,8 +39,15 @@ export function activityToExercise(service: ContentService, activity: Completion
   const issues = validateCompletionActivity(service.getProgram(), activity, week);
   if (issues.some((issue) => issue.severity === 'error')) return { issues };
   const target = service.getProgram().units.find((unit) => unit.id === activity.targetId);
-  if (!target || (target.type !== 'word' && target.type !== 'sentence')) return { issues };
+  if (!target || (target.type !== 'word' && target.type !== 'sentence' && target.type !== 'syllable')) return { issues };
+  const segmentation = activitySegmentation(service.getProgram(), activity)!;
+  const board = toCompletionBoard(service, segmentation, activity);
+  const suffix = target.type === 'sentence' ? terminalSuffix(target.display, constructionText(service.getProgram(), segmentation)) : '';
+  // Suffixe d'affichage ajouté après les blocs ; jamais un slot ni une réponse.
+  const displayBoard = suffix ? { ...board, segments: [...board.segments, suffix],
+    gaps: board.gaps ? [...board.gaps, ''] : undefined } : board;
   return { issues, exercise: { id: activity.id, target: {
     id: target.id, type: target.type, text: target.display, audioText: target.audioText,
-  }, ...toCompletionBoard(service, activitySegmentation(service.getProgram(), activity)!, activity) } };
+    imageAsset: target.type === 'syllable' ? undefined : target.imageAsset,
+  }, ...displayBoard } };
 }

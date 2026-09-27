@@ -11,12 +11,16 @@ export function UnitEditor({ program, unit, constructionOnly = false, onSave, on
   const [text, setText] = useState(unit.display);
   const [audio, setAudio] = useState(unit.audioText);
   const [week, setWeek] = useState(unit.introducedInWeek);
-  const [emoji, setEmoji] = useState(unit.type === 'word' && unit.imageAsset && 'emoji' in unit.imageAsset ? unit.imageAsset.emoji : '');
+  const asset = unit.type === 'word' || unit.type === 'sentence' ? unit.imageAsset : undefined;
+  const [emoji, setEmoji] = useState(asset && 'emoji' in asset ? asset.emoji : '');
+  const [imageSrc, setImageSrc] = useState(asset && 'src' in asset ? asset.src : '');
+  const media = constructionOnly ? asset : imageSrc.trim() ? { src: imageSrc.trim(), label: text.trim() }
+    : emoji.trim() ? { emoji: emoji.trim(), label: text.trim() } : null;
   const base = { ...unit, display: unit.type === 'sentence' ? text : text.trim(), audioText: audio.trim() || text.trim(), introducedInWeek: week };
   const formatted = construction && unit.type === 'sentence' ? sentenceConstruction(program, base.display, construction) : construction;
   const draft: LearningUnit = base.type === 'word' ? replacePrimary({ ...base, text: text.trim(),
-    imageAsset: constructionOnly ? base.imageAsset : emoji.trim() ? { emoji: emoji.trim(), label: text.trim() } : null }, formatted)
-    : base.type === 'sentence' ? replacePrimary(base, formatted) : base.type === 'letter' ? { ...base, grapheme: text.trim() } : base;
+    imageAsset: media }, formatted)
+    : base.type === 'sentence' ? replacePrimary({ ...base, imageAsset: media }, formatted) : base.type === 'letter' ? { ...base, grapheme: text.trim() } : base;
   const errors = validateParentUnit(program, draft).filter((issue) => issue.severity === 'error');
   return <section className="parent-card" aria-label="Éditeur de contenu">
     <h2>{unit.display ? `Modifier : ${unit.display}` : 'Nouveau contenu'}</h2>
@@ -28,7 +32,10 @@ export function UnitEditor({ program, unit, constructionOnly = false, onSave, on
         <label>Semaine d’introduction<select disabled={constructionOnly} value={week} onChange={(event) => { setWeek(Number(event.target.value)); onDirty(); }}>
           {program.weeks.map((item) => <option key={item.number} value={item.number}>{item.number} — {item.label}</option>)}
         </select></label>
-        {unit.type === 'word' && <label>Emoji<input disabled={constructionOnly} value={emoji} maxLength={24} onChange={(event) => { setEmoji(event.target.value); onDirty(); }} /></label>}
+        {(unit.type === 'word' || unit.type === 'sentence') && <>
+          <label>Emoji<input disabled={constructionOnly} value={emoji} maxLength={24} onChange={(event) => { setEmoji(event.target.value); setImageSrc(''); onDirty(); }} /></label>
+          <label>Adresse de l’image (facultative)<input disabled={constructionOnly} value={imageSrc} onChange={(event) => { setImageSrc(event.target.value); setEmoji(''); onDirty(); }} /></label>
+        </>}
       </div>
       {recovery && <p>Les blocs des anciennes constructions incomplètes sont réunis dans ce brouillon. Enregistrez pour confirmer.</p>}
       {(draft.type === 'word' || draft.type === 'sentence') && <ConstructionEditor program={program} target={draft} construction={formatted}

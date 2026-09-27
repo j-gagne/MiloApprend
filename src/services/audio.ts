@@ -12,13 +12,15 @@
 }
 
 // Vitesse commune à toutes les prononciations pédagogiques du jeu.
-const SPEECH_RATE = 0.60;
+import { readingRate, type ReadingSpeed } from './audio-settings.ts';
 
 const language = (voice: SpeechSynthesisVoice) => voice.lang.toLowerCase().replaceAll('_', '-');
 const describeVoice = (voice: SpeechSynthesisVoice) => `${voice.name || '(sans nom)'} — ${voice.lang}`;
 
 // Seul cet adaptateur connaît Web Speech ; les fichiers restent prioritaires.
 class GameAudio {
+  private rate = readingRate();
+  setReadingSpeed(speed?: ReadingSpeed) { this.rate = readingRate(speed); }
   private context?: AudioContext;
   private word?: HTMLAudioElement;
   private enabled = true;
@@ -153,7 +155,7 @@ class GameAudio {
       if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
       // TEST AUDIO laisse volontairement voice et lang aux valeurs du navigateur.
       utterance.volume = 1;
-      utterance.rate = french ? SPEECH_RATE : 1;
+      utterance.rate = french ? this.rate : 1;
       utterance.pitch = 1;
       this.update({ selected: voice ? describeVoice(voice) : 'Voix par défaut du navigateur (sans voice/lang imposés)' });
       utterance.onstart = () => { this.log('onstart', attempt); };
@@ -215,6 +217,7 @@ class GameAudio {
     const attempt = this.attempt;
     try {
       const audio = new Audio(src);
+      audio.playbackRate = this.rate / readingRate();
       this.word = audio;
       let failed = false;
       const fallback = () => {

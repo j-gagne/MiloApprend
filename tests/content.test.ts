@@ -1,12 +1,14 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import { initialProgram } from '../src/content/program.ts';
 import { activeWeek } from '../src/content/settings.ts';
 import { createContentRepository } from '../src/content/repository.ts';
 import { createContentService } from '../src/content/service.ts';
 import { validateProgram } from '../src/content/validation.ts';
-import { getCompleteWordChallenges, wordToChallenge } from '../src/game/complete-word-content.ts';
-import { createCompleteWordSession } from '../src/game/complete-word-session.ts';
+import { getCompleteWordChallenges } from './helpers/explicit-service.ts';
+import { wordToChallenge } from '../src/game/complete-word-content.ts';
+import { generateCompleteWordSession } from './helpers/explicit-service.ts';
+const createCompleteWordSession = (...args: Parameters<typeof generateCompleteWordSession>) => generateCompleteWordSession(...args).challenges;
 import type { LearningProgram, LearningUnit, Word } from '../src/content/model.ts';
 
 const service = createContentService(createContentRepository(initialProgram));

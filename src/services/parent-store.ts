@@ -1,6 +1,8 @@
 import type { CompletionActivity, LearningUnit, PedagogicalSegment, Segmentation, Word } from '../content/model.ts';
 import type { ParentData, ParentWeek } from '../parent/model.ts';
 import { emptyParentData } from '../parent/model.ts';
+import type { ExerciseScope } from '../content/model.ts';
+import { READING_SPEEDS, type ReadingSpeed } from './audio-settings.ts';
 
 export const PARENT_STORAGE_KEY = 'milo-apprend.parent.v1';
 export interface ParentStore {
@@ -57,6 +59,8 @@ function unit(value: unknown): value is LearningUnit {
       && (value.lowercase === undefined || typeof value.lowercase === 'string')
       && (value.uppercase === undefined || typeof value.uppercase === 'string'))
       || value.type === 'syllable' || (value.type === 'sentence' && (value.unitIds === undefined || strings(value.unitIds))
+        && (value.imageAsset == null || (record(value.imageAsset) && typeof value.imageAsset.label === 'string'
+          && (typeof value.imageAsset.emoji === 'string' || typeof value.imageAsset.src === 'string')))
         && (value.segmentations === undefined || (Array.isArray(value.segmentations) && value.segmentations.every(segmentation)))));
 }
 function week(value: unknown): value is ParentWeek {
@@ -70,6 +74,11 @@ export function parseParentData(raw: string): ParentData | undefined {
     || !booleans(value.unitEnabled) || !booleans(value.activityEnabled)
     || !Array.isArray(value.activities) || !value.activities.every(activity)) return undefined;
   const units = value.version === 1 ? value.customWords : value.customUnits;
+  if (value.readingSpeed !== undefined && (typeof value.readingSpeed !== 'string' || !Object.hasOwn(READING_SPEEDS, value.readingSpeed))) return undefined;
+  if (value.exerciseScope !== undefined && (!record(value.exerciseScope)
+    || !['all', 'selected-weeks'].includes(String(value.exerciseScope.mode))
+    || !Array.isArray(value.exerciseScope.selectedWeeks)
+    || !value.exerciseScope.selectedWeeks.every((week) => typeof week === 'number' && Number.isSafeInteger(week) && week > 0))) return undefined;
   const weeks = value.version === 1 ? [] : value.customWeeks;
   if (!Array.isArray(units) || !units.every(unit) || !Array.isArray(weeks) || !weeks.every(week)) return undefined;
   if (new Set(units.map((item) => item.id)).size !== units.length
@@ -79,6 +88,8 @@ export function parseParentData(raw: string): ParentData | undefined {
   if (value.constructions !== undefined && (!record(value.constructions)
     || !Object.values(value.constructions).every((items) => Array.isArray(items) && items.every(segmentation)))) return undefined;
   return { version: 2, activeWeek: value.activeWeek as number | undefined, unitEnabled: value.unitEnabled,
+    ...(value.exerciseScope === undefined ? {} : { exerciseScope: value.exerciseScope as unknown as ExerciseScope }),
+    ...(value.readingSpeed === undefined ? {} : { readingSpeed: value.readingSpeed as ReadingSpeed }),
     activityEnabled: value.activityEnabled, customUnits: units, customWeeks: weeks, activities: value.activities,
     ...(value.constructions === undefined ? {} : { constructions: value.constructions as Record<string, Segmentation[]> }) };
 }
