@@ -6,7 +6,8 @@ import { advanceChain, chainFinished, remainingChainBank } from '../game/chain';
 import type { ChainState } from '../game/chain';
 import { gameAudio } from '../services/audio';
 import { AnswerTile } from './AnswerTile';
-import { Dinosaur } from './Dinosaur';
+import { Character } from './Character';
+import { DEFAULT_CHARACTER_ID, type CharacterId } from '../game/characters';
 import { SessionProgress } from './SessionProgress';
 import { createSessionProgress, completeTarget, incorrectAttempt, nextTarget } from '../game/session-progress';
 import type { SessionProgress as Progress } from '../game/session-progress';
@@ -14,8 +15,9 @@ import { AudioDiagnostics } from './AudioDiagnostics';
 import { WordImage } from './WordImage';
 import { CompletionLine } from './CompletionLine';
 
-export function CompleteWord({ onComplete, sound, challenges, chains }: {
+export function CompleteWord({ onComplete, sound, challenges, chains, characterId = DEFAULT_CHARACTER_ID }: {
   onComplete: (progress: Progress) => void; sound: boolean; challenges: readonly ContentChallenge[]; chains?: readonly ChainState[];
+  characterId?: CharacterId;
 }) {
   const [chain, setChain] = useState(chains?.[0]);
   const [chainIndex, setChainIndex] = useState(0);
@@ -115,7 +117,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains }: {
   }
 
   return <main className={`game-screen${sentence ? ' sentence-game' : ''}`}>
-    <SessionProgress progress={performance} local={chain ? { total: chain.targets.length, completed: chain.completed.length + Number(solved) } : undefined} />
+    <SessionProgress progress={performance} characterId={characterId} local={chain ? { total: chain.targets.length, completed: chain.completed.length + Number(solved) } : undefined} />
     <h1 ref={heading} tabIndex={-1}>{sentence ? 'Complète la phrase' : challenge.targetType === 'syllable' ? 'Retrouve la syllabe' : 'Complète le mot'}</h1>
     <p className="instruction">{multiple ? 'Glisse chaque morceau dans sa case.' : 'Glisse le bon morceau dans la case.'}</p>
     <section className={`challenge-card ${solved ? 'is-solved' : ''}`} aria-label={`Défi ${index + 1}`}>
@@ -157,7 +159,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains }: {
     <div className={`answer-tray ${chain ? 'chain-bank ' : ''}${multiple || bank.length > 3 ? 'multiple-answers' : ''}`} aria-label="Morceaux disponibles" key={chain ? `chain-${chainIndex}` : challenge.id}>
       {availableAnswers(bank, placements).map((choice) => <AnswerTile key={choice.id} text={choice.text} retry={wrongAnswer === choice.id ? attempt : 0} disabled={solved} findTarget={findTarget} onAnswer={(_, destination) => answer(choice.id, destination)} onHover={setHover} />)}
     </div>
-    <div className="game-companion"><Dinosaur happy={solved} /><p>{solved ? 'Bien joué, Milo !' : attempt ? 'Tu vas y arriver !' : 'On cherche ensemble !'}</p></div>
+    <div className="game-companion"><Character id={characterId} happy={solved} /><p>{solved ? 'Bien joué, Milo !' : attempt ? 'Tu vas y arriver !' : 'On cherche ensemble !'}</p></div>
     <p className="tap-hint">{multiple ? 'Touche une case, puis un morceau. Touche un morceau placé pour le retirer.' : 'Tu peux aussi toucher un morceau.'}</p>
     {import.meta.env.DEV && new URLSearchParams(window.location.search).get('debugContent') === '1' &&
       <aside aria-label="Diagnostic contenu"><small>
