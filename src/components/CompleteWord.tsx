@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ContentChallenge } from '../game/complete-word-content';
-import { isComplete, placeAnswer } from '../game/complete-word';
-import type { Placements } from '../game/complete-word';
+import { availableAnswers, createAnswerBank, placementTexts, placeOccurrence, removeOccurrence } from '../game/answer-bank';
+import type { OccurrencePlacements } from '../game/answer-bank';
 import { gameAudio } from '../services/audio';
 import { AnswerTile } from './AnswerTile';
 import { Dinosaur } from './Dinosaur';
@@ -17,8 +17,8 @@ export function CompleteWord({ onComplete, sound, challenges }: {
   const [solved, setSolved] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [hover, setHover] = useState<number>();
-  const [placements, setPlacements] = useState<Placements>({});
-  const placed = useRef<Placements>({});
+  const [placements, setPlacements] = useState<OccurrencePlacements>({});
+  const placed = useRef<OccurrencePlacements>({});
   const [selectedSlot, setSelectedSlot] = useState<number>();
   const [replay, setReplay] = useState(0);
   const [wrongAnswer, setWrongAnswer] = useState<string>();
@@ -26,6 +26,8 @@ export function CompleteWord({ onComplete, sound, challenges }: {
   const targets = useRef(new Map<number, HTMLDivElement>());
   const locked = useRef(false);
   const challenge = challenges[index];
+  const bank = useMemo(() => createAnswerBank(challenge), [challenge]);
+  const texts = placementTexts(bank, placements);
   const multiple = challenge.slots.length > 1;
   const sentence = challenge.targetType === 'sentence';
   // Les mots à trois segments gardent les mêmes blocs, ajustés à la largeur du téléphone.
@@ -66,28 +68,27 @@ export function CompleteWord({ onComplete, sound, challenges }: {
 
   function remove(slotIndex: number) {
     if (locked.current) return;
-    placed.current = { ...placed.current, [slotIndex]: undefined };
+    placed.current = removeOccurrence(placed.current, slotIndex);
     setPlacements(placed.current); setSelectedSlot(slotIndex);
   }
 
-  function answer(value: string, slotIndex?: number, fromIndex?: number) {
+  function answer(id: string, slotIndex?: number, fromIndex?: number) {
     if (locked.current) return;
     const destination = slotIndex ?? selectedSlot ?? challenge.slots.find((slot) => !placed.current[slot.segmentIndex])?.segmentIndex;
     if (destination === undefined) return;
     gameAudio.unlock();
-    const result = placeAnswer(challenge, placed.current, destination, value);
+    const result = placeOccurrence(challenge, bank, placed.current, destination, id, fromIndex);
     if (result.accepted) {
-      placed.current = fromIndex !== undefined && fromIndex !== destination
-        ? { ...result.placements, [fromIndex]: undefined } : result.placements;
+      placed.current = result.placements;
       setPlacements(placed.current); setSelectedSlot(undefined); setWrongAnswer(undefined); setAttempt(0);
-      if (isComplete(challenge, placed.current)) {
+      if (result.complete) {
         locked.current = true;
         setSolved(true);
         playback.current = gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
         gameAudio.success();
       }
     } else {
-      setWrongAnswer(value);
+      setWrongAnswer(id);
       setAttempt((count) => count + 1);
       void gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
     }
@@ -107,7 +108,7 @@ export function CompleteWord({ onComplete, sound, challenges }: {
           if (!challenge.slots.some((slot) => slot.segmentIndex === segmentIndex)) {
             return <span className={sentence ? 'sentence-text' : 'word-segment'} style={sentence ? undefined : segmentStyle} key={segmentIndex}>{segment}</span>;
           }
-          const filled = placements[segmentIndex];
+          const filled = texts[segmentIndex];
           const className = `word-slot ${hover === segmentIndex ? 'over' : ''} ${filled ? 'filled' : ''} ${attempt && !solved ? 'retry' : ''}`;
           const innerStyle = segmentStyle ? { ...segmentStyle, width: '100%' } : undefined;
           return <div key={`${challenge.id}-${segmentIndex}`} style={segmentStyle}
@@ -115,7 +116,7 @@ export function CompleteWord({ onComplete, sound, challenges }: {
             {multiple && filled ? <AnswerTile text={filled} disabled={solved} retry={0}
               className={`${className} placed-tile`} style={innerStyle} label={`Retirer ${filled} de la case ${segmentIndex + 1}`}
               findTarget={findTarget} onHover={setHover} onTap={() => remove(segmentIndex)}
-              onAnswer={(value, destination) => answer(value, destination, segmentIndex)} />
+              onAnswer={(_, destination) => answer(placements[segmentIndex]!, destination, segmentIndex)} />
               : <div className={`${className} ${multiple && selectedSlot === segmentIndex ? 'selected-slot' : ''}`} style={innerStyle}
                 role={multiple ? 'button' : undefined} tabIndex={multiple && !solved ? 0 : undefined}
                 aria-label={filled ? segment : multiple ? `Case ${segmentIndex + 1} à compléter` : 'Case manquante'}
@@ -134,7 +135,7 @@ export function CompleteWord({ onComplete, sound, challenges }: {
       }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5ZM15 8q4 4 0 8M18 5q7 7 0 14" /></svg></button>
     </section>
     <div className={`answer-tray ${multiple || challenge.choices.length > 3 ? 'multiple-answers' : ''}`} aria-label="Morceaux disponibles" key={challenge.id}>
-      {challenge.choices.map((choice) => <AnswerTile key={choice.text} text={choice.text} retry={wrongAnswer === choice.text ? attempt : 0} disabled={solved} findTarget={findTarget} onAnswer={answer} onHover={setHover} />)}
+      {availableAnswers(bank, placements).map((choice) => <AnswerTile key={choice.id} text={choice.text} retry={wrongAnswer === choice.id ? attempt : 0} disabled={solved} findTarget={findTarget} onAnswer={(_, destination) => answer(choice.id, destination)} onHover={setHover} />)}
     </div>
     <div className="game-companion"><Dinosaur happy={solved} /><p>{solved ? 'Bien joué, Milo !' : attempt ? 'Tu vas y arriver !' : 'On cherche ensemble !'}</p></div>
     <p className="tap-hint">{multiple ? 'Touche une case, puis un morceau. Touche un morceau placé pour le retirer.' : 'Tu peux aussi toucher un morceau.'}</p>

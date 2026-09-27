@@ -54,6 +54,7 @@ for (const touch of [true, false]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await drag(page, la, right, touch); // La case 2 refuse LA même si LA est une réponse autorisée.
     await expect(right).toHaveText('?');
+    await expect(la).toBeVisible();
     await expect(page.getByRole('status')).not.toContainText('Bravo');
     await drag(page, ma, left, touch);
     await expect(left).toHaveText('?');
@@ -61,16 +62,20 @@ for (const touch of [true, false]) {
     await drag(page, ma, right, touch); // Ordre inverse : MA d'abord.
     const filled = page.getByRole('button', { name: 'Retirer ma de la case 2', exact: true });
     await expect(filled).toBeVisible();
+    await expect(ma).toHaveCount(0);
     await page.clock.runFor(2200);
     await expect(page.getByRole('status')).not.toContainText('Bravo');
     await drag(page, filled, left, touch); // Déplacement incorrect : la réponse reste en case 2.
     await expect(filled).toBeVisible();
     await filled.click(); // Retrait puis remplacement.
     await expect(right).toHaveText('?');
+    await expect(ma).toHaveCount(1);
     await drag(page, ma, right, touch);
     await page.screenshot({ path: `test-results/lama-partial-${touch ? 'touch' : 'mouse'}.png` });
     await drag(page, la, left, touch);
     await expect(page.getByRole('status')).toContainText('Bravo ! lama');
+    await expect(la).toHaveCount(0);
+    await expect(ma).toHaveCount(0);
     expect(await page.evaluate(() => window.speechProbe.calls.map((call) => call.text))).toEqual(['lama', 'lama', 'lama', 'lama', 'lama']);
     await page.clock.runFor(2000);
     await expect(page.getByRole('button', { name: 'Réécouter mémé' })).toBeVisible();
@@ -86,6 +91,13 @@ test('LAMA : alternative clavier, réécoute et muet respectés sans réussite p
   await page.getByRole('button', { name: 'Choisir ma', exact: true }).focus();
   await page.keyboard.press('Space');
   await expect(page.getByRole('button', { name: 'Retirer ma de la case 2' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Choisir ma', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Retirer ma de la case 2' }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Choisir ma', exact: true })).toHaveCount(1);
+  await page.getByRole('button', { name: 'Choisir ma', exact: true }).focus();
+  await page.keyboard.press('Space');
+  await expect(page.getByRole('button', { name: 'Choisir ma', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Réécouter lama' }).click();
   await page.getByRole('button', { name: 'Couper le son' }).click();
   await page.getByRole('button', { name: 'Choisir mu', exact: true }).click();
