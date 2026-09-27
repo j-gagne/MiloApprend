@@ -3,6 +3,7 @@ import type { ParentData, ParentWeek } from '../parent/model.ts';
 import { emptyParentData } from '../parent/model.ts';
 import type { ExerciseScope } from '../content/model.ts';
 import { READING_SPEEDS, type ReadingSpeed } from './audio-settings.ts';
+import type { GameMode, ChainLength } from '../game/play-settings.ts';
 
 export const PARENT_STORAGE_KEY = 'milo-apprend.parent.v1';
 export interface ParentStore {
@@ -73,6 +74,8 @@ export function parseParentData(raw: string): ParentData | undefined {
   if (!record(value) || (value.version !== 1 && value.version !== 2) || !optionalNumber(value.activeWeek)
     || !booleans(value.unitEnabled) || !booleans(value.activityEnabled)
     || !Array.isArray(value.activities) || !value.activities.every(activity)) return undefined;
+  if (value.gameMode !== undefined && value.gameMode !== 'individual' && value.gameMode !== 'chain') return undefined;
+  if (value.chainLength !== undefined && value.chainLength !== 2 && value.chainLength !== 3) return undefined;
   const units = value.version === 1 ? value.customWords : value.customUnits;
   if (value.readingSpeed !== undefined && (typeof value.readingSpeed !== 'string' || !Object.hasOwn(READING_SPEEDS, value.readingSpeed))) return undefined;
   if (value.exerciseScope !== undefined && (!record(value.exerciseScope)
@@ -88,6 +91,8 @@ export function parseParentData(raw: string): ParentData | undefined {
   if (value.constructions !== undefined && (!record(value.constructions)
     || !Object.values(value.constructions).every((items) => Array.isArray(items) && items.every(segmentation)))) return undefined;
   return { version: 2, activeWeek: value.activeWeek as number | undefined, unitEnabled: value.unitEnabled,
+    ...(value.gameMode === undefined ? {} : { gameMode: value.gameMode as GameMode }),
+    ...(value.chainLength === undefined ? {} : { chainLength: value.chainLength as ChainLength }),
     ...(value.exerciseScope === undefined ? {} : { exerciseScope: value.exerciseScope as unknown as ExerciseScope }),
     ...(value.readingSpeed === undefined ? {} : { readingSpeed: value.readingSpeed as ReadingSpeed }),
     activityEnabled: value.activityEnabled, customUnits: units, customWeeks: weeks, activities: value.activities,

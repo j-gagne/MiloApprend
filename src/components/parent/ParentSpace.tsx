@@ -11,6 +11,7 @@ import { Programme } from './Programme';
 import { Exercises } from './Exercises';
 import { gameAudio } from '../../services/audio';
 import { READING_SPEEDS, DEFAULT_READING_SPEED, type ReadingSpeed } from '../../services/audio-settings';
+import { DEFAULT_GAME_MODE, DEFAULT_CHAIN_LENGTH } from '../../game/play-settings';
 
 interface Props { data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
   onExit: () => void; onDirtyChange: (dirty: boolean) => void }
@@ -77,6 +78,17 @@ export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyC
         onConstruct={(value) => { setUnit(value); setReturnToExercise(true); setDirty(false); setMessage(''); }}
         onEdit={(activity, target) => { setEditing({ activity, target }); setDirty(false); setMessage(''); }} />}
       {tab === 'Réglages' && <section aria-label="Réglages parents"><h2>Réglages</h2>
+        <section className="parent-card"><h3>Mode de jeu</h3>
+          <label className="parent-scope-choice"><input type="radio" name="game-mode" checked={(data.gameMode ?? DEFAULT_GAME_MODE) === 'individual'}
+            onChange={() => onChange({ ...data, gameMode: 'individual' })} />Cibles individuelles</label>
+          <label className="parent-scope-choice"><input type="radio" name="game-mode" checked={data.gameMode === 'chain'}
+            onChange={() => onChange({ ...data, gameMode: 'chain' })} />Chaîne de cibles</label>
+          {data.gameMode === 'chain' && <fieldset><legend>Nombre de cibles par chaîne</legend>
+            {([2, 3] as const).map((length) => <label className="parent-scope-choice" key={length}>
+              <input type="radio" name="chain-length" checked={(data.chainLength ?? DEFAULT_CHAIN_LENGTH) === length}
+                onChange={() => onChange({ ...data, chainLength: length })} />{length}</label>)}
+          </fieldset>}
+        </section>
         <section className="parent-card"><h3>Semaine active</h3><div className="parent-tokens">
           {program.weeks.map((week) => <button key={week.number} aria-label={`Semaine ${week.number}`} aria-pressed={service.activeWeek === week.number}
             onClick={() => { onChange({ ...data, activeWeek: week.number }); setMessage(`Semaine ${week.number} sélectionnée pour les prochaines parties.`); }}>{week.number}</button>)}

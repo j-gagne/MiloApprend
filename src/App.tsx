@@ -5,7 +5,9 @@ import { Dinosaur } from './components/Dinosaur';
 import { gameAudio } from './services/audio';
 import { progressStore } from './services/progress';
 import { EggProgress } from './components/EggProgress';
-import { COMPLETE_WORD_SESSION_STRATEGY, createCompleteWordSession } from './game/complete-word-session';
+import { COMPLETE_WORD_SESSION_STRATEGY } from './game/complete-word-session';
+import { createPlaySession } from './game/play-session';
+import { DEFAULT_CHAIN_LENGTH } from './game/play-settings';
 import { getCompleteWordChallenges } from './game/complete-word-content';
 import { createContentRepository } from './content/repository';
 import { createContentService } from './content/service';
@@ -22,13 +24,13 @@ export function App() {
   const [parent, setParent] = useState(() => parentStore.load());
   const service = useMemo(() => createContentService(createContentRepository(effectiveProgram(initialProgram, parent.data)),
     effectiveWeek(initialProgram, parent.data, activeWeek), parent.data.exerciseScope), [parent.data]);
-  const availableCount = useMemo(() => Math.min(COMPLETE_WORD_SESSION_STRATEGY.size,
+  const availableCount = useMemo(() => Math.min(parent.data.gameMode === 'chain' ? parent.data.chainLength ?? DEFAULT_CHAIN_LENGTH : COMPLETE_WORD_SESSION_STRATEGY.size,
     new Set(getCompleteWordChallenges(service).challenges.filter((challenge) => service.exerciseScope.mode === 'all'
-      || service.exerciseScope.selectedWeeks.includes(challenge.introducedInWeek)).map((challenge) => challenge.word)).size), [service]);
+      || service.exerciseScope.selectedWeeks.includes(challenge.introducedInWeek)).map((challenge) => challenge.word)).size), [service, parent.data.gameMode, parent.data.chainLength]);
   const [progress, setProgress] = useState(() => progressStore.load());
   const [sound, setSound] = useState(true);
   const [saved, setSaved] = useState(true);
-  const [session, setSession] = useState(() => createCompleteWordSession(service));
+  const [session, setSession] = useState(() => createPlaySession(service, parent.data));
   const title = useRef<HTMLHeadingElement>(null);
   const completed = useRef(false);
   const parentDirty = useRef(false);
@@ -47,14 +49,14 @@ export function App() {
   }, [progress.completedSessions]);
 
   function start() {
-    const nextSession = createCompleteWordSession(service);
-    if (!nextSession.length) return;
+    const nextSession = createPlaySession(service, parent.data);
+    if (!nextSession.challenges.length) return;
     completed.current = false;
     gameAudio.unlock();
     // Monter le défi avant de parler, tout en restant dans le geste JOUER/REJOUER
     // pour iOS. Le cycle de vérification StrictMode précède ainsi cette lecture.
     flushSync(() => { setSession(nextSession); setScreen('game'); });
-    const first = nextSession[0];
+    const first = nextSession.challenges[0];
     void gameAudio.playWord(first.audioText ?? first.word, first.audioSrc);
   }
 
@@ -82,7 +84,7 @@ export function App() {
       <button className="text-button parents-link" onClick={() => { gameAudio.stop(); setScreen('gate'); }}>Parents</button>
     </main>}
 
-    {screen === 'game' && <CompleteWord onComplete={finish} sound={sound} challenges={session} />}
+    {screen === 'game' && <CompleteWord onComplete={finish} sound={sound} challenges={session.challenges} initialChain={session.chain} />}
     {screen === 'gate' && <ParentGate onOpen={() => setScreen('parent')} onCancel={() => setScreen('home')} />}
     {screen === 'parent' && <ParentSpace data={parent.data} service={service} warning={parent.warning}
       onDirtyChange={(dirty) => { parentDirty.current = dirty; }}
@@ -96,8 +98,8 @@ export function App() {
       <div className="confetti" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ left: `${4 + i * 3.9}%`, animationDelay: `${i * 0.08}s`, background: ['#e4b454', '#81a879', '#de9984'][i % 3] }} />)}</div>
       <div className="reward-stars" aria-hidden="true">★ <span>★</span> ★</div>
       <h1 ref={title} tabIndex={-1}>Bravo Milo !</h1>
-      <p>{session.length} mots, une belle aventure !</p>
-      <EggProgress total={session.length} completed={session.length} />
+      <p>{session.mode === 'chain' ? 'Une chaîne terminée, une belle aventure !' : `${session.challenges.length} mots, une belle aventure !`}</p>
+      <EggProgress total={session.mode === 'chain' ? 1 : session.challenges.length} completed={session.mode === 'chain' ? 1 : session.challenges.length} />
       <Dinosaur happy />
       <div className="earned-badge"><span aria-hidden="true">★</span> Une étoile de plus !</div>
       <button className="primary-button" onClick={start}><span aria-hidden="true">↻</span> REJOUER</button>

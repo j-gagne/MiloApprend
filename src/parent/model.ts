@@ -3,10 +3,11 @@ import { missingIndexes } from '../content/model.ts';
 import { parentActivities } from './activities.ts';
 import type { ExerciseScope } from '../content/model.ts';
 import type { ReadingSpeed } from '../services/audio-settings.ts';
+import type { PlaySettings } from '../game/play-settings.ts';
 
 export interface ParentWeek extends SchoolWeek { readonly id: string }
 
-export interface ParentData {
+export interface ParentData extends PlaySettings {
   readonly version: 2;
   readonly activeWeek?: number;
   readonly exerciseScope?: ExerciseScope;
