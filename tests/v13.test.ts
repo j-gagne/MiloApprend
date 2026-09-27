@@ -67,7 +67,8 @@ test('quatre blocs : cinq variantes et pas quinze', () => {
 });
 test('nouvelle syllabe MA cible distincte, sans fausse Word', () => {
   const unit = { id: 'parent-syllable-MA', type: 'syllable' as const, display: 'MA', audioText: 'ma', introducedInWeek: 5, enabled: true, tags: ['practice'] };
-  const p = effectiveProgram(initialProgram, { ...emptyParentData(), customUnits: [unit] });
+  const p = effectiveProgram(initialProgram, { ...emptyParentData(), customUnits: [unit],
+    activityEnabled: { [`generated:${unit.id}:self:missing:0`]: true } });
   const challenge = getCompleteWordChallenges(service(p)).challenges.find((a) => a.wordId === unit.id)!;
   assert.equal(challenge.targetType, 'syllable'); assert.deepEqual(challenge.slots, [{ segmentIndex: 0, expected: 'MA' }]);
 });

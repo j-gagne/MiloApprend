@@ -58,7 +58,9 @@ export function automaticActivities(program: LearningProgram, week: number): Com
       };
       const snapshot = { ...program, activities: [activity] };
       if (!validateCompletionActivity(snapshot, activity, week).some((issue) => issue.severity === 'error')) {
-        result.push({ ...activity, enabled: program.activityEnabled?.[activity.id] ?? true });
+        // Seule la cible syllabe de deux lettres est inactive par défaut, jamais ses usages comme bloc.
+        const enabledByDefault = target.type !== 'syllable' || Array.from(target.display.normalize('NFC')).length !== 2;
+        result.push({ ...activity, enabled: program.activityEnabled?.[activity.id] ?? enabledByDefault });
       }
     }
   }
