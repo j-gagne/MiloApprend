@@ -4,10 +4,11 @@ import { CompleteWord } from './components/CompleteWord';
 import { Dinosaur } from './components/Dinosaur';
 import { gameAudio } from './services/audio';
 import { progressStore } from './services/progress';
-import { EggProgress } from './components/EggProgress';
-import { COMPLETE_WORD_SESSION_STRATEGY } from './game/complete-word-session';
+import { SessionProgress } from './components/SessionProgress';
+import { createSessionProgress } from './game/session-progress';
+import type { SessionProgress as Progress } from './game/session-progress';
 import { createPlaySession } from './game/play-session';
-import { DEFAULT_CHAIN_LENGTH } from './game/play-settings';
+import { DEFAULT_QUESTION_COUNT } from './game/play-settings';
 import { getCompleteWordChallenges } from './game/complete-word-content';
 import { createContentRepository } from './content/repository';
 import { createContentService } from './content/service';
@@ -24,13 +25,14 @@ export function App() {
   const [parent, setParent] = useState(() => parentStore.load());
   const service = useMemo(() => createContentService(createContentRepository(effectiveProgram(initialProgram, parent.data)),
     effectiveWeek(initialProgram, parent.data, activeWeek), parent.data.exerciseScope), [parent.data]);
-  const availableCount = useMemo(() => Math.min(parent.data.gameMode === 'chain' ? parent.data.chainLength ?? DEFAULT_CHAIN_LENGTH : COMPLETE_WORD_SESSION_STRATEGY.size,
+  const availableCount = useMemo(() => Math.min(parent.data.questionCount ?? DEFAULT_QUESTION_COUNT,
     new Set(getCompleteWordChallenges(service).challenges.filter((challenge) => service.exerciseScope.mode === 'all'
-      || service.exerciseScope.selectedWeeks.includes(challenge.introducedInWeek)).map((challenge) => challenge.word)).size), [service, parent.data.gameMode, parent.data.chainLength]);
+      || service.exerciseScope.selectedWeeks.includes(challenge.introducedInWeek)).map((challenge) => challenge.word)).size), [service, parent.data.questionCount]);
   const [progress, setProgress] = useState(() => progressStore.load());
   const [sound, setSound] = useState(true);
   const [saved, setSaved] = useState(true);
   const [session, setSession] = useState(() => createPlaySession(service, parent.data));
+  const [result, setResult] = useState(() => createSessionProgress(0));
   const title = useRef<HTMLHeadingElement>(null);
   const completed = useRef(false);
   const parentDirty = useRef(false);
@@ -39,12 +41,13 @@ export function App() {
   useEffect(() => { gameAudio.setReadingSpeed(parent.data.readingSpeed); }, [parent.data.readingSpeed]);
   useEffect(() => () => gameAudio.stop(), []);
 
-  const finish = useCallback(() => {
+  const finish = useCallback((performance: Progress) => {
     if (completed.current) return;
     completed.current = true;
     const next = { completedSessions: progress.completedSessions + 1 };
     setSaved(progressStore.save(next));
     setProgress(next);
+    setResult(performance);
     setScreen('celebration');
   }, [progress.completedSessions]);
 
@@ -80,11 +83,11 @@ export function App() {
       <button className="primary-button play-button" onClick={start} disabled={!availableCount}><span aria-hidden="true">▶</span> JOUER</button>
       {!availableCount && <p role="status">Aucun défi disponible pour le contenu autorisé.</p>}
       <p className="adventure-note">{availableCount} petits défis avec ton ami dino</p>
-      <div className="progress-pill"><span aria-hidden="true">★</span> {progress.completedSessions === 0 ? 'Ta première aventure t’attend !' : `${progress.completedSessions} aventure${progress.completedSessions > 1 ? 's' : ''} terminée${progress.completedSessions > 1 ? 's' : ''}`}</div>
+      <div className="progress-pill"><span aria-hidden="true">●</span> {progress.completedSessions === 0 ? 'Ta première aventure t’attend !' : `${progress.completedSessions} aventure${progress.completedSessions > 1 ? 's' : ''} terminée${progress.completedSessions > 1 ? 's' : ''}`}</div>
       <button className="text-button parents-link" onClick={() => { gameAudio.stop(); setScreen('gate'); }}>Parents</button>
     </main>}
 
-    {screen === 'game' && <CompleteWord onComplete={finish} sound={sound} challenges={session.challenges} initialChain={session.chain} />}
+    {screen === 'game' && <CompleteWord onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} />}
     {screen === 'gate' && <ParentGate onOpen={() => setScreen('parent')} onCancel={() => setScreen('home')} />}
     {screen === 'parent' && <ParentSpace data={parent.data} service={service} warning={parent.warning}
       onDirtyChange={(dirty) => { parentDirty.current = dirty; }}
@@ -96,15 +99,13 @@ export function App() {
 
     {screen === 'celebration' && <main className="celebration-screen">
       <div className="confetti" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ left: `${4 + i * 3.9}%`, animationDelay: `${i * 0.08}s`, background: ['#e4b454', '#81a879', '#de9984'][i % 3] }} />)}</div>
-      <div className="reward-stars" aria-hidden="true">★ <span>★</span> ★</div>
       <h1 ref={title} tabIndex={-1}>Bravo Milo !</h1>
-      <p>{session.mode === 'chain' ? 'Une chaîne terminée, une belle aventure !' : `${session.challenges.length} mots, une belle aventure !`}</p>
-      <EggProgress total={session.challenges.length} completed={session.challenges.length} />
+      <p>{result.completedTargets} exercices terminés</p>
+      <SessionProgress progress={result} />
       <Dinosaur happy />
-      <div className="earned-badge"><span aria-hidden="true">★</span> Une étoile de plus !</div>
       <button className="primary-button" onClick={start}><span aria-hidden="true">↻</span> REJOUER</button>
       <button className="text-button" onClick={() => setScreen('home')}>Retour à l’accueil</button>
-      {!saved && <p className="save-note" role="status">L’étoile reste ici jusqu’à la fermeture du jeu. La sauvegarde est indisponible.</p>}
+      {!saved && <p className="save-note" role="status">La partie est terminée. La sauvegarde est indisponible.</p>}
     </main>}
     <footer>Un petit pas à la fois <span aria-hidden="true">✦</span></footer>
   </div>;

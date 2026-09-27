@@ -2,20 +2,19 @@
 
 ## Modes et session
 
-- **Cibles individuelles** (défaut) : session habituelle de cinq cibles au maximum,
+- **Cibles individuelles** (défaut) : session de 3, 6 ou 9 cibles demandées,
   une banque par cible, avec ses distracteurs.
 - **Chaîne de cibles** : une chaîne de deux ou trois cibles successives partage une
   banque. Une seule cible est affichée et manipulable à la fois.
 - **Cible** : l'exercice Word, Sentence ou Syllable sélectionné, avec ses slots.
 - **Chaîne** : cibles sélectionnées, banque d'occurrences et placements validés.
-- **Session** : partie complète. Cette version contient une seule chaîne en mode
-  chaîne ; elle est donc plus courte (2–3 cibles plutôt que 5), jamais trois fois
-  plus longue. Un œuf représente chaque cible réellement sélectionnée et éclot
-  dès sa réussite, avant la transition ; les œufs gagnés restent visibles ensuite.
-  La célébration et le compteur de parties restent ceux du jeu existant.
+- **Session** : partie complète, même nombre total de cibles dans les deux modes.
+  Les cibles sont ensuite regroupées en chaînes, avec une nouvelle banque par chaîne.
+  Les points locaux, le parcours global et les étoiles de performance sont distincts.
+  Voir [session-progress.md](session-progress.md) pour le modèle et les réglages actuels.
 
 `play-session.ts` enveloppe le générateur existant sans modifier ses règles
-d'admissibilité ni sa RNG injectable. La stratégie demande 2 ou 3 cibles avec
+d'admissibilité ni sa RNG injectable. La stratégie demande le total configuré avec
 environ 60 % de contenu récent. Le regroupement existant évite les variantes
 d'une même cible et les textes dupliqués. Tous les réglages Parent, activations,
 constructions effectives et filtres de semaines restent appliqués en amont.
@@ -91,7 +90,7 @@ npm run test:e2e -- tests/browser/game.spec.ts tests/browser/multiple-slots.spec
 
 ## Limites
 
-Deux ou trois cibles uniquement, une chaîne par partie dans cette version.
+Deux ou trois cibles par chaîne, éventuellement moins dans la dernière chaîne.
 Pas de séries configurables, de nouvelle récompense ou de distracteurs configurables.
 L'état de chaîne est autonome et réutilisable pour de futures séries, mais aucune
 interface de séries n'est développée. Les gestes tactiles sont testés par Chromium

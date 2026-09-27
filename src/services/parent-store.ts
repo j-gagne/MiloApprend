@@ -76,6 +76,8 @@ export function parseParentData(raw: string): ParentData | undefined {
     || !Array.isArray(value.activities) || !value.activities.every(activity)) return undefined;
   if (value.gameMode !== undefined && value.gameMode !== 'individual' && value.gameMode !== 'chain') return undefined;
   if (value.chainLength !== undefined && value.chainLength !== 2 && value.chainLength !== 3) return undefined;
+  if (value.questionCount !== undefined && (typeof value.questionCount !== 'number'
+    || !Number.isSafeInteger(value.questionCount) || value.questionCount < 1 || value.questionCount > 9)) return undefined;
   const units = value.version === 1 ? value.customWords : value.customUnits;
   if (value.readingSpeed !== undefined && (typeof value.readingSpeed !== 'string' || !Object.hasOwn(READING_SPEEDS, value.readingSpeed))) return undefined;
   if (value.exerciseScope !== undefined && (!record(value.exerciseScope)
@@ -93,6 +95,7 @@ export function parseParentData(raw: string): ParentData | undefined {
   return { version: 2, activeWeek: value.activeWeek as number | undefined, unitEnabled: value.unitEnabled,
     ...(value.gameMode === undefined ? {} : { gameMode: value.gameMode as GameMode }),
     ...(value.chainLength === undefined ? {} : { chainLength: value.chainLength as ChainLength }),
+    ...(value.questionCount === undefined ? {} : { questionCount: value.questionCount as number }),
     ...(value.exerciseScope === undefined ? {} : { exerciseScope: value.exerciseScope as unknown as ExerciseScope }),
     ...(value.readingSpeed === undefined ? {} : { readingSpeed: value.readingSpeed as ReadingSpeed }),
     activityEnabled: value.activityEnabled, customUnits: units, customWeeks: weeks, activities: value.activities,

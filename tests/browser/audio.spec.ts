@@ -56,7 +56,7 @@ for (const [languages, expected] of [
     await page.getByRole('button', { name: 'Choisir ne', exact: true }).tap();
     expect(await page.evaluate(() => window.speechProbe.calls)).toEqual(Array.from({ length: 3 }, () => ({ text: 'lune', lang: expected, voice: expected })));
     await expect(page.getByRole('button', { name: 'Choisir na', exact: true })).toBeDisabled();
-    await expect(page.getByLabel('1 œuf éclos sur 5')).toBeVisible();
+    await expect(page.getByRole('progressbar')).toHaveAttribute('value', '1');
   });
 }
 

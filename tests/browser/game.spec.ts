@@ -1,5 +1,6 @@
 ﻿import { test, expect } from '@playwright/test';
 import { mockSpeech } from './legacy-speech-mock';
+import { generateCompleteWordSession } from '../../src/game/complete-word-session';
 
 test.beforeEach(async ({ page }) => { await mockSpeech(page); });
 
@@ -13,7 +14,7 @@ test('partie tactile complète, erreur douce, annulation et sauvegarde', async (
   await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
   await page.getByRole('button', { name: 'Choisir na', exact: true }).tap();
   await expect(page.getByRole('status')).toHaveText('Essaie un autre morceau !');
-  await expect(page.getByLabel('0 œuf éclos sur 5')).toBeVisible();
+  await expect(page.getByRole('progressbar')).toHaveAttribute('value', '0');
   await page.screenshot({ path: 'test-results/game-mobile.png' });
 
   const session = await context.newCDPSession(page);
@@ -40,13 +41,14 @@ test('partie tactile complète, erreur douce, annulation et sauvegarde', async (
     await expect(page.getByRole('status')).toContainText(`Bravo ! ${word}`);
   }
   await expect(page.getByRole('heading', { name: 'Bravo Milo !' })).toBeVisible();
-  await expect(page.getByLabel('5 œufs éclos sur 5')).toBeVisible();
+  await expect(page.getByRole('progressbar')).toHaveAttribute('value', '5');
+  await expect(page.getByLabel('Étoiles : 4 sur 5')).toBeVisible();
   expect(await page.evaluate(() => window.speechProbe.calls.map((call) => call.text))).toEqual(['lune', 'lune', 'lune', 'lama', 'lama', 'ami', 'ami', 'vélo', 'vélo', 'nid', 'nid']);
   await page.screenshot({ path: 'test-results/celebration-mobile.png' });
   await page.reload();
   await expect(page.getByText('1 aventure terminée')).toBeVisible();
   await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
-  await expect(page.getByLabel('0 œuf éclos sur 5')).toBeVisible();
+  await expect(page.getByRole('progressbar')).toHaveAttribute('value', '0');
   expect(errors).toEqual([]);
 });
 
@@ -71,11 +73,16 @@ test('stockage indisponible : la partie reste jouable', async ({ page }) => {
     Storage.prototype.setItem = () => { throw new Error('Stockage désactivé'); };
   });
   await page.goto('/');
+  await page.clock.install();
   await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
-  for (const answer of ['ne', 'la', 'a', 'lo', 'ni']) {
-    const button = page.getByRole('button', { name: `Choisir ${answer}`, exact: true });
-    await expect(button).toBeEnabled();
-    await button.tap();
+  const expected = generateCompleteWordSession(undefined, { random: () => 0.999, strategy: { size: 6, recentCount: 4 } }).challenges;
+  for (const challenge of expected) {
+    for (const slot of challenge.slots) {
+      const button = page.getByRole('button', { name: `Choisir ${slot.expected}`, exact: true }).first();
+      await expect(button).toBeEnabled();
+      await button.tap();
+    }
+    await page.clock.runFor(2100);
   }
   await expect(page.getByRole('heading', { name: 'Bravo Milo !' })).toBeVisible();
   await expect(page.getByText(/La sauvegarde est indisponible/)).toBeVisible();

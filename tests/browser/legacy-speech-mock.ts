@@ -3,7 +3,7 @@ import { mockSpeech as speech } from './speech-mock';
 import { initialProgram } from '../../src/content/program';
 import { automaticActivities } from '../../src/content/activity-catalog';
 import { emptyParentData } from '../../src/parent/model';
-export const legacyData = { ...emptyParentData(), activityEnabled: Object.fromEntries(automaticActivities(initialProgram, 5).map((activity) => [activity.id, false])) };
+export const legacyData = { ...emptyParentData(), questionCount: 5, activityEnabled: Object.fromEntries(automaticActivities(initialProgram, 5).map((activity) => [activity.id, false])) };
 // Scénarios de gestes/audio V1.2 : mêmes activités explicites, overrides Parent réels.
 export async function mockSpeech(page: Page, languages?: string[], ends?: boolean) {
   await speech(page, languages, ends);

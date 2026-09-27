@@ -17,7 +17,6 @@ interface Props {
 export function AnswerTile({ text, disabled, retry, findTarget, onAnswer, onHover, onTap, className, style, label }: Props) {
   const button = useRef<HTMLButtonElement>(null);
   const drag = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
-  const suppressClick = useRef(false);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -46,7 +45,6 @@ export function AnswerTile({ text, disabled, retry, findTarget, onAnswer, onHove
       aria-label={label ?? `Choisir ${text}`} onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => {
         if (disabled || !event.isPrimary || event.button !== 0) return;
-        suppressClick.current = false;
         drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
         event.currentTarget.setPointerCapture(event.pointerId);
       }}
@@ -54,18 +52,18 @@ export function AnswerTile({ text, disabled, retry, findTarget, onAnswer, onHove
       onPointerUp={(event) => {
         const current = drag.current;
         if (!current || current.id !== event.pointerId) return;
-        suppressClick.current = true;
         const slotIndex = findTarget(event.clientX, event.clientY);
         clear();
         if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
         if (!current.moved) tap();
         else if (slotIndex !== undefined) onAnswer(text, slotIndex);
       }}
-      onPointerCancel={() => { suppressClick.current = true; clear(); }}
+      onPointerCancel={clear}
       onLostPointerCapture={clear}
       onClick={(event) => {
-        if (event.detail === 0 || !suppressClick.current) tap();
-        suppressClick.current = false;
+        // PointerUp already submits mouse/touch. A synthetic click can land on a
+        // different tile after consumption; only keyboard/accessibility clicks submit here.
+        if (event.detail === 0) tap();
       }}
     >{text}</button>
     {position && <div className="drag-ghost" aria-hidden="true" style={{ left: position.x, top: position.y }}>{text}</div>}

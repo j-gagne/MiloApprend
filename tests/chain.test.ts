@@ -39,9 +39,9 @@ test('old saves default to individual and chain length 3; individual session/ban
   assert.equal(data.chainLength ?? DEFAULT_CHAIN_LENGTH, 3);
   const actual = session(data);
   assert.equal(actual.mode, 'individual');
-  assert.equal(actual.chain, undefined);
-  assert.deepEqual(actual.challenges, createCompleteWordSession(service(data), { random: () => 0.999 }));
-  assert.equal(actual.challenges.length, 5);
+  assert.equal(actual.chains, undefined);
+  assert.deepEqual(actual.challenges, createCompleteWordSession(service(data), { random: () => 0.999, strategy: { size: 6, recentCount: 4 } }));
+  assert.equal(actual.challenges.length, 6);
   const individual = session({ ...chainParentData(), gameMode: 'individual' });
   assert.ok(createAnswerBank(individual.challenges[0]).some((a) => a.text === 'li'));
   assert.ok(createAnswerBank(individual.challenges[0]).some((a) => a.text === 'so'));
@@ -61,7 +61,7 @@ test('individual/chain and lengths 2/3 persist through the existing Parent store
 });
 
 for (const chainLength of [2, 3] as const) test(`chain selects ${chainLength} distinct targets`, () => {
-  const result = session({ ...chainParentData(), chainLength });
+  const result = session({ ...chainParentData(), chainLength, questionCount: chainLength });
   assert.equal(result.challenges.length, chainLength);
   assert.equal(new Set(result.challenges.map((c) => c.wordId)).size, chainLength);
   assert.equal(result.mode, 'chain');
@@ -71,7 +71,7 @@ test('insufficient targets shorten to 2, fall back to one individual, or return 
   assert.equal(session(chainParentData(2)).challenges.length, 2);
   const single = session(chainParentData(1));
   assert.equal(single.mode, 'individual'); assert.equal(single.challenges.length, 1);
-  assert.equal(single.chain, undefined);
+  assert.equal(single.chains, undefined);
   assert.equal(session(chainParentData(0)).challenges.length, 0);
 });
 

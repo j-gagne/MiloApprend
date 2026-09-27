@@ -22,7 +22,7 @@ test('deux nouvelles parties mobiles sélectionnent réellement des mots différ
   for (const [round, seed] of [13, 42].entries()) {
     await setSeed(page, seed);
     await page.getByRole('button', { name: round === 0 ? 'JOUER' : 'REJOUER', exact: true }).tap();
-    const expected = generateCompleteWordSession(undefined, { random: seededRandom(seed) }).challenges;
+    const expected = generateCompleteWordSession(undefined, { random: seededRandom(seed), strategy: { size: 6, recentCount: 4 } }).challenges;
     const words: string[] = [];
     for (const [index, challenge] of expected.entries()) {
       const debug = page.getByRole('complementary', { name: 'Diagnostic contenu' });
@@ -44,7 +44,7 @@ test('deux nouvelles parties mobiles sélectionnent réellement des mots différ
       });
       expect(fits).toBe(true);
       for (const [slotNumber, targetSlot] of challenge.slots.entries()) {
-      const button = page.getByRole('button', { name: `Choisir ${targetSlot.expected}`, exact: true });
+      const button = page.getByRole('button', { name: `Choisir ${targetSlot.expected}`, exact: true }).first();
       if (index === 0 && round === 0 && slotNumber === 0) {
         await button.scrollIntoViewIfNeeded();
         const tile = await button.boundingBox();
@@ -61,7 +61,7 @@ test('deux nouvelles parties mobiles sélectionnent réellement des mots différ
       await expect(page.getByRole('status')).toContainText(`Bravo ! ${challenge.word}`);
       await page.clock.runFor(2000);
     }
-    expect(new Set(words).size).toBe(5);
+    expect(new Set(words).size).toBe(6);
     await expect(page.getByRole('heading', { name: 'Bravo Milo !' })).toBeVisible();
     sessions.push(words);
   }

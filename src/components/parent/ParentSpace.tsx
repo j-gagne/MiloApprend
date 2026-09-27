@@ -11,7 +11,7 @@ import { Programme } from './Programme';
 import { Exercises } from './Exercises';
 import { gameAudio } from '../../services/audio';
 import { READING_SPEEDS, DEFAULT_READING_SPEED, type ReadingSpeed } from '../../services/audio-settings';
-import { DEFAULT_GAME_MODE, DEFAULT_CHAIN_LENGTH } from '../../game/play-settings';
+import { DEFAULT_GAME_MODE, DEFAULT_CHAIN_LENGTH, DEFAULT_QUESTION_COUNT } from '../../game/play-settings';
 
 interface Props { data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
   onExit: () => void; onDirtyChange: (dirty: boolean) => void }
@@ -83,6 +83,11 @@ export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyC
             onChange={() => onChange({ ...data, gameMode: 'individual' })} />Cibles individuelles</label>
           <label className="parent-scope-choice"><input type="radio" name="game-mode" checked={data.gameMode === 'chain'}
             onChange={() => onChange({ ...data, gameMode: 'chain' })} />Chaîne de cibles</label>
+          <fieldset><legend>Nombre de questions par partie</legend>
+            {([3, 6, 9] as const).map((count) => <label className="parent-scope-choice" key={count}>
+              <input type="radio" name="question-count" checked={(data.questionCount ?? DEFAULT_QUESTION_COUNT) === count}
+                onChange={() => onChange({ ...data, questionCount: count })} />{count}</label>)}
+          </fieldset>
           {data.gameMode === 'chain' && <fieldset><legend>Nombre de cibles par chaîne</legend>
             {([2, 3] as const).map((length) => <label className="parent-scope-choice" key={length}>
               <input type="radio" name="chain-length" checked={(data.chainLength ?? DEFAULT_CHAIN_LENGTH) === length}

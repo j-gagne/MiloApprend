@@ -2,20 +2,26 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ContentChallenge } from '../game/complete-word-content';
 import { availableAnswers, createAnswerBank, placementTexts, placeOccurrence, removeOccurrence } from '../game/answer-bank';
 import type { OccurrencePlacements } from '../game/answer-bank';
-import { advanceChain, remainingChainBank } from '../game/chain';
+import { advanceChain, chainFinished, remainingChainBank } from '../game/chain';
 import type { ChainState } from '../game/chain';
 import { gameAudio } from '../services/audio';
 import { AnswerTile } from './AnswerTile';
 import { Dinosaur } from './Dinosaur';
-import { EggProgress } from './EggProgress';
+import { SessionProgress } from './SessionProgress';
+import { createSessionProgress, completeTarget, incorrectAttempt, nextTarget } from '../game/session-progress';
+import type { SessionProgress as Progress } from '../game/session-progress';
 import { AudioDiagnostics } from './AudioDiagnostics';
 import { WordImage } from './WordImage';
 import { CompletionLine } from './CompletionLine';
 
-export function CompleteWord({ onComplete, sound, challenges, initialChain }: {
-  onComplete: () => void; sound: boolean; challenges: readonly ContentChallenge[]; initialChain?: ChainState;
+export function CompleteWord({ onComplete, sound, challenges, chains }: {
+  onComplete: (progress: Progress) => void; sound: boolean; challenges: readonly ContentChallenge[]; chains?: readonly ChainState[];
 }) {
-  const [chain, setChain] = useState(initialChain);
+  const [chain, setChain] = useState(chains?.[0]);
+  const [chainIndex, setChainIndex] = useState(0);
+  const [performance, setPerformance] = useState(() => createSessionProgress(challenges.length));
+  const performanceRef = useRef(performance);
+  function updatePerformance(value: Progress) { performanceRef.current = value; setPerformance(value); }
   const [index, setIndex] = useState(0);
   const [solved, setSolved] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -29,7 +35,7 @@ export function CompleteWord({ onComplete, sound, challenges, initialChain }: {
   const targets = useRef(new Map<number, HTMLDivElement>());
   const locked = useRef(false);
   const challenge = challenges[index];
-  const individualBank = useMemo(() => initialChain ? [] : createAnswerBank(challenge), [challenge, initialChain]);
+  const individualBank = useMemo(() => chains ? [] : createAnswerBank(challenge), [challenge, chains]);
   const bank = useMemo(() => chain ? remainingChainBank(chain) : individualBank, [chain, individualBank]);
   const texts = placementTexts(bank, placements);
   const multiple = challenge.slots.length > 1;
@@ -57,15 +63,18 @@ export function CompleteWord({ onComplete, sound, challenges, initialChain }: {
       if (chain) {
         const next = advanceChain(chain, placed.current);
         if (next === chain) return;
-        setChain(next);
+        if (chainFinished(next) && chains?.[chainIndex + 1]) {
+          setChain(chains[chainIndex + 1]); setChainIndex(chainIndex + 1);
+        } else setChain(next);
       }
       gameAudio.stop();
-      if (index === challenges.length - 1) onComplete();
+      if (index === challenges.length - 1) onComplete(performanceRef.current);
       else { locked.current = false; setSolved(false); setAttempt(0); setWrongAnswer(undefined);
+        updatePerformance(nextTarget(performanceRef.current));
         placed.current = {}; setPlacements({}); setSelectedSlot(undefined); setHover(undefined); setIndex(index + 1); }
     });
     return () => { cancelled = true; window.clearTimeout(timer); };
-  }, [solved, index, onComplete, replay, challenges.length, chain]);
+  }, [solved, index, onComplete, replay, challenges.length, chain, chains, chainIndex]);
 
   function findTarget(x: number, y: number): number | undefined {
     // La plus proche gagne si les marges tactiles de deux cases se chevauchent.
@@ -92,11 +101,13 @@ export function CompleteWord({ onComplete, sound, challenges, initialChain }: {
       setPlacements(placed.current); setSelectedSlot(undefined); setWrongAnswer(undefined); setAttempt(0);
       if (result.complete) {
         locked.current = true;
+        updatePerformance(completeTarget(performanceRef.current));
         setSolved(true);
         playback.current = gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
         gameAudio.success();
       }
     } else {
+      updatePerformance(incorrectAttempt(performanceRef.current));
       setWrongAnswer(id);
       setAttempt((count) => count + 1);
       void gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
@@ -104,7 +115,7 @@ export function CompleteWord({ onComplete, sound, challenges, initialChain }: {
   }
 
   return <main className={`game-screen${sentence ? ' sentence-game' : ''}`}>
-    <EggProgress total={challenges.length} completed={index + Number(solved)} />
+    <SessionProgress progress={performance} local={chain ? { total: chain.targets.length, completed: chain.completed.length + Number(solved) } : undefined} />
     <h1 ref={heading} tabIndex={-1}>{sentence ? 'Complète la phrase' : challenge.targetType === 'syllable' ? 'Retrouve la syllabe' : 'Complète le mot'}</h1>
     <p className="instruction">{multiple ? 'Glisse chaque morceau dans sa case.' : 'Glisse le bon morceau dans la case.'}</p>
     <section className={`challenge-card ${solved ? 'is-solved' : ''}`} aria-label={`Défi ${index + 1}`}>
@@ -136,14 +147,14 @@ export function CompleteWord({ onComplete, sound, challenges, initialChain }: {
           </div>;
         }} />
       <div className="feedback" role="status" aria-live="polite" aria-atomic="true">
-        {solved ? <><span aria-hidden="true">★</span> Bravo ! <strong>{challenge.word}</strong></> : attempt > 0 ? 'Essaie un autre morceau !' : <span aria-hidden="true">À toi de jouer !</span>}
+        {solved ? <>{performance.incorrectAttemptsForCurrentTarget === 0 && <span aria-label="Étoile gagnée">⭐</span>} Bravo ! <strong>{challenge.word}</strong></> : attempt > 0 ? 'Essaie un autre morceau !' : <span aria-hidden="true">À toi de jouer !</span>}
       </div>
       <button className="listen-button" disabled={!sound} aria-label={`Réécouter ${challenge.word}`} onClick={() => {
         playback.current = gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
         setReplay((count) => count + 1);
       }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5ZM15 8q4 4 0 8M18 5q7 7 0 14" /></svg></button>
     </section>
-    <div className={`answer-tray ${chain ? 'chain-bank ' : ''}${multiple || bank.length > 3 ? 'multiple-answers' : ''}`} aria-label="Morceaux disponibles" key={chain ? 'chain' : challenge.id}>
+    <div className={`answer-tray ${chain ? 'chain-bank ' : ''}${multiple || bank.length > 3 ? 'multiple-answers' : ''}`} aria-label="Morceaux disponibles" key={chain ? `chain-${chainIndex}` : challenge.id}>
       {availableAnswers(bank, placements).map((choice) => <AnswerTile key={choice.id} text={choice.text} retry={wrongAnswer === choice.id ? attempt : 0} disabled={solved} findTarget={findTarget} onAnswer={(_, destination) => answer(choice.id, destination)} onHover={setHover} />)}
     </div>
     <div className="game-companion"><Dinosaur happy={solved} /><p>{solved ? 'Bien joué, Milo !' : attempt ? 'Tu vas y arriver !' : 'On cherche ensemble !'}</p></div>
