@@ -13,12 +13,15 @@
 
 // Vitesse commune à toutes les prononciations pédagogiques du jeu.
 import { readingRate, type ReadingSpeed } from './audio-settings.ts';
+import { AudioSequence, SEGMENT_PAUSE_MS, WHOLE_WORD_PAUSE_MS } from './audio-sequence.ts';
+import type { SegmentedReading } from '../content/segmented-reading.ts';
 
 const language = (voice: SpeechSynthesisVoice) => voice.lang.toLowerCase().replaceAll('_', '-');
 const describeVoice = (voice: SpeechSynthesisVoice) => `${voice.name || '(sans nom)'} — ${voice.lang}`;
 
 // Seul cet adaptateur connaît Web Speech ; les fichiers restent prioritaires.
 class GameAudio {
+  private sequence = new AudioSequence();
   private rate = readingRate();
   setReadingSpeed(speed?: ReadingSpeed) { this.rate = readingRate(speed); }
   private context?: AudioContext;
@@ -207,6 +210,20 @@ class GameAudio {
 
   playWord(text: string, src?: string): Promise<void> {
     this.stop();
+    return this.playSingle(text, src);
+  }
+
+  playSegmented(reading: SegmentedReading, wholeSrc?: string): Promise<void> {
+    this.stop();
+    if (!this.enabled) return Promise.resolve();
+    return this.sequence.play([
+      ...reading.segments.map((text, index) => ({ text,
+        pauseAfter: index === reading.segments.length - 1 ? WHOLE_WORD_PAUSE_MS : SEGMENT_PAUSE_MS })),
+      { text: reading.whole, src: wholeSrc },
+    ], (step) => this.playSingle(step.text, step.src));
+  }
+
+  private playSingle(text: string, src?: string): Promise<void> {
     this.beginAttempt(text, src ? 'fichier audio' : 'mot du jeu');
     if (!this.enabled) { this.log('lecture ignorée : muted'); return Promise.resolve(); }
     let resolvePlayback!: () => void;
@@ -238,6 +255,7 @@ class GameAudio {
   }
 
   stop() {
+    this.sequence.cancel();
     const hadUtterance = !!this.utterance;
     try { this.word?.pause(); } catch { /* Facultatif. */ }
     this.finishPlayback?.();
