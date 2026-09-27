@@ -10,7 +10,8 @@
 - **Chaîne** : cibles sélectionnées, banque d'occurrences et placements validés.
 - **Session** : partie complète. Cette version contient une seule chaîne en mode
   chaîne ; elle est donc plus courte (2–3 cibles plutôt que 5), jamais trois fois
-  plus longue. Un œuf représente la chaîne et éclot à sa dernière réussite.
+  plus longue. Un œuf représente chaque cible réellement sélectionnée et éclot
+  dès sa réussite, avant la transition ; les œufs gagnés restent visibles ensuite.
   La célébration et le compteur de parties restent ceux du jeu existant.
 
 `play-session.ts` enveloppe le générateur existant sans modifier ses règles

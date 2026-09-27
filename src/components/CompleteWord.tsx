@@ -104,7 +104,7 @@ export function CompleteWord({ onComplete, sound, challenges, initialChain }: {
   }
 
   return <main className={`game-screen${sentence ? ' sentence-game' : ''}`}>
-    <EggProgress total={chain ? 1 : challenges.length} completed={chain ? Number(solved && index === challenges.length - 1) : index + Number(solved)} />
+    <EggProgress total={challenges.length} completed={index + Number(solved)} />
     <h1 ref={heading} tabIndex={-1}>{sentence ? 'Complète la phrase' : challenge.targetType === 'syllable' ? 'Retrouve la syllabe' : 'Complète le mot'}</h1>
     <p className="instruction">{multiple ? 'Glisse chaque morceau dans sa case.' : 'Glisse le bon morceau dans la case.'}</p>
     <section className={`challenge-card ${solved ? 'is-solved' : ''}`} aria-label={`Défi ${index + 1}`}>

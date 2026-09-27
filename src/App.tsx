@@ -99,7 +99,7 @@ export function App() {
       <div className="reward-stars" aria-hidden="true">★ <span>★</span> ★</div>
       <h1 ref={title} tabIndex={-1}>Bravo Milo !</h1>
       <p>{session.mode === 'chain' ? 'Une chaîne terminée, une belle aventure !' : `${session.challenges.length} mots, une belle aventure !`}</p>
-      <EggProgress total={session.mode === 'chain' ? 1 : session.challenges.length} completed={session.mode === 'chain' ? 1 : session.challenges.length} />
+      <EggProgress total={session.challenges.length} completed={session.challenges.length} />
       <Dinosaur happy />
       <div className="earned-badge"><span aria-hidden="true">★</span> Une étoile de plus !</div>
       <button className="primary-button" onClick={start}><span aria-hidden="true">↻</span> REJOUER</button>
