@@ -1,0 +1,6 @@
+{
+  "id": "/", "name": "Milo apprend", "short_name": "Milo",
+  "lang": "fr-CA", "start_url": "/", "scope": "/", "display": "standalone",
+  "background_color": "#f8f6eb", "theme_color": "#f8f6eb",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
