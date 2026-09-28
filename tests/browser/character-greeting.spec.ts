@@ -67,3 +67,11 @@ test('character profile never leaks into normal or segmented pedagogical speech'
   expect((await calls(page)).filter((call) => call.text.startsWith('Salut'))).toHaveLength(1);
   expect(await page.evaluate(() => window.speechProbe.cancels)).toBeGreaterThanOrEqual(3);
 });
+
+test('rabbit greeting uses its catalog profile without affecting pedagogical speech', async ({ page }) => {
+  await setup(page);
+  await confirm(page, 'Milo', 'Lapin');
+  expect(await calls(page)).toEqual([{ text: 'Salut Milo !', pitch: 1.1, rate: 0.98, lang: 'fr-FR' }]);
+  await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
+  expect((await calls(page)).at(-1)).toEqual({ text: 'lama', pitch: 1, rate: 0.78, lang: 'fr-FR' });
+});

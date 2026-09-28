@@ -11,9 +11,9 @@ function memory() {
     setItem: (key: string, value: string) => { values.set(key, value); } };
 }
 
-test('catalog exposes five unique, immediately available characters with visuals', () => {
-  assert.deepEqual(characterCatalog.map((c) => c.name), ['Dinosaure', 'Lion', 'Singe', 'Tigre', 'Licorne']);
-  assert.equal(new Set(characterCatalog.map((c) => c.id)).size, 5);
+test('catalog exposes six unique, immediately available characters with visuals', () => {
+  assert.deepEqual(characterCatalog.map((c) => c.name), ['Dinosaure', 'Lion', 'Singe', 'Tigre', 'Licorne', 'Lapin']);
+  assert.equal(new Set(characterCatalog.map((c) => c.id)).size, 6);
   assert.ok(characterCatalog.every((c) => c.visual.kind));
   assert.equal(getCharacter('lion').id, 'lion');
 });
@@ -31,7 +31,7 @@ test('all character voice profiles are moderate, distinct and independent of sys
     assert.ok(voiceProfile.rateMultiplier >= 0.95 && voiceProfile.rateMultiplier <= 1.05);
     assert.deepEqual(Object.keys(voiceProfile).sort(), ['pitch', 'rateMultiplier']);
   }
-  assert.equal(new Set(characterCatalog.map((c) => c.voiceProfile.pitch)).size, 5);
+  assert.equal(new Set(characterCatalog.map((c) => c.voiceProfile.pitch)).size, 6);
 });
 
 test('lion persists using the existing key through new store instances and completed sessions', () => {
@@ -67,4 +67,19 @@ test('position uses completed targets only, independently of stars', () => {
     }
   }
   assert.equal(characterPosition(createSessionProgress(0)), 0);
+});
+
+test('rabbit shares the catalogue and persistence mechanisms; existing profiles remain compatible', () => {
+  const rabbit = getCharacter('rabbit');
+  assert.equal(rabbit.name, 'Lapin');
+  assert.deepEqual(rabbit.visual, { kind: 'emoji', value: '\u{1F430}' });
+  assert.deepEqual(rabbit.voiceProfile, { pitch: 1.1, rateMultiplier: 0.98 });
+  for (const character of characterCatalog) {
+    const storage = memory();
+    storage.setItem(key, JSON.stringify({ completedSessions: 7, selectedCharacterId: character.id }));
+    const store = createProgressStore(() => storage);
+    assert.equal(store.load().selectedCharacterId, character.id);
+    store.save({ ...store.load(), completedSessions: 8 });
+    assert.deepEqual(createProgressStore(() => storage).load(), { completedSessions: 8, selectedCharacterId: character.id });
+  }
 });
