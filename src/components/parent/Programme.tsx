@@ -9,13 +9,13 @@ import { parentDrafts } from '../../services/parent-drafts';
 const weekDraftKey = 'programme:week:new';
 
 interface Props { program: LearningProgram; data: ParentData; onChange: (data: ParentData) => boolean; onEdit: (unit: LearningUnit) => void; onDirtyChange: (value: boolean) => void }
-const types = [['letter', 'Lettres', 'une lettre'], ['syllable', 'Syllabes', 'une syllabe'], ['word', 'Mots', 'un mot'], ['sentence', 'Phrases', 'une phrase']] as const;
+const types = [['letter', 'Lettres', 'une lettre'], ['grapheme', 'Graphèmes', 'un graphème'], ['syllable', 'Syllabes', 'une syllabe'], ['word', 'Mots', 'un mot'], ['sentence', 'Phrases', 'une phrase']] as const;
 export function Programme({ program, data, onChange, onEdit, onDirtyChange }: Props) {
   const [opened, setOpened] = useState<number>();
   const [adding, setAdding] = useState(() => !!parentDrafts.load(weekDraftKey));
   const [message, setMessage] = useState('');
   const units = program.units.filter((unit) => unit.introducedInWeek === opened);
-  function create(type: 'letter' | 'syllable' | 'word' | 'sentence') {
+  function create(type: 'letter' | 'grapheme' | 'syllable' | 'word' | 'sentence') {
     const base = { id: newParentId(type), display: '', audioText: '', introducedInWeek: opened!, enabled: true, tags: ['parent', 'practice'] };
     onEdit(type === 'word' ? { ...base, type, text: '', segmentations: [] }
       : type === 'letter' ? { ...base, type, grapheme: '' } : { ...base, type });

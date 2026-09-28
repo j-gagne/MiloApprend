@@ -18,12 +18,12 @@ export function toCompletionBoard(service: ContentService, segmentation: Segment
   const expected = [...new Set(indexes.map((index) => segments[index]))];
   const choices: Answer[] = config.distractorUnitIds.map((id) => {
     const unit = units.find((item) => item.id === id)!;
-    return { text: unit.display, kind: unit.type === 'letter' ? 'letter' : unit.type === 'syllable' ? 'syllable' : 'word' };
+    return { text: unit.display, kind: unit.type === 'letter' ? 'letter' : unit.type === 'grapheme' ? 'grapheme' : unit.type === 'syllable' ? 'syllable' : 'word' };
   });
   const answers: Answer[] = expected.map((text) => {
     const segment = segmentation.segments[indexes.find((index) => segments[index] === text)!];
     const unit = 'unitId' in segment ? units.find((item) => item.id === segment.unitId)! : undefined;
-    return { text, kind: unit?.type === 'letter' ? 'letter' : unit?.type === 'syllable' ? 'syllable' : 'word' };
+    return { text, kind: unit?.type === 'letter' ? 'letter' : unit?.type === 'grapheme' ? 'grapheme' : unit?.type === 'syllable' ? 'syllable' : 'word' };
   });
   choices.splice(config.answerPosition ?? 0, 0, ...answers);
   return { segments, choices, ...(segmentation.gaps ? { gaps: segmentation.gaps } : {}), slots: indexes.map((segmentIndex) => ({ segmentIndex, expected: segments[segmentIndex] })) };

@@ -1,4 +1,4 @@
-export type LearningUnitType = 'letter' | 'sound' | 'syllable' | 'word' | 'tool-word' | 'sentence';
+export type LearningUnitType = 'letter' | 'grapheme' | 'sound' | 'syllable' | 'word' | 'tool-word' | 'sentence';
 
 interface UnitBase {
   readonly id: string;
@@ -16,6 +16,7 @@ export interface Letter extends UnitBase {
   readonly lowercase?: string;
   readonly uppercase?: string;
 }
+export interface Grapheme extends UnitBase { readonly type: 'grapheme' }
 export interface Sound extends UnitBase { readonly type: 'sound' }
 export interface Syllable extends UnitBase { readonly type: 'syllable' }
 export interface ToolWord extends UnitBase { readonly type: 'tool-word' }
@@ -103,7 +104,7 @@ export interface Word extends UnitBase {
   readonly completeWord?: readonly CompleteWordVariant[];
 }
 
-export type LearningUnit = Letter | Sound | Syllable | Word | ToolWord | Sentence;
+export type LearningUnit = Letter | Grapheme | Sound | Syllable | Word | ToolWord | Sentence;
 export type CompletionTarget = Word | Sentence | Syllable;
 export interface ExerciseScope { readonly mode: 'all' | 'selected-weeks'; readonly selectedWeeks: readonly number[] }
 export interface SchoolWeek {

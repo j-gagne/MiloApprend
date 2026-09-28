@@ -1,0 +1,25 @@
+﻿import { test, expect } from '@playwright/test';
+import { mockSpeech } from './speech-mock';
+test('Parents grapheme creation, draft restoration, audio editing and activation persist',async({page})=>{
+ await mockSpeech(page);page.on('dialog',d=>d.accept());await page.goto('/');
+ await page.getByRole('button',{name:'Parents',exact:true}).click();
+ const names=['un','deux','trois','quatre','cinq','six','sept','huit','neuf'];
+ for(const [i,name] of (await page.getByTestId('gate-prompt').innerText()).split(' — ').entries())await page.getByLabel(`Chiffre ${i+1}`,{exact:true}).fill(String(names.indexOf(name)+1));
+ await page.getByRole('button',{name:'Valider',exact:true}).click();
+ await page.getByRole('navigation',{name:'Sections parents'}).getByRole('button',{name:'Programme',exact:true}).click();
+ await page.getByRole('button',{name:'Ouvrir la semaine 3',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Graphèmes',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'+ Ajouter un graphème',exact:true}).click();
+ await page.getByLabel('Graphème',{exact:true}).fill('ch');await page.getByLabel('Prononciation audio',{exact:true}).fill('che');
+ await page.reload();await expect(page.getByLabel('Graphème',{exact:true})).toHaveValue('ch');
+ await expect(page.getByLabel('Prononciation audio',{exact:true})).toHaveValue('che');
+ await page.getByRole('button',{name:'Enregistrer le contenu',exact:true}).click();
+ await page.getByRole('button',{name:'Ouvrir la semaine 3',exact:true}).click();
+ await page.getByRole('button',{name:'Modifier ch',exact:true}).click();await page.getByLabel('Prononciation audio',{exact:true}).fill('ch');
+ await page.getByRole('button',{name:'Enregistrer le contenu',exact:true}).click();
+ await page.getByRole('button',{name:'Ouvrir la semaine 3',exact:true}).click();await page.getByRole('checkbox',{name:'Activer ch',exact:true}).uncheck();
+ await page.reload();await page.getByRole('button',{name:'Ouvrir la semaine 3',exact:true}).click();await expect(page.getByRole('checkbox',{name:'Activer ch',exact:true})).not.toBeChecked();
+ const data=await page.evaluate(()=>JSON.parse(localStorage.getItem('milo-apprend.parent.v1')!));
+ expect(data.customUnits).toHaveLength(1);expect(data.customUnits[0]).toMatchObject({type:'grapheme',display:'ch',audioText:'ch'});
+ expect(Object.keys(data.unitEnabled)).toEqual([data.customUnits[0].id]);
+});

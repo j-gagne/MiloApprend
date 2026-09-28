@@ -11,6 +11,7 @@ export function createContentService(repository: ContentRepository, week = activ
     activeWeek: week,
     getProgram: () => repository.getProgram(),
     getAvailableLetters: (at = week) => selectors.getAvailableLetters(repository.getProgram(), at),
+    getAvailableGraphemes: (at = week) => selectors.getAvailableGraphemes(repository.getProgram(), at),
     getAvailableSounds: (at = week) => selectors.getAvailableSounds(repository.getProgram(), at),
     getAvailableSyllables: (at = week) => selectors.getAvailableSyllables(repository.getProgram(), at),
     getAvailableWords: (at = week) => selectors.getAvailableWords(repository.getProgram(), at),

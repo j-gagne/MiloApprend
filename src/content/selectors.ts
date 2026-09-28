@@ -12,6 +12,7 @@ export function getAvailableUnits<T extends LearningUnitType>(program: LearningP
     unit.type === type && isAvailable(program, unit, week));
 }
 export const getAvailableLetters = (program: LearningProgram, week: number) => getAvailableUnits(program, week, 'letter');
+export const getAvailableGraphemes = (program: LearningProgram, week: number) => getAvailableUnits(program, week, 'grapheme');
 export const getAvailableSounds = (program: LearningProgram, week: number) => getAvailableUnits(program, week, 'sound');
 export const getAvailableSyllables = (program: LearningProgram, week: number) => getAvailableUnits(program, week, 'syllable');
 export const getAvailableWords = (program: LearningProgram, week: number) => getAvailableUnits(program, week, 'word');

@@ -9,7 +9,7 @@ import { displayConstruction, blockText } from './construction.ts';
 import type { CompletionTarget } from './model.ts';
 
 export function isAnswerUnit(unit: LearningUnit): boolean {
-  return ['letter', 'syllable', 'word', 'tool-word'].includes(unit.type);
+  return ['letter', 'grapheme', 'syllable', 'word', 'tool-word'].includes(unit.type);
 }
 
 function issue(code: string, path: string, message: string, severity: ContentIssue['severity'] = 'error'): ContentIssue {

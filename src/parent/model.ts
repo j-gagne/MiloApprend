@@ -73,7 +73,7 @@ export function removeCustomWord(data: ParentData, id: string): ParentData {
 }
 
 // getRandomValues fonctionne aussi sur une adresse HTTP du réseau local (randomUUID n'est pas garanti).
-export function newParentId(kind: 'word' | 'activity' | 'letter' | 'syllable' | 'sentence' | 'week' | 'segmentation'): string {
+export function newParentId(kind: 'word' | 'activity' | 'letter' | 'grapheme' | 'syllable' | 'sentence' | 'week' | 'segmentation'): string {
   const bytes = new Uint32Array(4);
   globalThis.crypto.getRandomValues(bytes);
   return `parent-${kind}-${Array.from(bytes, (value) => value.toString(16).padStart(8, '0')).join('')}`;

@@ -67,7 +67,7 @@ function unit(value: unknown): value is LearningUnit {
     && ((value.type === 'letter' && typeof value.grapheme === 'string'
       && (value.lowercase === undefined || typeof value.lowercase === 'string')
       && (value.uppercase === undefined || typeof value.uppercase === 'string'))
-      || value.type === 'syllable' || (value.type === 'sentence' && (value.unitIds === undefined || strings(value.unitIds))
+      || value.type === 'syllable' || value.type === 'grapheme' || (value.type === 'sentence' && (value.unitIds === undefined || strings(value.unitIds))
         && (value.imageAsset == null || (record(value.imageAsset) && typeof value.imageAsset.label === 'string'
           && (typeof value.imageAsset.emoji === 'string' || typeof value.imageAsset.src === 'string')))
         && (value.segmentations === undefined || (Array.isArray(value.segmentations) && value.segmentations.every(segmentation)))));

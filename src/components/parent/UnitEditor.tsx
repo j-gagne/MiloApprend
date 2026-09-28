@@ -30,7 +30,7 @@ export function UnitEditor({ program, unit, activeWeek, constructionOnly = false
     <h2>{unit.display ? `Modifier : ${unit.display}` : 'Nouveau contenu'}</h2>
     <form onSubmit={(event) => { event.preventDefault(); if (!errors.length) onSave(draft); }}>
       <div className="parent-form-grid">
-        <label>{unit.type === 'word' ? 'Mot' : unit.type === 'letter' ? 'Lettre' : unit.type === 'sentence' ? 'Phrase' : 'Syllabe'}
+        <label>{unit.type === 'word' ? 'Mot' : unit.type === 'letter' ? 'Lettre' : unit.type === 'grapheme' ? 'Graphème' : unit.type === 'sentence' ? 'Phrase' : 'Syllabe'}
           <input disabled={constructionOnly} required maxLength={unit.type === 'sentence' ? 500 : 80} value={text} onChange={(event) => { setText(event.target.value); onDirty(); }} /></label>
         <label>Prononciation audio<input value={audio} maxLength={500} placeholder="Le texte affiché, par défaut" onChange={(event) => { gameAudio.stop(); setAudio(event.target.value); onDirty(); }} /></label>
         <label>Semaine d’introduction<select disabled={constructionOnly} value={week} onChange={(event) => { setWeek(Number(event.target.value)); onDirty(); }}>

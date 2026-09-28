@@ -1,5 +1,5 @@
 import { comparableText } from '../content/text.ts';
-export type AnswerKind = 'letter' | 'syllable' | 'word';
+export type AnswerKind = 'letter' | 'grapheme' | 'syllable' | 'word';
 export interface Answer { text: string; kind: AnswerKind }
 export interface CompletionSlot { readonly segmentIndex: number; readonly expected: string }
 export interface CompletionBoard {
