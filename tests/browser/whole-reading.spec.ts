@@ -6,7 +6,7 @@ import { automaticActivities } from '../../src/content/activity-catalog';
 
 for (const [id, word] of [['word-vis', 'vis'], ['practice-olive', 'olive']] as const) {
   test(`${word}: whole aid, normal speed restored, score and cancellation`, async ({ page }) => {
-    await mockSpeech(page, ['fr-CA'], false);
+    await mockSpeech(page, ['fr-CA'], false, true);
     const target = initialProgram.units.find((u) => u.id === id)!;
     const activities = automaticActivities(initialProgram, 5);
     await page.addInitScript((data) => localStorage.setItem('milo-apprend.parent.v1', JSON.stringify(data)), {
@@ -28,7 +28,9 @@ for (const [id, word] of [['word-vis', 'vis'], ['practice-olive', 'olive']] as c
     await expect(page.getByRole('button', { name: /^Découper/ })).toHaveCount(0);
     await slow.tap(); await slow.tap();
     await page.getByRole('button', { name: `Réécouter ${word}`, exact: true }).tap();
-    expect(await page.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates)).toEqual([0.6, 0.6 * 0.75, 0.6 * 0.75, 0.6]);
+    const rates = await page.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates);
+    expect(rates).toHaveLength(4);
+    for (const [index, expected] of [0.6, 0.45, 0.45, 0.6].entries()) expect(rates[index]).toBeCloseTo(expected);
     expect(await page.evaluate(() => window.speechProbe.calls.map((c) => c.text))).toEqual([word, word, word, word]);
     await expect(page.getByRole('progressbar')).toHaveAttribute('value', '0');
     await expect(page.getByLabel('Étoiles : 0 sur 1')).toBeVisible();

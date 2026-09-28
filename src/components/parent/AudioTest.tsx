@@ -12,7 +12,8 @@ export function AudioTest({ service }: { service: ContentService }) {
   const word = words.find((unit) => unit.id === wordId) ?? words[0];
   const construction = word?.segmentations.find((item) => item.id === constructionId) ?? word?.segmentations[0];
   const reading = word ? getPedagogicalReading(program, word, construction, service.activeWeek) : null;
-  const { muted } = useSyncExternalStore(gameAudio.subscribe, gameAudio.getDiagnostics);
+  const { muted, finalRate, lastText } = useSyncExternalStore(gameAudio.subscribe, gameAudio.getDiagnostics);
+  const rates = gameAudio.getPlaybackRates();
   useEffect(() => () => gameAudio.stop(), []);
 
   return <section aria-label="Test audio"><h2>Test audio</h2>
@@ -31,6 +32,9 @@ export function AudioTest({ service }: { service: ContentService }) {
           : 'Aucune construction définie.'}</p>
         <h3>Textes envoyés au TTS</h3>
         <p>Mode de lecture : {word.readingMode === 'whole' ? 'Mot complet lent' : 'Segmenté'}</p>
+        <p data-testid="audio-test-rates">Vitesses demandées — Mot : {rates.normal.toFixed(2)}
+          {word.readingMode === 'whole' ? ` · Lentement : ${rates.slowWhole.toFixed(2)}` : ` · Découpe : ${rates.normal.toFixed(2)}`}</p>
+        {finalRate !== undefined && <p data-testid="audio-test-final-rate">Dernier rate transmis au TTS : {finalRate.toFixed(2)} — « {lastText} »</p>}
         <p>Mot : <span data-testid="audio-test-whole">{word.audioText}</span></p>
         {reading ? <p data-testid="audio-test-segments">{reading.mode === 'whole' ? reading.whole : [...reading.segments, reading.whole].join(' → ')}</p>
           : <p>Découpe non disponible</p>}

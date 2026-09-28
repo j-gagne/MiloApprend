@@ -1,4 +1,5 @@
 ﻿export interface AudioDiagnostics {
+  finalRate?: number;
   available: boolean;
   voices: { name: string; lang: string }[];
   selected: string;
@@ -24,7 +25,8 @@ const describeVoice = (voice: SpeechSynthesisVoice) => `${voice.name || '(sans n
 class GameAudio {
   private sequence = new AudioSequence();
   private rate = readingRate();
-  setReadingSpeed(speed?: ReadingSpeed) { this.rate = readingRate(speed); }
+  setReadingSpeed(speed?: ReadingSpeed) { this.rate = readingRate(speed); this.update({}); }
+  getPlaybackRates() { return { normal: this.rate, slowWhole: slowWholeRate(this.rate) }; }
   private context?: AudioContext;
   private word?: HTMLAudioElement;
   private enabled = true;
@@ -134,7 +136,7 @@ class GameAudio {
     this.attempt += 1;
     this.update({ lastText: text, lastAttempt: `#${this.attempt} · ${new Date().toLocaleTimeString('fr-CA')} · ${source}`,
       gesture: navigator.userActivation ? (navigator.userActivation.isActive ? 'oui' : 'non') : 'non exposée par le navigateur',
-      selected: 'Aucune', lastError: '—',
+      selected: 'Aucune', lastError: '—', finalRate: undefined,
     });
     this.log('demande de lecture');
   }
@@ -173,6 +175,7 @@ class GameAudio {
       };
       if (synthesis.paused) { synthesis.resume(); this.log('resume()'); }
       this.log('speak() appelé');
+      this.update({ finalRate: utterance.rate });
       synthesis.speak(utterance);
     } catch (error) {
       this.update({ lastError: this.error(error) });
@@ -211,7 +214,7 @@ class GameAudio {
 
   playWord(text: string, src?: string): Promise<void> {
     this.stop();
-    return this.playSingle(text, src);
+    return this.playSingle(text, src, this.getPlaybackRates().normal);
   }
 
   // Character personality is per utterance, never stored in pedagogical settings.
@@ -239,7 +242,7 @@ class GameAudio {
   playPedagogical(reading: PedagogicalReading, wholeSrc?: string): Promise<void> {
     if (reading.mode === 'segmented') return this.playSegmented(reading, wholeSrc);
     this.stop();
-    return this.playSingle(reading.whole, wholeSrc, slowWholeRate(this.rate));
+    return this.playSingle(reading.whole, wholeSrc, this.getPlaybackRates().slowWhole);
   }
 
   private playSingle(text: string, src?: string, rate = this.rate): Promise<void> {

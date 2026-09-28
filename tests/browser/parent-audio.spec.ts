@@ -2,10 +2,10 @@ import { test, expect, type Page } from '@playwright/test';
 import { mockSpeech } from './speech-mock';
 import { chainParentData } from '../fixtures/chain-program';
 
-async function openAudio(page: Page) {
-  await mockSpeech(page);
+async function openAudio(page: Page, speed: 'normal' | 'fast' = 'fast') {
+  await mockSpeech(page, ['fr-FR'], true, true);
   await page.addInitScript((data) => localStorage.setItem('milo-apprend.parent.v1', JSON.stringify(data)),
-    { ...chainParentData(), readingSpeed: 'fast' });
+    { ...chainParentData(), readingSpeed: speed });
   await page.goto('/');
   await page.getByRole('button', { name: 'Parents', exact: true }).click();
   const names = ['un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf'];
@@ -19,12 +19,12 @@ async function openAudio(page: Page) {
 }
 const texts = (page: Page) => page.evaluate(() => window.speechProbe.calls.map((call) => call.text));
 
-for (const [id, construction, mode, button, spoken] of [
+for (const speed of ['normal', 'fast'] as const) for (const [id, construction, mode, button, spoken] of [
   ['word-ami', 'ami = a + mi', 'Segmenté', 'Découpe', ['a', 'mi', 'ami']],
   ['word-vis', 'vis = vi + s', 'Mot complet lent', 'Lentement', ['vis']],
   ['practice-olive', 'olive = o + li + ve', 'Mot complet lent', 'Lentement', ['olive']],
-] as const) test(`Parent ${id}: construction, policy, exact utterances and speed`, async ({ page }) => {
-  await openAudio(page);
+] as const) test(`Parent ${id} ${speed}: native utterance, displayed and applied rates`, async ({ page }) => {
+  await openAudio(page, speed);
   await page.getByLabel('Mot du programme').selectOption(id);
   await expect(page.getByTestId('audio-test-construction')).toHaveText(construction);
   await expect(page.getByText(`Mode de lecture : ${mode}`, { exact: true })).toBeVisible();
@@ -33,17 +33,25 @@ for (const [id, construction, mode, button, spoken] of [
     const original = speechSynthesis.speak.bind(speechSynthesis);
     Object.assign(window, { audioRates: [] });
     speechSynthesis.speak = (utterance) => {
+      if (!(utterance instanceof SpeechSynthesisUtterance)) throw new Error('Expected native utterance');
       (window as unknown as { audioRates: number[] }).audioRates.push(utterance.rate);
       original(utterance);
     };
   });
   await page.getByRole('button', { name: '🔊 Mot', exact: true }).tap();
+  const normal = speed === 'normal' ? 0.60 : 0.78;
+  const slow = speed === 'normal' ? 0.45 : 0.585;
+  await expect(page.getByTestId('audio-test-rates')).toContainText(`Mot : ${normal.toFixed(2)}`);
+  await expect(page.getByTestId('audio-test-final-rate')).toContainText(`TTS : ${normal.toFixed(2)}`);
   await page.getByRole('button', { name: `🐢 ${button}`, exact: true }).tap();
   await page.clock.runFor(2000);
   expect(await texts(page)).toEqual([spoken.at(-1), ...spoken]);
   const rates = await page.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates);
-  expect(rates[0]).toBe(0.78);
-  for (const rate of rates.slice(1)) expect(rate).toBeCloseTo(mode === 'Segmenté' ? 0.78 : 0.585);
+  expect(rates[0]).toBeCloseTo(normal);
+  const expected = mode === 'Segmenté' ? normal : slow;
+  for (const rate of rates.slice(1)) expect(rate).toBeCloseTo(expected);
+  await expect(page.getByTestId('audio-test-rates')).toContainText(`${button === 'Découpe' ? 'Découpe' : 'Lentement'} : ${expected.toFixed(2)}`);
+  await expect(page.getByTestId('audio-test-final-rate')).toContainText(`TTS : ${expected.toFixed(2)}`);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

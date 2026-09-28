@@ -6,8 +6,8 @@ declare global {
   }
 }
 
-export async function mockSpeech(page: Page, languages = ['en-US', 'fr-FR', 'fr-CA'], ends = true) {
-  await page.addInitScript(({ languages, ends }) => {
+export async function mockSpeech(page: Page, languages = ['en-US', 'fr-FR', 'fr-CA'], ends = true, nativeUtterance = false) {
+  await page.addInitScript(({ languages, ends, nativeUtterance }) => {
     // Ordre stable pour les tests historiques d'interaction et d'audio.
     // Les tests de session injectent leurs propres RNG pour vérifier le mélange.
     Math.random = () => 0.999;
@@ -31,6 +31,16 @@ export async function mockSpeech(page: Page, languages = ['en-US', 'fr-FR', 'fr-
       },
     });
     Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: synthesis });
-    Object.defineProperty(window, 'SpeechSynthesisUtterance', { configurable: true, value: Utterance });
-  }, { languages, ends });
+    if (nativeUtterance) {
+      class NativeProbeUtterance extends window.SpeechSynthesisUtterance {
+        constructor(text: string) {
+          super(text);
+          // Fake voices are not native SpeechSynthesisVoice objects. Only shadow
+          // voice; keep the browser's real rate setter/getter and utterance object.
+          Object.defineProperty(this, 'voice', { writable: true, value: null });
+        }
+      }
+      Object.defineProperty(window, 'SpeechSynthesisUtterance', { configurable: true, value: NativeProbeUtterance });
+    } else Object.defineProperty(window, 'SpeechSynthesisUtterance', { configurable: true, value: Utterance });
+  }, { languages, ends, nativeUtterance });
 }
