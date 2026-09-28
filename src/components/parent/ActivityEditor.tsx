@@ -1,5 +1,5 @@
 ﻿import { useDraftField } from './ParentDraft';
-import type { CompletionActivity, LearningProgram, CompletionTarget } from '../../content/model';
+import type { Activity, LearningProgram, CompletionTarget } from '../../content/model';
 import { missingIndexes } from '../../content/model';
 import { activitySegmentation } from '../../content/activity-segmentation';
 import { comparableText } from '../../content/text';
@@ -10,29 +10,44 @@ import { createContentService } from '../../content/service';
 import { activityToExercise } from '../../game/completion-content';
 import { segmentText, withActivity } from '../../parent/activities';
 import { ActivityPreview } from './ActivityPreview';
+import { useEffect } from 'react';
+import { letterForPosition, letterPositions, newSpellActivity } from '../../content/spelling';
+import { primaryConstruction } from '../../content/construction';
 
-interface Props { program: LearningProgram; activity: CompletionActivity; target: CompletionTarget;
-  onSave: (activity: CompletionActivity) => void; onCancel: () => void; onDirty: () => void }
+interface Props { program: LearningProgram; activity: Activity; target: CompletionTarget;
+  onSave: (activity: Activity) => void; onCancel: () => void; onDirty: () => void }
 export function ActivityEditor({ program, activity, target, onSave, onCancel, onDirty }: Props) {
   const [draft, setDraft] = useDraftField('activity', activity);
+  useEffect(() => {
+    // Choosing a Word and spell type already creates a meaningful unsaved configuration.
+    if (activity.type === 'spell' && !program.activities?.some((item) => item.id === activity.id)) { setDraft(draft); onDirty(); }
+  }, []);
   const [search, setSearch] = useDraftField('search', '');
   const segmentation = activitySegmentation(program, draft);
   const segments = segmentation?.segments ?? [];
+  const spelling = draft.type === 'spell';
+  const positions = spelling ? letterPositions(target.display) : segments.map((segment) => segmentText(program, segment));
   const week = draft.availableFromWeek ?? segmentation?.availableFromWeek ?? target.introducedInWeek;
   const indexes = missingIndexes(draft);
   const previewActivity = { ...draft, enabled: true };
   const previewProgram = withActivity(program, previewActivity);
   const result = activityToExercise(createContentService(createContentRepository(previewProgram), week), previewActivity);
   const errors = result.issues.filter((issue) => issue.severity === 'error').map((issue) => issue.message);
-  const allowed = program.units.filter((unit) => isAvailable(program, unit, week) && isAnswerUnit(unit));
-  const expected = indexes.map((index) => segments[index]).filter((segment) => segment && 'unitId' in segment)
+  const allowed = program.units.filter((unit) => isAvailable(program, unit, week) && (spelling ? unit.type === 'letter' : isAnswerUnit(unit)));
+  const expected = spelling ? indexes.flatMap((index) => positions[index] === undefined ? [] : [positions[index]]) : indexes.map((index) => segments[index]).filter((segment) => segment && 'unitId' in segment)
     .map((segment) => segmentText(program, segment));
   const isCorrect = (text: string) => expected.some((value) => comparableText(value) === comparableText(text));
-  function change(next: CompletionActivity) { setDraft(next); onDirty(); }
+  function change(next: Activity) { setDraft(next); onDirty(); }
   function hide(index: number, checked: boolean) {
     const missing = checked ? [...indexes, index].sort((a, b) => a - b) : indexes.filter((item) => item !== index);
-    const correct = missing.map((i) => comparableText(segmentText(program, segments[i])));
+    const correct = missing.map((i) => comparableText(positions[i]));
     const distractors = draft.distractorUnitIds.filter((id) => !correct.includes(comparableText(program.units.find((unit) => unit.id === id)?.display ?? '')));
+    if (draft.type === 'spell') {
+      const ids = { ...draft.letterUnitIds };
+      if (checked) { const letter = letterForPosition(program, positions[index], week); if (!letter) return; ids[index] = letter.id; }
+      else delete ids[index];
+      change({ ...draft, missingPositions: missing, letterUnitIds: ids, distractorUnitIds: distractors }); return;
+    }
     change({ ...draft, missingSegmentIndex: undefined, missingSegmentIndexes: missing, distractorUnitIds: distractors,
       answerPosition: Math.min(draft.answerPosition ?? 0, distractors.length) });
   }
@@ -40,17 +55,27 @@ export function ActivityEditor({ program, activity, target, onSave, onCancel, on
     <h2>Exercice : {target.display}</h2><p>Le contenu et sa construction sont définis dans Programme.</p>
     <form onSubmit={(event) => { event.preventDefault(); if (!errors.length) onSave(draft); }}>
       <div className="parent-form-grid">
+        <label>Type de défi<select aria-label="Type de défi" value={draft.type} onChange={(event) => {
+          if (event.target.value === 'spell' && target.type === 'word') change({ ...newSpellActivity(program, target, week, draft.id), label: draft.label, enabled: draft.enabled, order: draft.order });
+          else change({ id: draft.id, type: 'complete-segments', targetId: target.id, label: draft.label, enabled: draft.enabled, order: draft.order,
+            segmentationId: primaryConstruction(target)?.id, availableFromWeek: week, missingSegmentIndexes: [], distractorUnitIds: [] });
+        }}><option value="complete-segments">Compléter</option><option value="spell" disabled={target.type !== 'word'}>Écris le mot</option></select></label>
         <label>Nom administratif (facultatif)<input value={draft.label ?? ''} maxLength={120} onChange={(event) => change({ ...draft, label: event.target.value })} /></label>
         <label>Disponible à partir de la semaine<select value={week} onChange={(event) => change({ ...draft, availableFromWeek: Number(event.target.value) })}>
           {program.weeks.map((item) => <option key={item.number} value={item.number}>{item.number} — {item.label}</option>)}
         </select></label>
       </div>
-      <h3>{target.type === 'word' ? 'Construction du mot' : target.type === 'sentence' ? 'Construction de la phrase' : 'Syllabe à retrouver'}</h3><div className="parent-tokens">{segments.map((segment, index) => <span key={index}>{segmentText(program, segment)}</span>)}</div>
-      <fieldset><legend>Parties à trouver</legend><div className="parent-checks">{segments.map((segment, index) => {
-        const eligible = 'unitId' in segment && allowed.some((unit) => unit.id === segment.unitId);
-        return <label key={index}><input type="checkbox" checked={indexes.includes(index)} disabled={!eligible}
-          aria-label={`Trouver ${segmentText(program, segment)} (bloc ${index + 1})`} onChange={(event) => hide(index, event.target.checked)} />
-          {segmentText(program, segment)}{!('unitId' in segment) ? ' — Texte visible — non appris' : !eligible ? ' — unité indisponible' : ''}</label>;
+      {draft.type === 'spell' && draft.targetText !== target.display && target.type === 'word' && <button type="button" onClick={() => {
+        change({ ...newSpellActivity(program, target, week, draft.id), label: draft.label, enabled: draft.enabled, order: draft.order });
+      }}>Reconfigurer les positions pour ce mot</button>}
+      <h3>{spelling ? 'Positions des lettres' : target.type === 'word' ? 'Construction du mot' : target.type === 'sentence' ? 'Construction de la phrase' : 'Syllabe à retrouver'}</h3><div className="parent-tokens">{positions.map((text, index) => <span key={index}>{text}</span>)}</div>
+      <fieldset><legend>Parties à trouver</legend><div className="parent-checks">{positions.map((text, index) => {
+        const segment = segments[index];
+        const eligible = spelling ? !!letterForPosition(program, text, week) : 'unitId' in segment && allowed.some((unit) => unit.id === segment.unitId);
+        return <label key={index}><input type="checkbox" checked={indexes.includes(index)} disabled={!eligible && !(spelling && indexes.includes(index))}
+          aria-label={`Trouver ${text} (${spelling ? 'lettre' : 'bloc'} ${index + 1})`} onChange={(event) => hide(index, event.target.checked)} />
+          {text}{spelling ? !eligible ? ' — Texte fourni — réponse non autorisée' : ''
+            : !('unitId' in segment) ? ' — Texte visible — non appris' : !eligible ? ' — unité indisponible' : ''}</label>;
       })}</div></fieldset>
       <p><strong>Bonnes réponses :</strong> {expected.join(' · ') || 'Sélectionnez au moins une partie.'}</p>
       <fieldset><legend>Distracteurs</legend>

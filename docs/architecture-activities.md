@@ -56,3 +56,13 @@ Tentatives : placeAnswer retourne accepted/complete ; le composant a un compteur
 Synchronisation : le service actuel gère start/end/error, sans repères de blocs. La spécification Web Speech décrit boundary aux frontières de mots/phrases et charIndex/elapsedTime lorsque le moteur les fournit ; elle ne garantit pas des frontières de syllabes pédagogiques. On ne peut donc pas déduire une synchronisation syllabique fiable de ces événements seuls. Une future solution devra vérifier les voix/appareils ou employer des enregistrements annotés et exposer les repères via l'abstraction audio. Aucun délai arbitraire ni surlignage ajouté. Source : [spécification Web Speech, événements de synthèse](https://webaudio.github.io/web-speech-api/#speechsynthesisutterance-events).
 
 Les réponses restent réutilisables, aucun mode multicible, personnage, police, backend ou nouvelle animation. Voir [parent-space.md](parent-space.md) pour les parcours et [rapport-v1.3.md](rapport-v1.3.md) pour les validations finales.
+
+## Activité explicite « Écris le mot »
+
+`Activity = CompletionActivity | SpellActivity`. `spell` cible exclusivement un Word et conserve `targetText` (détection d'un changement du mot), `missingPositions` (indices de graphèmes Unicode), `letterUnitIds` (références explicites par position manquante) et `distractorUnitIds` (vide par défaut). La casse peut correspondre à celle du Word; les accents restent distincts. Aucun LearningUnit ni construction n'est créé.
+
+`content/spelling.ts` résout et valide uniquement les lettres existantes, non ambiguës et disponibles dans le programme effectif. Les positions non admissibles restent fournies. Une modification du texte cible invalide la configuration; le Parent peut explicitement la reconfigurer. Les activités compléter et leurs IDs restent inchangés; aucune activité spell automatique n'est générée.
+
+L'adaptateur produit le même CompletionBoard : la banque consommable, le drag/drop, le clavier, le scoring et les chaînes sont réutilisés. Individual inclut les distracteurs configurés; Chain conserve uniquement les occurrences nécessaires, même pour une chaîne mixte. Le mot modèle reste affiché. La lecture normale utilise le Word sans indice de lettre; Découpe/Lentement continue d'utiliser sa construction et sa configuration audio pédagogiques.
+
+Parents expose le type dans Exercices et dans l'éditeur. La configuration est protégée par les Parent Drafts existants, y compris dès la création explicite d'un spell. Le stockage Parent conserve sa clé et sa version; aucune migration destructive.

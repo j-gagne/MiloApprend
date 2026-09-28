@@ -35,3 +35,8 @@
 /* Keep normal document scrolling and touch gestures; contain boundary overscroll. */
 html,body{overscroll-behavior-y:none}
 .choice-scroll{overscroll-behavior-y:contain}
+.spell-model{font-family:var(--reading-font);font-size:clamp(28px,7vw,40px);font-weight:750;overflow-wrap:anywhere;margin:10px 0}
+.spell-game .word-segments{flex-wrap:wrap;gap:8px}
+.spell-game .word-segments>div,.spell-game .word-segments>.word-segment{flex:0 0 48px!important;min-width:48px!important}
+.spell-game .word-slot,.spell-game .word-segment{height:64px;font-size:30px!important;padding:0 4px!important}
+.spell-game .answer-tray{flex-wrap:wrap}

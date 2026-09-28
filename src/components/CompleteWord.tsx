@@ -42,6 +42,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
   const texts = placementTexts(bank, placements);
   const multiple = challenge.slots.length > 1;
   const sentence = challenge.targetType === 'sentence';
+  const spelling = challenge.activityType === 'spell';
   // Les mots à trois segments gardent les mêmes blocs, ajustés à la largeur du téléphone.
   const segmentStyle = sentence ? { minWidth: 44, fontSize: 'clamp(24px, 6vw, 32px)', padding: '0 6px' } : challenge.segments.length > 2
     ? { minWidth: 0, flex: '0 1 94px', fontSize: 'clamp(26px, 7vw, 43px)', padding: '0 8px' }
@@ -116,14 +117,15 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
     }
   }
 
-  return <main className={`game-screen${sentence ? ' sentence-game' : ''}`}>
+  return <main className={`game-screen${sentence ? ' sentence-game' : ''}${spelling ? ' spell-game' : ''}`}>
     <SessionProgress progress={performance} characterId={characterId} local={chain ? { total: chain.targets.length, completed: chain.completed.length + Number(solved) } : undefined} />
-    <h1 ref={heading} tabIndex={-1}>{sentence ? 'Complète la phrase' : challenge.targetType === 'syllable' ? 'Retrouve la syllabe' : 'Complète le mot'}</h1>
-    <p className="instruction">{multiple ? 'Glisse chaque morceau dans sa case.' : 'Glisse le bon morceau dans la case.'}</p>
+    <h1 ref={heading} tabIndex={-1}>{spelling ? 'Écris le mot' : sentence ? 'Complète la phrase' : challenge.targetType === 'syllable' ? 'Retrouve la syllabe' : 'Complète le mot'}</h1>
+    <p className="instruction">{spelling ? 'Glisse chaque lettre dans sa case.' : multiple ? 'Glisse chaque morceau dans sa case.' : 'Glisse le bon morceau dans la case.'}</p>
     <section className={`challenge-card ${solved ? 'is-solved' : ''}`} aria-label={`Défi ${index + 1}`}>
       <span className="card-sparkle sparkle-one" aria-hidden="true">✦</span>
       <span className="card-sparkle sparkle-two" aria-hidden="true">✦</span>
       {challenge.targetType !== 'syllable' && <WordImage key={challenge.id} image={challenge.image} />}
+      {spelling && <p className="spell-model" aria-label="Mot modèle">{challenge.word}</p>}
       <CompletionLine board={challenge} sentence={sentence} label={solved ? challenge.word : sentence ? 'Phrase à compléter' : 'Mot à compléter'}
         render={(segmentIndex) => {
           const segment = challenge.segments[segmentIndex];

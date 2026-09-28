@@ -27,6 +27,7 @@ export function placeAnswer(board: CompletionBoard, placements: Placements, slot
   return { accepted, placements: next, complete: isComplete(board, next) };
 }
 export interface Challenge {
+  activityType?: 'complete-segments' | 'spell';
   targetType?: 'word' | 'sentence' | 'syllable';
   gaps?: readonly string[];
   id: string;
@@ -54,7 +55,7 @@ export function validateChallenges(challenges: readonly Challenge[], allowed: re
     if (ids.has(challenge.id) || comparableText(challenge.segments.join('')) !== comparableText(challenge.word)
       || !Number.isInteger(challenge.missingIndex) || challenge.missingIndex < 0
       || challenge.missingIndex >= challenge.segments.length
-      || challenge.choices.length < 2
+      || challenge.choices.length < (challenge.activityType === 'spell' ? 1 : 2)
       || new Set(challenge.choices.map((choice) => choice.text)).size !== challenge.choices.length
       || challenge.choices.some((choice) => !allowed.includes(choice.text))
       || !isCorrect(challenge, challenge.segments[challenge.missingIndex])) {

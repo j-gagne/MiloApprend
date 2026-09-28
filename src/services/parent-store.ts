@@ -1,4 +1,4 @@
-import type { CompletionActivity, LearningUnit, PedagogicalSegment, Segmentation, Word } from '../content/model.ts';
+import type { Activity, LearningUnit, PedagogicalSegment, Segmentation, Word } from '../content/model.ts';
 import type { AudioOverride, ParentData, ParentWeek } from '../parent/model.ts';
 import { isReadingSequence } from '../content/reading-sequence.ts';
 import { emptyParentData } from '../parent/model.ts';
@@ -27,7 +27,12 @@ function segmentation(value: unknown): value is Segmentation {
     && value.segments.every(segment) && optionalNumber(value.availableFromWeek)
     && (value.gaps === undefined || strings(value.gaps)) && (value.surface === undefined || strings(value.surface));
 }
-function activity(value: unknown): value is CompletionActivity {
+function activity(value: unknown): value is Activity {
+  if (record(value) && value.type === 'spell') return typeof value.id === 'string' && typeof value.targetId === 'string'
+    && typeof value.targetText === 'string' && Array.isArray(value.missingPositions) && value.missingPositions.every((i) => Number.isSafeInteger(i))
+    && record(value.letterUnitIds) && Object.entries(value.letterUnitIds).every(([i, id]) => /^\d+$/.test(i) && typeof id === 'string')
+    && strings(value.distractorUnitIds) && optionalNumber(value.availableFromWeek) && optionalNumber(value.answerPosition) && optionalNumber(value.order)
+    && (value.label === undefined || typeof value.label === 'string') && (value.enabled === undefined || typeof value.enabled === 'boolean');
   return record(value) && typeof value.id === 'string' && value.type === 'complete-segments'
     && typeof value.targetId === 'string'
     && ((typeof value.segmentationId === 'string' && value.segmentation === undefined)

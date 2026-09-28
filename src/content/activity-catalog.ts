@@ -1,5 +1,6 @@
-﻿import type { CompletionActivity, CompletionTarget, LearningProgram } from './model.ts';
+﻿import type { Activity, CompletionTarget, LearningProgram } from './model.ts';
 import { missingIndexes } from './model.ts';
+import type { CompletionActivity } from './model.ts';
 import { activitySegmentation } from './activity-segmentation.ts';
 import { primaryConstruction } from './construction.ts';
 import { comparableText } from './text.ts';
@@ -7,8 +8,8 @@ import { isAvailable } from './selectors.ts';
 import { isAnswerUnit, validateCompletionActivity } from './validation.ts';
 
 // Projection des variantes historiques ; les configurations explicites gardent leurs IDs.
-export function explicitActivities(program: LearningProgram): CompletionActivity[] {
-  const activities = new Map<string, CompletionActivity>();
+export function explicitActivities(program: LearningProgram): Activity[] {
+  const activities = new Map<string, Activity>();
   for (const unit of program.units) {
     if (unit.type !== 'word') continue;
     for (const variant of unit.completeWord ?? []) {
@@ -20,11 +21,12 @@ export function explicitActivities(program: LearningProgram): CompletionActivity
   for (const activity of program.activities ?? []) activities.set(activity.id, activity);
   return [...activities.values()];
 }
-export function activitySignature(program: LearningProgram, activity: CompletionActivity): string {
+export function activitySignature(program: LearningProgram, activity: Activity): string {
+  if (activity.type === 'spell') return JSON.stringify(['spell', activity.targetId, activity.targetText, activity.letterUnitIds, [...activity.missingPositions].sort((a, b) => a - b)]);
   const construction = activitySegmentation(program, activity);
   return JSON.stringify([activity.targetId, construction?.segments, [...missingIndexes(activity)].sort((a, b) => a - b)]);
 }
-export const isAutomatic = (activity: CompletionActivity) => activity.id.startsWith('generated:');
+export const isAutomatic = (activity: Activity) => activity.id.startsWith('generated:');
 
 export function automaticActivities(program: LearningProgram, week: number): CompletionActivity[] {
   const result: CompletionActivity[] = [];
@@ -69,7 +71,7 @@ export function automaticActivities(program: LearningProgram, week: number): Com
 
 // Une configuration explicite (même désactivée) prend priorité sur l'automatique équivalente.
 // Les configurations explicites distinctes restent conservées, y compris leurs distracteurs.
-export function activityCatalog(program: LearningProgram, week: number, includeFuture = false): CompletionActivity[] {
+export function activityCatalog(program: LearningProgram, week: number, includeFuture = false): Activity[] {
   const explicit = explicitActivities(program);
   const signatures = new Set(explicit.map((activity) => activitySignature(program, activity)));
   const automatic = automaticActivities(program, week);

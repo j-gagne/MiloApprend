@@ -72,7 +72,19 @@ export interface CompletionActivity extends CompletionParameters {
   readonly label?: string;
 }
 
-export function missingIndexes(config: Pick<CompletionParameters, 'missingSegmentIndex' | 'missingSegmentIndexes'>): readonly number[] {
+// Letter positions are activity data, never a second pedagogical construction.
+export interface SpellActivity extends Omit<CompletionParameters, 'missingSegmentIndex' | 'missingSegmentIndexes'> {
+  readonly type: 'spell';
+  readonly targetId: string;
+  readonly targetText: string;
+  readonly missingPositions: readonly number[];
+  readonly letterUnitIds: Readonly<Record<number, string>>;
+  readonly label?: string;
+}
+export type Activity = CompletionActivity | SpellActivity;
+
+export function missingIndexes(config: Pick<CompletionParameters, 'missingSegmentIndex' | 'missingSegmentIndexes'> | SpellActivity): readonly number[] {
+  if ('missingPositions' in config) return config.missingPositions;
   return config.missingSegmentIndexes ?? (config.missingSegmentIndex === undefined ? [] : [config.missingSegmentIndex]);
 }
 
@@ -104,7 +116,7 @@ export interface LearningProgram {
   readonly id: string;
   readonly weeks: readonly SchoolWeek[];
   readonly units: readonly LearningUnit[];
-  readonly activities?: readonly CompletionActivity[];
+  readonly activities?: readonly Activity[];
   readonly activityEnabled?: Readonly<Record<string, boolean>>;
 }
 

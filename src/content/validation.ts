@@ -1,8 +1,10 @@
-﻿import type { CompletionActivity, CompletionParameters, CompleteWordVariant, ContentIssue, LearningProgram, LearningUnit, Segmentation, Word } from './model.ts';
+﻿import type { CompletionParameters, CompleteWordVariant, ContentIssue, LearningProgram, LearningUnit, Segmentation, Word } from './model.ts';
 import { missingIndexes } from './model.ts';
 import { isValidWeek } from './selectors.ts';
 import { comparableText } from './text.ts';
 import { activitySegmentation } from './activity-segmentation.ts';
+import type { Activity } from './model.ts';
+import { validateSpellActivity } from './spelling.ts';
 import { displayConstruction, blockText } from './construction.ts';
 import type { CompletionTarget } from './model.ts';
 
@@ -124,7 +126,8 @@ function validateCompletion(program: LearningProgram, word: CompletionTarget, se
   return issues;
 }
 
-export function validateCompletionActivity(program: LearningProgram, activity: CompletionActivity, week: number): ContentIssue[] {
+export function validateCompletionActivity(program: LearningProgram, activity: Activity, week: number): ContentIssue[] {
+  if (activity.type === 'spell') return validateSpellActivity(program, activity, week);
   const path = `activities.${activity.id}`;
   const issues = referenceIssues(program, activity.targetId, week, path);
   if (!activity.id || (program.activities ?? []).filter((item) => item.id === activity.id).length !== 1) {

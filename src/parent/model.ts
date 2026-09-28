@@ -1,4 +1,4 @@
-import type { CompletionActivity, LearningProgram, LearningUnit, SchoolWeek, Segmentation, Word } from '../content/model.ts';
+import type { Activity, LearningProgram, LearningUnit, SchoolWeek, Segmentation, Word } from '../content/model.ts';
 import { missingIndexes } from '../content/model.ts';
 import { parentActivities } from './activities.ts';
 import type { ExerciseScope } from '../content/model.ts';
@@ -21,7 +21,7 @@ export interface ParentData extends PlaySettings {
   readonly activityEnabled: Readonly<Record<string, boolean>>;
   readonly customUnits: readonly LearningUnit[];
   readonly customWeeks: readonly ParentWeek[];
-  readonly activities: readonly CompletionActivity[];
+  readonly activities: readonly Activity[];
   readonly constructions?: Readonly<Record<string, readonly Segmentation[]>>;
   readonly audioOverrides?: Readonly<Record<string, AudioOverride>>;
 }
@@ -58,7 +58,7 @@ export function effectiveWeek(seed: LearningProgram, parent: ParentData, default
   return effectiveProgram(seed, parent).weeks.some((week) => week.number === parent.activeWeek) ? parent.activeWeek! : defaultWeek;
 }
 
-export function saveActivity(data: ParentData, activity: CompletionActivity): ParentData {
+export function saveActivity(data: ParentData, activity: Activity): ParentData {
   return { ...data, activities: [...data.activities.filter((item) => item.id !== activity.id), activity] };
 }
 
@@ -89,7 +89,7 @@ export function removeCustomWeek(data: ParentData, program: LearningProgram, id:
   if (!week || program.units.some((unit) => unit.introducedInWeek === week.number
     || ((unit.type === 'word' || unit.type === 'sentence') && unit.segmentations?.some((item) => item.availableFromWeek === week.number)))
     || parentActivities(program).some((activity) => activity.availableFromWeek === week.number
-      || activity.segmentation?.availableFromWeek === week.number)) return data;
+      || (activity.type === 'complete-segments' && activity.segmentation?.availableFromWeek === week.number))) return data;
   return { ...data, customWeeks: data.customWeeks.filter((item) => item.id !== id),
     activeWeek: data.activeWeek === week.number ? undefined : data.activeWeek };
 }
@@ -103,7 +103,8 @@ export function saveParentUnit(data: ParentData, program: LearningProgram, unit:
         ...(unit.type === 'word' ? { readingMode: unit.readingMode ?? 'segmented', readingSequence: unit.readingSequence ?? null } : {}) } },
       ...((unit.type === 'word' || unit.type === 'sentence') ? { constructions: { ...data.constructions, [unit.id]: unit.segmentations ?? [] } } : {}) };
   if ((unit.type !== 'word' && unit.type !== 'sentence') || (old?.type !== 'word' && old?.type !== 'sentence')) return next;
-  for (const activity of parentActivities(program).filter((item) => item.targetId === unit.id && item.segmentationId)) {
+  for (const activity of parentActivities(program)) {
+    if (activity.type !== 'complete-segments' || activity.targetId !== unit.id || !activity.segmentationId) continue;
     const before = old.segmentations?.find((item) => item.id === activity.segmentationId);
     const after = unit.segmentations?.find((item) => item.id === activity.segmentationId);
     if (!before || !after || JSON.stringify(before.segments) === JSON.stringify(after.segments)) continue;
@@ -125,7 +126,8 @@ export function removeCustomActivity(data: ParentData, seed: LearningProgram, id
     activityEnabled: Object.fromEntries(Object.entries(data.activityEnabled).filter(([key]) => key !== id)) };
 }
 
-export function duplicateActivity(activity: CompletionActivity): CompletionActivity {
+export function duplicateActivity(activity: Activity): Activity {
+  if (activity.type === 'spell') return { ...activity, id: newParentId('activity'), missingPositions: [...activity.missingPositions], letterUnitIds: { ...activity.letterUnitIds }, distractorUnitIds: [...activity.distractorUnitIds] };
   return { ...activity, id: newParentId('activity'), missingSegmentIndexes: [...(activity.missingSegmentIndexes ?? [])],
     ...(activity.missingSegmentIndex === undefined ? {} : { missingSegmentIndexes: undefined }),
     distractorUnitIds: [...activity.distractorUnitIds] };

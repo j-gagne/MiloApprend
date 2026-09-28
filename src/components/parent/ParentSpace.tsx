@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CompletionActivity, LearningUnit, CompletionTarget } from '../../content/model';
+import type { Activity, LearningUnit, CompletionTarget } from '../../content/model';
 import type { ContentService } from '../../content/service';
 import { getCompleteWordChallenges } from '../../game/complete-word-content';
 import type { ParentData } from '../../parent/model';
@@ -22,7 +22,7 @@ interface Props { playerName: string; data: ParentData; service: ContentService;
   onExit: () => void; onDirtyChange: (dirty: boolean) => void }
 const tabs = parentTabs;
 type Tab = ParentTab;
-interface Editing { activity: CompletionActivity; target: CompletionTarget }
+interface Editing { activity: Activity; target: CompletionTarget }
 
 export function ParentSpace({ playerName, data, service, warning, onChange, onExit, onDirtyChange }: Props) {
   const [restored] = useState(() => {

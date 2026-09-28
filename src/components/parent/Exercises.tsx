@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CompletionActivity, LearningProgram, Sentence, Word } from '../../content/model';
+import type { Activity, LearningProgram, Sentence, Word } from '../../content/model';
 import { missingIndexes } from '../../content/model';
 import { activitySegmentation } from '../../content/activity-segmentation';
 import { validateCompletionActivity } from '../../content/validation';
@@ -10,12 +10,14 @@ import { initialProgram } from '../../content/program';
 import { primaryConstruction } from '../../content/construction';
 import { activityCatalog, isAutomatic, isCompletionTarget } from '../../content/activity-catalog';
 import type { CompletionTarget } from '../../content/model';
+import { letterPositions, newSpellActivity } from '../../content/spelling';
 
 interface Props { program: LearningProgram; data: ParentData; activeWeek: number; onChange: (data: ParentData) => boolean;
   onConstruct: (target: Word | Sentence) => void;
-  onEdit: (activity: CompletionActivity, target: CompletionTarget) => void }
+  onEdit: (activity: Activity, target: CompletionTarget) => void }
 export function Exercises({ program, data, activeWeek, onChange, onEdit, onConstruct }: Props) {
   const [adding, setAdding] = useState(false);
+  const [kind, setKind] = useState<'complete-segments' | 'spell'>('complete-segments');
   const [targetId, setTargetId] = useState('');
   const [search, setSearch] = useState('');
   const activities = activityCatalog(program, activeWeek, true);
@@ -23,17 +25,22 @@ export function Exercises({ program, data, activeWeek, onChange, onEdit, onConst
   const target = program.units.find((unit) => unit.id === targetId);
   return <section aria-label="Exercices pédagogiques"><h2>Exercices</h2>
     <button className="parent-primary" onClick={() => setAdding(!adding)}>+ Nouvel exercice</button>
-    {adding && <div className="parent-card"><label>Cible de l’exercice<select aria-label="Cible de l’exercice" value={targetId} onChange={(event) => setTargetId(event.target.value)}>
+    {adding && <div className="parent-card">
+      <label>Type de défi<select aria-label="Type de défi" value={kind} onChange={(event) => { setKind(event.target.value as typeof kind); setTargetId(''); }}>
+        <option value="complete-segments">Compléter</option><option value="spell">Écris le mot</option>
+      </select></label>
+      <label>Cible de l’exercice<select aria-label="Cible de l’exercice" value={targetId} onChange={(event) => setTargetId(event.target.value)}>
       <option value="">Choisir un mot ou une phrase</option>{(['word', 'sentence'] as const).map((type) => <optgroup key={type} label={type === 'word' ? 'Mots' : 'Phrases'}>
-        {program.units.filter((unit) => unit.type === type).map((unit) => <option key={unit.id} value={unit.id}>{unit.display} · semaine {unit.introducedInWeek}{!primaryConstruction(unit) ? ' · Aucune construction' : ''}</option>)}
+        {program.units.filter((unit) => unit.type === type && (kind !== 'spell' || unit.type === 'word')).map((unit) => <option key={unit.id} value={unit.id}>{unit.display} · semaine {unit.introducedInWeek}{kind !== 'spell' && !primaryConstruction(unit) ? ' · Aucune construction' : ''}</option>)}
       </optgroup>)}
     </select></label>
-      {target && (target.type === 'word' || target.type === 'sentence') && !primaryConstruction(target) && <>
+      {kind !== 'spell' && target && (target.type === 'word' || target.type === 'sentence') && !primaryConstruction(target) && <>
         <p>{target.type === 'word' ? "Ce mot n'a pas encore de construction." : "Cette phrase n'a pas encore de construction."}</p>
         <button onClick={() => onConstruct(target)}>Définir la construction</button>
       </>}
-      <button disabled={!target || !primaryConstruction(target)} onClick={() => {
+      <button disabled={!target || (kind === 'spell' ? target.type !== 'word' : !primaryConstruction(target))} onClick={() => {
         if (target?.type !== 'word' && target?.type !== 'sentence') return;
+        if (kind === 'spell' && target.type === 'word') { onEdit(newSpellActivity(program, target, Math.max(activeWeek, target.introducedInWeek), newParentId('activity')), target); return; }
         const construction = primaryConstruction(target); if (!construction) return;
         onEdit({ id: newParentId('activity'), type: 'complete-segments', targetId: target.id, segmentationId: construction.id,
           availableFromWeek: construction.availableFromWeek ?? target.introducedInWeek,
@@ -54,8 +61,9 @@ export function Exercises({ program, data, activeWeek, onChange, onEdit, onConst
           return <article key={activity.id} className="parent-card" aria-label={`Exercice ${unit.display} variante ${index + 1}`}>
             {(index === 0 || isAutomatic(group[index - 1]) !== automatic) && <h4>{automatic ? 'Exercices automatiques' : 'Exercices personnalisés'}</h4>}
             <h4>{activity.label || `Variante ${index + 1}`}</h4><p>{unit.type === 'sentence' ? 'Phrase' : unit.type === 'syllable' ? 'Syllabe' : 'Mot'} · {automatic ? 'Automatique' : custom ? 'Parent / personnalisé' : 'Programme initial'} · Semaine {activity.availableFromWeek ?? segmentation?.availableFromWeek ?? unit.introducedInWeek}</p>
-            <p>Construction : {segmentation?.segments.map((segment) => segmentText(program, segment)).join(' + ') ?? 'Introuvable'}</p>
-            <p>Parties à trouver : {missingIndexes(activity).map((i) => segmentation?.segments[i]).filter((part) => !!part).map((part) => segmentText(program, part)).join(' + ')}</p>
+            <p>{activity.type === 'spell' ? `Écris le mot : ${letterPositions(unit.display).join(' | ')}` : `Construction : ${segmentation?.segments.map((segment) => segmentText(program, segment)).join(' + ') ?? 'Introuvable'}`}</p>
+            <p>Parties à trouver : {activity.type === 'spell' ? activity.missingPositions.map((i) => `${letterPositions(unit.display)[i] ?? '?'} (${i + 1})`).join(' + ')
+              : missingIndexes(activity).map((i) => segmentation?.segments[i]).filter((part) => !!part).map((part) => segmentText(program, part)).join(' + ')}</p>
             <p>{errors.length ? 'Indisponible pour la semaine active' : 'Jouable'}</p>
             {!!errors.length && <details><summary>Voir les raisons</summary><ul>{errors.map((issue, i) => <li key={i}>{issue.message}</li>)}</ul></details>}
             <div className="parent-actions"><label><input type="checkbox" aria-label={`Activer l’exercice ${unit.display} variante ${index + 1}`} checked={activity.enabled !== false}

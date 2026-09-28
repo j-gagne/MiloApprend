@@ -1,6 +1,7 @@
-import type { CompletionActivity, LearningProgram, Segmentation } from './model.ts';
+import type { Activity, LearningProgram, Segmentation } from './model.ts';
 
-export function activitySegmentation(program: LearningProgram, activity: CompletionActivity): Segmentation | undefined {
+export function activitySegmentation(program: LearningProgram, activity: Activity): Segmentation | undefined {
+  if (activity.type === 'spell') return undefined;
   if (activity.segmentationId !== undefined) {
     if (activity.segmentation !== undefined) return undefined;
     const target = program.units.find((unit) => unit.id === activity.targetId);

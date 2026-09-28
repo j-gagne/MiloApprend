@@ -11,6 +11,7 @@ import { activityToExercise, toCompletionBoard } from './completion-content.ts';
 import { activitySegmentation } from '../content/activity-segmentation.ts';
 import { getPedagogicalReading, type PedagogicalReading } from '../content/segmented-reading.ts';
 import { firstSegmentAudio } from './first-segment-audio.ts';
+import { primaryConstruction } from '../content/construction.ts';
 
 export interface ContentChallenge extends Challenge {
   readonly firstSegmentAudio?: string;
@@ -77,8 +78,8 @@ export function getCompleteWordChallenges(service: ContentService = contentServi
           label: asset?.label ?? (target.type === 'sentence' ? 'Une phrase à compléter' : 'Illustration indisponible'),
           src: asset && 'src' in asset ? asset.src : undefined },
       audioSrc: target.audioAsset ?? undefined,
-      firstSegmentAudio: firstSegmentAudio(program, target, activitySegmentation(program, activity), board.slots.map((slot) => slot.segmentIndex), week),
-      pedagogicalReading: getPedagogicalReading(program, target, activitySegmentation(program, activity), week),
+      firstSegmentAudio: activity.type === 'spell' ? undefined : firstSegmentAudio(program, target, activitySegmentation(program, activity), board.slots.map((slot) => slot.segmentIndex), week),
+      pedagogicalReading: getPedagogicalReading(program, target, activity.type === 'spell' ? primaryConstruction(target) : activitySegmentation(program, activity), week),
     });
   }
   const order = new Map(activities.map((activity) => [activity.id, activity.order ?? Infinity]));

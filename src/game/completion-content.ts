@@ -1,4 +1,4 @@
-import type { CompletionActivity, CompletionParameters, ContentIssue, Segmentation } from '../content/model.ts';
+import type { Activity, CompletionParameters, ContentIssue, Segmentation } from '../content/model.ts';
 import { missingIndexes } from '../content/model.ts';
 import { activitySegmentation } from '../content/activity-segmentation.ts';
 import type { ContentService } from '../content/service.ts';
@@ -6,6 +6,7 @@ import { validateCompletionActivity } from '../content/validation.ts';
 import type { Answer, CompletionBoard } from './complete-word.ts';
 import type { CompletionTarget, ImageAsset } from '../content/model.ts';
 import { constructionText, terminalSuffix } from '../content/construction.ts';
+import { letterPositions } from '../content/spelling.ts';
 
 // Conversion commune, uniquement après validation des références et des emplacements.
 export function toCompletionBoard(service: ContentService, segmentation: Segmentation, config: CompletionParameters): CompletionBoard {
@@ -29,17 +30,25 @@ export function toCompletionBoard(service: ContentService, segmentation: Segment
 }
 
 export interface CompletionExercise extends CompletionBoard {
+  readonly activityType?: Activity['type'];
   readonly id: string;
   readonly target: { readonly id: string; readonly type: CompletionTarget['type']; readonly text: string; readonly audioText: string; readonly imageAsset?: ImageAsset | null };
 }
 
-export function activityToExercise(service: ContentService, activity: CompletionActivity, week = service.activeWeek): {
+export function activityToExercise(service: ContentService, activity: Activity, week = service.activeWeek): {
   exercise?: CompletionExercise; issues: ContentIssue[];
 } {
   const issues = validateCompletionActivity(service.getProgram(), activity, week);
   if (issues.some((issue) => issue.severity === 'error')) return { issues };
   const target = service.getProgram().units.find((unit) => unit.id === activity.targetId);
   if (!target || (target.type !== 'word' && target.type !== 'sentence' && target.type !== 'syllable')) return { issues };
+  if (activity.type === 'spell' && target.type === 'word') {
+    const segments = letterPositions(target.display);
+    const choices: Answer[] = activity.distractorUnitIds.map((id) => ({ text: service.getProgram().units.find((u) => u.id === id)!.display, kind: 'letter' }));
+    choices.splice(activity.answerPosition ?? 0, 0, ...[...new Set(activity.missingPositions.map((i) => segments[i]))].map((text): Answer => ({ text, kind: 'letter' })));
+    return { issues, exercise: { id: activity.id, activityType: 'spell', target: { id: target.id, type: 'word', text: target.display, audioText: target.audioText, imageAsset: target.imageAsset },
+      segments, slots: activity.missingPositions.map((segmentIndex) => ({ segmentIndex, expected: segments[segmentIndex] })), choices } };
+  }
   const segmentation = activitySegmentation(service.getProgram(), activity)!;
   const board = toCompletionBoard(service, segmentation, activity);
   const suffix = target.type === 'sentence' ? terminalSuffix(target.display, constructionText(service.getProgram(), segmentation)) : '';
