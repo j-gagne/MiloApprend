@@ -16,11 +16,16 @@ for (const mode of ['individual', 'chain'] as const) test(`${mode}: character se
   for (const name of ['Dinosaure', 'Lion', 'Singe', 'Tigre', 'Licorne']) await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Dinosaure', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Lion', exact: true }).tap();
+  await page.getByLabel('Ton prénom').fill('  Éloïse  ');
+  await page.getByRole('button', { name: 'Continuer', exact: true }).tap();
+  await expect(page.getByText('Salut Éloïse !')).toBeVisible();
   await expect(open).toBeFocused();
   await expect(page.locator('.hero-scene').getByRole('img', { name: 'Lion' })).toBeVisible();
   await page.reload();
+  await expect(page.getByText('Salut Éloïse !')).toBeVisible();
   await expect(page.locator('.hero-scene').getByRole('img', { name: 'Lion' })).toBeVisible();
   await open.click();
+  await expect(page.getByLabel('Ton prénom')).toHaveValue('Éloïse');
   await expect(page.getByRole('button', { name: 'Lion', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('button', { name: 'Lion', exact: true })).toContainText('✓ Ton ami');
   await page.keyboard.press('Escape');
@@ -36,6 +41,7 @@ for (const mode of ['individual', 'chain'] as const) test(`${mode}: character se
   await choose('la').tap(); await choose('ma').tap();
   await expect(page.getByLabel('Étoiles : 0 sur 3')).toBeVisible();
   await expect(page.getByRole('progressbar')).toHaveAttribute('value', '1');
+  await expect(page.getByText('Bien joué, Éloïse !')).toBeVisible();
   expect((await marker.boundingBox())!.x).toBeGreaterThan(first.x);
   await expect(marker.locator('.character-happy')).toHaveCount(1);
   // Reduced motion retains the advanced position without the bounce animation.
@@ -52,9 +58,12 @@ for (const mode of ['individual', 'chain'] as const) test(`${mode}: character se
     for (const answer of answers) await choose(answer).tap();
     await page.clock.runFor(2100);
   }
-  await expect(page.getByRole('heading', { name: 'Bravo Milo !' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bravo Éloïse !' })).toBeVisible();
   await expect(page.locator('.celebration-screen > .child-character')).toHaveAttribute('data-character', 'lion');
   expect(await marker.evaluate((e) => (e as HTMLElement).style.left)).toBe('100%');
+  await page.getByRole('button', { name: 'REJOUER', exact: true }).tap();
+  await page.getByRole('button', { name: 'Milo apprend, accueil' }).tap();
+  await expect(page.getByText('Salut Éloïse !')).toBeVisible();
   await page.reload();
   await expect(page.locator('.hero-scene').getByRole('img', { name: 'Lion' })).toBeVisible();
   await expect(page.getByText('1 aventure terminée')).toBeVisible();
@@ -68,6 +77,7 @@ test('keyboard choice and narrow mobile grid', async ({ page }) => {
   await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Licorne', exact: true }).focus();
   await page.keyboard.press('Space');
+  await page.getByRole('button', { name: 'Continuer', exact: true }).click();
   await expect(page.locator('.hero-scene').getByRole('img', { name: 'Licorne' })).toBeVisible();
   await page.getByRole('button', { name: 'CHOISIR MON PERSONNAGE' }).click();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -14,13 +14,13 @@ import { gameAudio } from '../../services/audio';
 import { READING_SPEEDS, DEFAULT_READING_SPEED, type ReadingSpeed } from '../../services/audio-settings';
 import { DEFAULT_GAME_MODE, DEFAULT_CHAIN_LENGTH, DEFAULT_QUESTION_COUNT } from '../../game/play-settings';
 
-interface Props { data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
+interface Props { playerName: string; data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
   onExit: () => void; onDirtyChange: (dirty: boolean) => void }
 const tabs = ['Aperçu', 'Programme', 'Exercices', 'Réglages', 'Test audio'] as const;
 type Tab = typeof tabs[number];
 interface Editing { activity: CompletionActivity; target: CompletionTarget }
 
-export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyChange }: Props) {
+export function ParentSpace({ playerName, data, service, warning, onChange, onExit, onDirtyChange }: Props) {
   const [tab, setTab] = useState<Tab>('Aperçu');
   const [editing, setEditing] = useState<Editing>();
   const [unit, setUnit] = useState<LearningUnit>();
@@ -63,7 +63,7 @@ export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyC
           }
           setReturnToExercise(false);
         }} /> : <>
-      {tab === 'Aperçu' && <section aria-label="Aperçu du programme"><h2>Le programme de Milo</h2>
+      {tab === 'Aperçu' && <section aria-label="Aperçu du programme"><h2>Le programme de {playerName}</h2>
         <p>Les disponibilités suivent la semaine choisie et vos activations.</p><dl className="parent-stats">
           {[
             ['Semaine active', service.activeWeek], ['Mots disponibles', words.length],
@@ -72,7 +72,7 @@ export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyC
             ['Contenu de l’école (mots disponibles)', words.filter((word) => word.tags?.includes('school')).length],
             ['Contenu d’entraînement (mots disponibles)', words.filter((word) => word.tags?.includes('practice')).length],
           ].map(([label, count]) => <div key={label}><dt>{label}</dt><dd>{count}</dd></div>)}
-        </dl><p>Les modifications restent sur ce navigateur. La progression de Milo est conservée séparément.</p>
+        </dl><p>Les modifications restent sur ce navigateur. La progression de {playerName} est conservée séparément.</p>
       </section>}
       {tab === 'Programme' && <Programme program={program} data={data} onChange={onChange} onEdit={(value) => { setUnit(value); setReturnToExercise(false); setDirty(false); setMessage(''); }} />}
       {tab === 'Exercices' && <Exercises program={program} data={data} activeWeek={service.activeWeek} onChange={onChange}
@@ -120,7 +120,7 @@ export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyC
           <button onClick={() => { gameAudio.unlock(); const example = service.getAvailableWords()[0]; if (example) void gameAudio.playWord(example.audioText, example.audioAsset ?? undefined); }}>Écouter un exemple</button>
         </div></section>
         <section className="parent-card"><h3>Revenir au programme initial</h3>
-          <p>Supprime vos semaines, contenus, exercices et réglages personnalisés. Les aventures terminées de Milo seront conservées.</p>
+          <p>Supprime vos semaines, contenus, exercices et réglages personnalisés. Les aventures terminées de {playerName} seront conservées.</p>
           <button onClick={() => {
             if (window.confirm('Réinitialiser toutes les personnalisations Parent ? La progression enfant sera conservée.')) {
               onChange(emptyParentData()); setMessage('Programme initial restauré. La progression enfant est conservée.');

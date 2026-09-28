@@ -15,9 +15,9 @@ import { AudioDiagnostics } from './AudioDiagnostics';
 import { WordImage } from './WordImage';
 import { CompletionLine } from './CompletionLine';
 
-export function CompleteWord({ onComplete, sound, challenges, chains, characterId = DEFAULT_CHARACTER_ID }: {
+export function CompleteWord({ onComplete, sound, challenges, chains, characterId = DEFAULT_CHARACTER_ID, playerName }: {
   onComplete: (progress: Progress) => void; sound: boolean; challenges: readonly ContentChallenge[]; chains?: readonly ChainState[];
-  characterId?: CharacterId;
+  characterId?: CharacterId; playerName: string;
 }) {
   const [chain, setChain] = useState(chains?.[0]);
   const [chainIndex, setChainIndex] = useState(0);
@@ -165,7 +165,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
     <div className={`answer-tray ${chain ? 'chain-bank ' : ''}${multiple || bank.length > 3 ? 'multiple-answers' : ''}`} aria-label="Morceaux disponibles" key={chain ? `chain-${chainIndex}` : challenge.id}>
       {availableAnswers(bank, placements).map((choice) => <AnswerTile key={choice.id} text={choice.text} retry={wrongAnswer === choice.id ? attempt : 0} disabled={solved} findTarget={findTarget} onAnswer={(_, destination) => answer(choice.id, destination)} onHover={setHover} />)}
     </div>
-    <div className="game-companion"><Character id={characterId} happy={solved} /><p>{solved ? 'Bien joué, Milo !' : attempt ? 'Tu vas y arriver !' : 'On cherche ensemble !'}</p></div>
+    <div className="game-companion"><Character id={characterId} happy={solved} /><p>{solved ? `Bien joué, ${playerName} !` : attempt ? 'Tu vas y arriver !' : 'On cherche ensemble !'}</p></div>
     <p className="tap-hint">{multiple ? 'Touche une case, puis un morceau. Touche un morceau placé pour le retirer.' : 'Tu peux aussi toucher un morceau.'}</p>
     {import.meta.env.DEV && new URLSearchParams(window.location.search).get('debugContent') === '1' &&
       <aside aria-label="Diagnostic contenu"><small>

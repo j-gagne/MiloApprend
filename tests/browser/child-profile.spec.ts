@@ -1,0 +1,36 @@
+import { test, expect } from '@playwright/test';
+import { mockSpeech } from './speech-mock';
+
+test('old profile, validation and editing both fields preserve stored data and branding', async ({ page }) => {
+  await mockSpeech(page);
+  await page.goto('/');
+  await page.evaluate(() => localStorage.setItem('milo-apprend.progress.v1', JSON.stringify({ completedSessions: 7, selectedCharacterId: 'lion' })));
+  await page.reload();
+  await expect(page.getByText('Salut Milo !')).toBeVisible();
+  const originalParent = await page.evaluate(() => localStorage.getItem('milo-apprend.parent.v1'));
+  const open = page.getByRole('button', { name: 'CHOISIR MON PERSONNAGE' });
+  await open.click();
+  const name = page.getByLabel('Ton prénom');
+  const confirm = page.getByRole('button', { name: 'Continuer', exact: true });
+  await expect(name).toHaveValue('Milo');
+  await name.fill('   '); await expect(confirm).toBeDisabled();
+  await name.fill('a'.repeat(21)); await expect(confirm).toBeDisabled();
+  await name.fill('a'.repeat(20)); await expect(confirm).toBeEnabled();
+  await name.fill('  Zoë  ');
+  await page.getByRole('button', { name: 'Tigre', exact: true }).click();
+  await confirm.click();
+  await page.reload();
+  await expect(page.getByText('Salut Zoë !')).toBeVisible();
+  await expect(page.locator('.hero-scene').getByRole('img', { name: 'Tigre' })).toBeVisible();
+  await open.click(); await expect(name).toHaveValue('Zoë');
+  await name.fill('李-Anne'); await confirm.click();
+  await open.click();
+  await page.getByRole('button', { name: 'Licorne', exact: true }).click();
+  await confirm.click(); await page.reload();
+  await expect(page.getByText('Salut 李-Anne !')).toBeVisible();
+  await expect(page.getByText('7 aventures terminées')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Milo apprend.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Milo apprend, accueil' })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('milo-apprend.parent.v1'))).toBe(originalParent);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('milo-apprend.progress.v1')!))).toEqual({ completedSessions: 7, selectedCharacterId: 'unicorn', playerName: '李-Anne' });
+});

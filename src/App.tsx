@@ -5,7 +5,7 @@ import { Character } from './components/Character';
 import { CharacterPicker } from './components/CharacterPicker';
 import { getCharacter, type CharacterId } from './game/characters';
 import { gameAudio } from './services/audio';
-import { progressStore } from './services/progress';
+import { progressStore, DEFAULT_PLAYER_NAME } from './services/progress';
 import { SessionProgress } from './components/SessionProgress';
 import { createSessionProgress } from './game/session-progress';
 import type { SessionProgress as Progress } from './game/session-progress';
@@ -32,6 +32,7 @@ export function App() {
       || service.exerciseScope.selectedWeeks.includes(challenge.introducedInWeek)).map((challenge) => challenge.word)).size), [service, parent.data.questionCount]);
   const [progress, setProgress] = useState(() => progressStore.load());
   const character = getCharacter(progress.selectedCharacterId);
+  const playerName = progress.playerName ?? DEFAULT_PLAYER_NAME;
   const [characterSaved, setCharacterSaved] = useState(true);
   const characterButton = useRef<HTMLButtonElement>(null);
   const returnToCharacterButton = useRef(false);
@@ -62,8 +63,8 @@ export function App() {
   }, [progress]);
 
   function closeCharacters() { returnToCharacterButton.current = true; setScreen('home'); }
-  function selectCharacter(selectedCharacterId: CharacterId) {
-    const next = { ...progress, selectedCharacterId };
+  function selectCharacter(selectedCharacterId: CharacterId, playerName: string) {
+    const next = { ...progress, selectedCharacterId, playerName };
     setCharacterSaved(progressStore.save(next)); setProgress(next); closeCharacters();
   }
 
@@ -95,9 +96,9 @@ export function App() {
       <span className="eyebrow"><span aria-hidden="true">✦</span> UNE PETITE AVENTURE DE LECTURE</span>
       <h1 ref={title} tabIndex={-1}>Milo <span>apprend</span><span className="title-dot">.</span></h1>
       <p className="home-subtitle">De petits mots, de grandes découvertes !</p>
-      <div className="hero-scene"><span className="hello-bubble">Salut Milo ! <span aria-hidden="true">✦</span></span><Character id={character.id} /><span className="scene-stone stone-one" /><span className="scene-stone stone-two" /></div>
+      <div className="hero-scene"><span className="hello-bubble">Salut {playerName} ! <span aria-hidden="true">✦</span></span><Character id={character.id} /><span className="scene-stone stone-one" /><span className="scene-stone stone-two" /></div>
       <button ref={characterButton} className="character-picker-button" onClick={() => setScreen('characters')}>CHOISIR MON PERSONNAGE</button>
-      {!characterSaved && <p className="save-note" role="status">Ton personnage reste choisi ici. La sauvegarde est indisponible.</p>}
+      {!characterSaved && <p className="save-note" role="status">Ton prénom et ton personnage restent choisis ici. La sauvegarde est indisponible.</p>}
       <button className="primary-button play-button" onClick={start} disabled={!availableCount}><span aria-hidden="true">▶</span> JOUER</button>
       {!availableCount && <p role="status">Aucun défi disponible pour le contenu autorisé.</p>}
       <p className="adventure-note">{availableCount} petits défis avec ton ami</p>
@@ -105,10 +106,10 @@ export function App() {
       <button className="text-button parents-link" onClick={() => { gameAudio.stop(); setScreen('gate'); }}>Parents</button>
     </main>}
 
-    {screen === 'characters' && <CharacterPicker selected={character.id} onSelect={selectCharacter} onClose={closeCharacters} />}
-    {screen === 'game' && <CompleteWord onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}
+    {screen === 'characters' && <CharacterPicker playerName={playerName} selected={character.id} onSelect={selectCharacter} onClose={closeCharacters} />}
+    {screen === 'game' && <CompleteWord playerName={playerName} onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}
     {screen === 'gate' && <ParentGate onOpen={() => setScreen('parent')} onCancel={() => setScreen('home')} />}
-    {screen === 'parent' && <ParentSpace data={parent.data} service={service} warning={parent.warning}
+    {screen === 'parent' && <ParentSpace playerName={playerName} data={parent.data} service={service} warning={parent.warning}
       onDirtyChange={(dirty) => { parentDirty.current = dirty; }}
       onExit={() => { parentDirty.current = false; setScreen('home'); }} onChange={(data) => {
         const saved = parentStore.save(data);
@@ -118,7 +119,7 @@ export function App() {
 
     {screen === 'celebration' && <main className="celebration-screen">
       <div className="confetti" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ left: `${4 + i * 3.9}%`, animationDelay: `${i * 0.08}s`, background: ['#e4b454', '#81a879', '#de9984'][i % 3] }} />)}</div>
-      <h1 ref={title} tabIndex={-1}>Bravo Milo !</h1>
+      <h1 ref={title} tabIndex={-1}>Bravo {playerName} !</h1>
       <p>{result.completedTargets} exercices terminés</p>
       <SessionProgress progress={result} characterId={character.id} />
       <Character id={character.id} happy />
