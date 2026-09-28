@@ -33,7 +33,7 @@ export function AudioTest({ service }: { service: ContentService }) {
         <h3>Textes envoyés au TTS</h3>
         <p>Mode de lecture : {word.readingMode === 'whole' ? 'Mot complet lent' : 'Segmenté'}</p>
         <p data-testid="audio-test-rates">Vitesses demandées — Mot : {rates.normal.toFixed(2)}
-          {word.readingMode === 'whole' ? ` · Lentement : ${rates.slowWhole.toFixed(2)}` : ` · Découpe : ${rates.normal.toFixed(2)}`}</p>
+          {word.readingMode === 'whole' ? ` · Lentement : ${rates.slowWhole.toFixed(2)}` : ` · Découpe : ${rates.slowWhole.toFixed(2)}`}</p>
         {finalRate !== undefined && <p data-testid="audio-test-final-rate">Dernier rate transmis au TTS : {finalRate.toFixed(2)} — « {lastText} »</p>}
         <p>Mot : <span data-testid="audio-test-whole">{word.audioText}</span></p>
         {reading ? <p data-testid="audio-test-segments">{reading.mode === 'whole' ? reading.whole : [...reading.segments, reading.whole].join(' → ')}</p>

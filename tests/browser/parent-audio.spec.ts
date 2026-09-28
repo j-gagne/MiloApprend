@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { mockSpeech } from './speech-mock';
 import { chainParentData } from '../fixtures/chain-program';
 
-async function openAudio(page: Page, speed: 'normal' | 'fast' = 'fast') {
+async function openAudio(page: Page, speed: 'normal' | 'slow' | 'fast' = 'fast') {
   await mockSpeech(page, ['fr-FR'], true, true);
   await page.addInitScript((data) => localStorage.setItem('milo-apprend.parent.v1', JSON.stringify(data)),
     { ...chainParentData(), readingSpeed: speed });
@@ -19,7 +19,7 @@ async function openAudio(page: Page, speed: 'normal' | 'fast' = 'fast') {
 }
 const texts = (page: Page) => page.evaluate(() => window.speechProbe.calls.map((call) => call.text));
 
-for (const speed of ['normal', 'fast'] as const) for (const [id, construction, mode, button, spoken] of [
+for (const speed of ['normal', 'slow', 'fast'] as const) for (const [id, construction, mode, button, spoken] of [
   ['word-ami', 'ami = a + mi', 'Segmenté', 'Découpe', ['a', 'mi', 'ami']],
   ['word-vis', 'vis = vi + s', 'Mot complet lent', 'Lentement', ['vis']],
   ['practice-olive', 'olive = o + li + ve', 'Mot complet lent', 'Lentement', ['olive']],
@@ -39,8 +39,8 @@ for (const speed of ['normal', 'fast'] as const) for (const [id, construction, m
     };
   });
   await page.getByRole('button', { name: '🔊 Mot', exact: true }).tap();
-  const normal = speed === 'normal' ? 0.60 : 0.78;
-  const slow = speed === 'normal' ? 0.45 : 0.585;
+  const normal = speed === 'normal' ? 0.60 : speed === 'slow' ? 0.45 : 0.78;
+  const slow = speed === 'normal' ? 0.45 : speed === 'slow' ? 0.3375 : 0.585;
   await expect(page.getByTestId('audio-test-rates')).toContainText(`Mot : ${normal.toFixed(2)}`);
   await expect(page.getByTestId('audio-test-final-rate')).toContainText(`TTS : ${normal.toFixed(2)}`);
   await page.getByRole('button', { name: `🐢 ${button}`, exact: true }).tap();
@@ -48,7 +48,7 @@ for (const speed of ['normal', 'fast'] as const) for (const [id, construction, m
   expect(await texts(page)).toEqual([spoken.at(-1), ...spoken]);
   const rates = await page.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates);
   expect(rates[0]).toBeCloseTo(normal);
-  const expected = mode === 'Segmenté' ? normal : slow;
+  const expected = slow;
   for (const rate of rates.slice(1)) expect(rate).toBeCloseTo(expected);
   await expect(page.getByTestId('audio-test-rates')).toContainText(`${button === 'Découpe' ? 'Découpe' : 'Lentement'} : ${expected.toFixed(2)}`);
   await expect(page.getByTestId('audio-test-final-rate')).toContainText(`TTS : ${expected.toFixed(2)}`);

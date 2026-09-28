@@ -4,13 +4,13 @@ import { emptyParentData } from '../../src/parent/model';
 import { initialProgram } from '../../src/content/program';
 import { automaticActivities } from '../../src/content/activity-catalog';
 
-for (const [id, word] of [['word-vis', 'vis'], ['practice-olive', 'olive']] as const) {
-  test(`${word}: whole aid, normal speed restored, score and cancellation`, async ({ page }) => {
+for (const speed of ['normal', 'slow'] as const) for (const [id, word] of [['word-vis', 'vis'], ['practice-olive', 'olive']] as const) {
+  test(`${word} ${speed}: whole aid, normal speed restored, score and cancellation`, async ({ page }) => {
     await mockSpeech(page, ['fr-CA'], false, true);
     const target = initialProgram.units.find((u) => u.id === id)!;
     const activities = automaticActivities(initialProgram, 5);
     await page.addInitScript((data) => localStorage.setItem('milo-apprend.parent.v1', JSON.stringify(data)), {
-      ...emptyParentData(), activeWeek: 5, readingSpeed: 'normal',
+      ...emptyParentData(), activeWeek: 5, readingSpeed: speed,
       unitEnabled: Object.fromEntries(initialProgram.units.filter((u) => u.type === 'word' || u.type === 'sentence').map((u) => [u.id, u.id === target.id])),
       activityEnabled: Object.fromEntries(activities.map((a) => [a.id, a.targetId === target.id])),
     });
@@ -30,7 +30,9 @@ for (const [id, word] of [['word-vis', 'vis'], ['practice-olive', 'olive']] as c
     await page.getByRole('button', { name: `Réécouter ${word}`, exact: true }).tap();
     const rates = await page.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates);
     expect(rates).toHaveLength(4);
-    for (const [index, expected] of [0.6, 0.45, 0.45, 0.6].entries()) expect(rates[index]).toBeCloseTo(expected);
+    const normalRate = speed === 'normal' ? 0.60 : 0.45;
+    const slowRate = speed === 'normal' ? 0.45 : 0.3375;
+    for (const [index, expected] of [normalRate, slowRate, slowRate, normalRate].entries()) expect(rates[index]).toBeCloseTo(expected, 5);
     expect(await page.evaluate(() => window.speechProbe.calls.map((c) => c.text))).toEqual([word, word, word, word]);
     await expect(page.getByRole('progressbar')).toHaveAttribute('value', '0');
     await expect(page.getByLabel('Étoiles : 0 sur 1')).toBeVisible();

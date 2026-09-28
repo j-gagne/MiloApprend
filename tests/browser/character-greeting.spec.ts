@@ -61,7 +61,7 @@ test('character profile never leaks into normal or segmented pedagogical speech'
   await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
   expect((await calls(page)).at(-1)).toEqual({ text: 'lama', pitch: 1, rate: 0.78, lang: 'fr-FR' });
   await page.getByRole('button', { name: 'Découper lama', exact: true }).tap();
-  expect((await calls(page)).at(-1)).toEqual({ text: 'la', pitch: 1, rate: 0.78, lang: 'fr-FR' });
+  expect((await calls(page)).at(-1)).toEqual({ text: 'la', pitch: 1, rate: 0.78 * 0.75, lang: 'fr-FR' });
   await page.getByRole('button', { name: 'Réécouter lama', exact: true }).tap();
   expect((await calls(page)).at(-1)?.pitch).toBe(1);
   expect((await calls(page)).filter((call) => call.text.startsWith('Salut'))).toHaveLength(1);

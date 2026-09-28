@@ -6,13 +6,13 @@ import { automaticActivities } from '../../src/content/activity-catalog';
 import { effectiveProgram } from '../../src/parent/model';
 import type { Word } from '../../src/content/model';
 
-async function setup(page: Page, mode: 'individual' | 'chain' = 'individual', ends = true) {
+async function setup(page: Page, mode: 'individual' | 'chain' = 'individual', ends = true, speed: 'normal' | 'slow' | 'fast' = 'fast') {
   await mockSpeech(page, ['fr-CA'], ends);
   const previous = chainParentData();
   const original = initialProgram.units.find((u): u is Word => u.id === 'word-ami' && u.type === 'word')!;
   const { completeWord: _variants, ...base } = original;
   const ami: Word = { ...base, id: 'parent-word-audio-ami', introducedInWeek: 6, tags: ['practice'] };
-  const data = { ...previous, gameMode: mode, questionCount: 6, readingSpeed: 'fast' as const,
+  const data = { ...previous, gameMode: mode, questionCount: 6, readingSpeed: speed,
     customUnits: [ami, ...previous.customUnits], activities: [
       { id: 'parent-activity-audio-ami', type: 'complete-segments' as const, targetId: ami.id, segmentationId: 'initial',
         missingSegmentIndexes: [0], distractorUnitIds: ['letter-i', 'letter-o'] }, ...previous.activities,
@@ -34,9 +34,9 @@ async function setup(page: Page, mode: 'individual' | 'chain' = 'individual', en
 const texts = (page: Page) => page.evaluate(() => window.speechProbe.calls.map((c) => c.text));
 const choose = (page: Page, answer: string) => page.getByLabel('Morceaux disponibles').getByRole('button', { name: `Choisir ${answer}`, exact: true }).first().click();
 
-for (const mode of ['individual', 'chain'] as const) test(`${mode}: AMI, LAMA utterances, whole construction, unchanged score; LAVAGE and phrase normal only`, async ({ page }) => {
+for (const speed of ['normal', 'slow'] as const) for (const mode of ['individual', 'chain'] as const) test(`${mode} ${speed}: AMI, LAMA utterances, whole construction, unchanged score; LAVAGE and phrase normal only`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await setup(page, mode);
+  await setup(page, mode, true, speed);
   await expect(page.getByRole('button', { name: 'Réécouter ami', exact: true })).toContainText('Mot');
   const cut = page.getByRole('button', { name: 'Découper ami', exact: true });
   await expect(cut).toContainText('Découpe');
@@ -49,9 +49,15 @@ for (const mode of ['individual', 'chain'] as const) test(`${mode}: AMI, LAMA ut
   expect(times[2] - times[1]).toBeGreaterThanOrEqual(700); // 100 ms speech + 600 ms pause.
   await expect(page.getByRole('progressbar')).toHaveAttribute('value', '0');
   await expect(page.getByLabel('Étoiles : 0 sur 4')).toBeVisible();
-  expect(await page.evaluate(() => (window as unknown as { sequenceRates: number[] }).sequenceRates.every((r) => r === 0.78))).toBe(true);
+  const rates = await page.evaluate(() => (window as unknown as { sequenceRates: number[] }).sequenceRates);
+  const normalRate = speed === 'normal' ? 0.60 : 0.45;
+  const slowRate = speed === 'normal' ? 0.45 : 0.3375;
+  expect(rates[0]).toBeCloseTo(normalRate);
+  expect(rates.slice(1)).toHaveLength(3);
+  for (const rate of rates.slice(1)) expect(rate).toBeCloseTo(slowRate, 5);
   await page.getByRole('button', { name: 'Réécouter ami', exact: true }).tap();
   expect((await texts(page)).at(-1)).toBe('ami');
+  expect(await page.evaluate(() => (window as unknown as { sequenceRates: number[] }).sequenceRates.at(-1))).toBeCloseTo(normalRate);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/segmented-audio-${mode}.png` });
   await choose(page, 'a'); await expect(page.getByLabel('Étoiles : 1 sur 4')).toBeVisible();

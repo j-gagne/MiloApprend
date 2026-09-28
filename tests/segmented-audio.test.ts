@@ -119,6 +119,7 @@ test('slow whole speed is centrally derived and lower for every Parent setting',
     assert.ok(slowWholeRate(rate) < rate);
   }
   assert.ok(Math.abs(slowWholeRate(0.6) - 0.45) < 1e-10);
+  assert.ok(Math.abs(slowWholeRate(0.45) - 0.3375) < 1e-10);
 });
 
 const flush = async () => { for (let i = 0; i < 4; i++) await Promise.resolve(); };

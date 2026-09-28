@@ -232,11 +232,12 @@ class GameAudio {
   playSegmented(reading: SegmentedReading, wholeSrc?: string): Promise<void> {
     this.stop();
     if (!this.enabled) return Promise.resolve();
+    const rate = this.getPlaybackRates().slowWhole;
     return this.sequence.play([
       ...reading.segments.map((text, index) => ({ text,
         pauseAfter: index === reading.segments.length - 1 ? WHOLE_WORD_PAUSE_MS : SEGMENT_PAUSE_MS })),
       { text: reading.whole, src: wholeSrc },
-    ], (step) => this.playSingle(step.text, step.src));
+    ], (step) => this.playSingle(step.text, step.src, rate));
   }
 
   playPedagogical(reading: PedagogicalReading, wholeSrc?: string): Promise<void> {
