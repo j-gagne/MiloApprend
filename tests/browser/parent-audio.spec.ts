@@ -19,24 +19,31 @@ async function openAudio(page: Page) {
 }
 const texts = (page: Page) => page.evaluate(() => window.speechProbe.calls.map((call) => call.text));
 
-test('Parent OLIVE shows actual construction/texts and uses game speech and Parent speed', async ({ page }) => {
+for (const [id, construction, mode, button, spoken] of [
+  ['word-ami', 'ami = a + mi', 'Segmenté', 'Découpe', ['a', 'mi', 'ami']],
+  ['word-vis', 'vis = vi + s', 'Mot complet lent', 'Lentement', ['vis']],
+  ['practice-olive', 'olive = o + li + ve', 'Mot complet lent', 'Lentement', ['olive']],
+] as const) test(`Parent ${id}: construction, policy, exact utterances and speed`, async ({ page }) => {
   await openAudio(page);
-  await page.getByLabel('Mot du programme').selectOption('practice-olive');
-  await expect(page.getByTestId('audio-test-construction')).toHaveText('olive = o + li + ve');
-  await expect(page.getByTestId('audio-test-segments')).toHaveText('o → li → vé → olive');
+  await page.getByLabel('Mot du programme').selectOption(id);
+  await expect(page.getByTestId('audio-test-construction')).toHaveText(construction);
+  await expect(page.getByText(`Mode de lecture : ${mode}`, { exact: true })).toBeVisible();
+  await expect(page.getByTestId('audio-test-segments')).toHaveText(spoken.join(' → '));
   await page.evaluate(() => {
     const original = speechSynthesis.speak.bind(speechSynthesis);
+    Object.assign(window, { audioRates: [] });
     speechSynthesis.speak = (utterance) => {
-      if (utterance.rate !== 0.78) throw new Error('Incorrect Parent speed');
+      (window as unknown as { audioRates: number[] }).audioRates.push(utterance.rate);
       original(utterance);
     };
   });
   await page.getByRole('button', { name: '🔊 Mot', exact: true }).tap();
-  expect(await texts(page)).toEqual(['olive']);
-  await page.getByRole('button', { name: '🐢 Découpe', exact: true }).tap();
-  expect(await texts(page)).toEqual(['olive', 'o']);
+  await page.getByRole('button', { name: `🐢 ${button}`, exact: true }).tap();
   await page.clock.runFor(2000);
-  expect(await texts(page)).toEqual(['olive', 'o', 'li', 'vé', 'olive']);
+  expect(await texts(page)).toEqual([spoken.at(-1), ...spoken]);
+  const rates = await page.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates);
+  expect(rates[0]).toBe(0.78);
+  for (const rate of rates.slice(1)) expect(rate).toBeCloseTo(mode === 'Segmenté' ? 0.78 : 0.585);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
@@ -54,15 +61,15 @@ test('normal playback, word change, mute and leaving cancel segmented playback',
   await openAudio(page);
   const select = page.getByLabel('Mot du programme');
   const cut = page.getByRole('button', { name: '🐢 Découpe', exact: true });
-  await select.selectOption('practice-olive');
+  await select.selectOption('word-ami');
   await cut.tap();
   await page.getByRole('button', { name: '🔊 Mot', exact: true }).tap();
   await page.clock.runFor(2500);
-  expect(await texts(page)).toEqual(['o', 'olive']);
+  expect(await texts(page)).toEqual(['a', 'ami']);
   await cut.tap();
   await select.selectOption('word-lama');
   await page.clock.runFor(2500);
-  expect(await texts(page)).toEqual(['o', 'olive', 'o']);
+  expect(await texts(page)).toEqual(['a', 'ami', 'a']);
   await cut.tap();
   await page.getByRole('button', { name: 'Couper le son' }).tap();
   await page.clock.runFor(2500);
@@ -73,5 +80,5 @@ test('normal playback, word change, mute and leaving cancel segmented playback',
   await cut.tap();
   await page.getByRole('button', { name: 'Programme', exact: true }).tap();
   await page.clock.runFor(2500);
-  expect(await texts(page)).toEqual(['o', 'olive', 'o', 'la', 'la']);
+  expect(await texts(page)).toEqual(['a', 'ami', 'a', 'la', 'la']);
 });

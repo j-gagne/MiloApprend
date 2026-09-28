@@ -151,15 +151,15 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
       <div className="feedback" role="status" aria-live="polite" aria-atomic="true">
         {solved ? <>{performance.incorrectAttemptsForCurrentTarget === 0 && <span aria-label="Étoile gagnée">⭐</span>} Bravo ! <strong>{challenge.word}</strong></> : attempt > 0 ? 'Essaie un autre morceau !' : <span aria-hidden="true">À toi de jouer !</span>}
       </div>
-      <div className={challenge.segmentedReading ? 'reading-actions' : undefined}>
+      <div className={challenge.pedagogicalReading ? 'reading-actions' : undefined}>
       <button className="listen-button" disabled={!sound} aria-label={`Réécouter ${challenge.word}`} onClick={() => {
         playback.current = gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
         setReplay((count) => count + 1);
-      }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5ZM15 8q4 4 0 8M18 5q7 7 0 14" /></svg>{challenge.segmentedReading && <span>Mot</span>}</button>
-      {challenge.segmentedReading && <button className="listen-button" disabled={!sound} aria-label={`Découper ${challenge.word}`} onClick={() => {
-        playback.current = gameAudio.playSegmented(challenge.segmentedReading!, challenge.audioSrc);
+      }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5ZM15 8q4 4 0 8M18 5q7 7 0 14" /></svg>{challenge.pedagogicalReading && <span>Mot</span>}</button>
+      {challenge.pedagogicalReading && <button className="listen-button" disabled={!sound} aria-label={`${challenge.pedagogicalReading.mode === 'whole' ? 'Écouter lentement' : 'Découper'} ${challenge.word}`} onClick={() => {
+        playback.current = gameAudio.playPedagogical(challenge.pedagogicalReading!, challenge.audioSrc);
         setReplay((count) => count + 1);
-      }}><span aria-hidden="true">🐢</span> Découpe</button>}
+      }}><span aria-hidden="true">🐢</span> {challenge.pedagogicalReading.mode === 'whole' ? 'Lentement' : 'Découpe'}</button>}
       </div>
     </section>
     <div className={`answer-tray ${chain ? 'chain-bank ' : ''}${multiple || bank.length > 3 ? 'multiple-answers' : ''}`} aria-label="Morceaux disponibles" key={chain ? `chain-${chainIndex}` : challenge.id}>

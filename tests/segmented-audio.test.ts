@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { initialProgram } from '../src/content/program.ts';
-import { getSegmentedReading } from '../src/content/segmented-reading.ts';
+import { getSegmentedReading, getPedagogicalReading } from '../src/content/segmented-reading.ts';
+import { READING_SPEEDS, slowWholeRate, SLOW_WHOLE_FACTOR } from '../src/services/audio-settings.ts';
 import { getCompleteWordChallenges } from '../src/game/complete-word-content.ts';
 import { effectiveProgram } from '../src/parent/model.ts';
 import { chainParentData } from './fixtures/chain-program.ts';
@@ -89,7 +90,35 @@ test('single/multi-slot LAMA get identical full readings, not just missing answe
   const challenges = getCompleteWordChallenges().challenges.filter((c) => c.wordId === 'word-lama');
   assert.ok(challenges.some((c) => c.slots.length === 1));
   assert.ok(challenges.some((c) => c.slots.length === 2));
-  for (const challenge of challenges) assert.deepEqual(challenge.segmentedReading, { segments: ['la', 'ma'], whole: 'lama' });
+  for (const challenge of challenges) assert.deepEqual(challenge.pedagogicalReading, { mode: 'segmented', segments: ['la', 'ma'], whole: 'lama' });
+});
+
+test('explicit reading modes do not alter constructions, audioText or legacy behavior', () => {
+  for (const [id, mode, blocks] of [
+    ['word-ami', 'segmented', ['letter-a', 'syllable-mi']],
+    ['word-lama', 'segmented', ['syllable-la', 'syllable-ma']],
+    ['word-vis', 'whole', ['syllable-vi', 'letter-s']],
+    ['practice-olive', 'whole', ['letter-o', 'syllable-li', 'syllable-ve']],
+  ] as const) {
+    const target = word(id);
+    assert.equal(target.readingMode, mode);
+    assert.deepEqual(target.segmentations[0].segments, blocks.map((unitId) => ({ unitId })));
+    const reading = getPedagogicalReading(initialProgram, target, target.segmentations[0], 5);
+    if (mode === 'whole') assert.deepEqual(reading, { mode, whole: target.audioText });
+    else assert.deepEqual(reading, { mode, ...getSegmentedReading(initialProgram, target, target.segmentations[0], 5) });
+  }
+  const legacy = { ...word('word-ami'), readingMode: undefined };
+  assert.deepEqual(getPedagogicalReading(initialProgram, legacy, legacy.segmentations[0], 5), { mode: 'segmented', segments: ['a', 'mi'], whole: 'ami' });
+  const sentence = initialProgram.units.find((u) => u.type === 'sentence')!;
+  assert.equal(getPedagogicalReading(initialProgram, sentence, undefined, 5), null);
+});
+
+test('slow whole speed is centrally derived and lower for every Parent setting', () => {
+  for (const { rate } of Object.values(READING_SPEEDS)) {
+    assert.equal(slowWholeRate(rate), rate * SLOW_WHOLE_FACTOR);
+    assert.ok(slowWholeRate(rate) < rate);
+  }
+  assert.ok(Math.abs(slowWholeRate(0.6) - 0.45) < 1e-10);
 });
 
 const flush = async () => { for (let i = 0; i < 4; i++) await Promise.resolve(); };

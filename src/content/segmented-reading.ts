@@ -3,6 +3,20 @@ import { isAvailable } from './selectors.ts';
 import { validateSegmentation } from './validation.ts';
 
 export interface SegmentedReading { readonly segments: readonly string[]; readonly whole: string }
+export type PedagogicalReading = { readonly mode: 'whole'; readonly whole: string }
+  | ({ readonly mode: 'segmented' } & SegmentedReading);
+
+// The word's explicit audio policy is independent of its exercise construction.
+export function getPedagogicalReading(program: LearningProgram, target: LearningUnit,
+  construction: Segmentation | undefined, week: number): PedagogicalReading | null {
+  if (target.type !== 'word' || !isAvailable(program, target, week)) return null;
+  if (target.readingMode === 'whole') {
+    const whole = target.audioText?.trim() ? target.audioText : target.display;
+    return whole?.trim() ? { mode: 'whole', whole } : null;
+  }
+  const reading = getSegmentedReading(program, target, construction, week);
+  return reading ? { mode: 'segmented', ...reading } : null;
+}
 
 // Read the entire explicit construction, never just the missing slots or inferred syllables.
 export function getSegmentedReading(program: LearningProgram, target: LearningUnit, construction: Segmentation | undefined,

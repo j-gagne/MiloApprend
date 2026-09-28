@@ -25,6 +25,7 @@ export const seedBank: readonly SeedWeek[] = [
     words: [
       {
         id: 'word-ami',
+        readingMode: 'segmented',
         display: 'ami',
         segmentations: [
           { id: 'initial', segments: [ { unitId: 'letter-a' }, { unitId: 'syllable-mi' } ] }
@@ -43,6 +44,7 @@ export const seedBank: readonly SeedWeek[] = [
       },
       {
         id: 'word-lama',
+        readingMode: 'segmented',
         display: 'lama',
         segmentations: [
           { id: 'initial', segments: [ { unitId: 'syllable-la' }, { unitId: 'syllable-ma' } ] }
@@ -122,6 +124,7 @@ export const seedBank: readonly SeedWeek[] = [
       },
       {
         id: 'word-vis',
+        readingMode: 'whole',
         display: 'vis',
         segmentations: [
           { id: 'initial', segments: [ { unitId: 'syllable-vi' }, { unitId: 'letter-s' } ] }
@@ -180,6 +183,7 @@ export const seedBank: readonly SeedWeek[] = [
       },
       {
         id: 'practice-olive',
+        readingMode: 'whole',
         display: 'olive',
         tags: [ 'practice' ],
         segmentations: [

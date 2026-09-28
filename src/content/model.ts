@@ -82,6 +82,7 @@ export type ImageAsset =
 
 export interface Word extends UnitBase {
   readonly type: 'word';
+  readonly readingMode?: 'segmented' | 'whole';
   readonly text: string;
   readonly segmentations: readonly Segmentation[];
   readonly imageAsset?: ImageAsset | null;

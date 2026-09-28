@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { ContentService } from '../../content/service';
 import { blockText } from '../../content/construction';
-import { getSegmentedReading } from '../../content/segmented-reading';
+import { getPedagogicalReading } from '../../content/segmented-reading';
 import { gameAudio } from '../../services/audio';
 
 export function AudioTest({ service }: { service: ContentService }) {
@@ -11,7 +11,7 @@ export function AudioTest({ service }: { service: ContentService }) {
   const [constructionId, setConstructionId] = useState('');
   const word = words.find((unit) => unit.id === wordId) ?? words[0];
   const construction = word?.segmentations.find((item) => item.id === constructionId) ?? word?.segmentations[0];
-  const reading = word ? getSegmentedReading(program, word, construction, service.activeWeek) : null;
+  const reading = word ? getPedagogicalReading(program, word, construction, service.activeWeek) : null;
   const { muted } = useSyncExternalStore(gameAudio.subscribe, gameAudio.getDiagnostics);
   useEffect(() => () => gameAudio.stop(), []);
 
@@ -30,8 +30,9 @@ export function AudioTest({ service }: { service: ContentService }) {
           ? `${word.display} = ${construction.segments.map((block) => blockText(program, block)).join(' + ')}`
           : 'Aucune construction définie.'}</p>
         <h3>Textes envoyés au TTS</h3>
+        <p>Mode de lecture : {word.readingMode === 'whole' ? 'Mot complet lent' : 'Segmenté'}</p>
         <p>Mot : <span data-testid="audio-test-whole">{word.audioText}</span></p>
-        {reading ? <p data-testid="audio-test-segments">{[...reading.segments, reading.whole].join(' → ')}</p>
+        {reading ? <p data-testid="audio-test-segments">{reading.mode === 'whole' ? reading.whole : [...reading.segments, reading.whole].join(' → ')}</p>
           : <p>Découpe non disponible</p>}
         {!reading && <small>La découpe suit les critères du jeu : construction explicite valide, sans bloc littéral prononçable, et contenu disponible à la semaine active.</small>}
         {word.audioAsset && <p>Le fichier audio du mot est prioritaire ; le texte TTS sert de secours, comme dans le jeu.</p>}
@@ -39,8 +40,8 @@ export function AudioTest({ service }: { service: ContentService }) {
         <div className="parent-actions">
           <button disabled={muted} onClick={() => { gameAudio.unlock(); void gameAudio.playWord(word.audioText, word.audioAsset ?? undefined); }}>🔊 Mot</button>
           <button disabled={muted || !reading} onClick={() => {
-            if (reading) { gameAudio.unlock(); void gameAudio.playSegmented(reading, word.audioAsset ?? undefined); }
-          }}>🐢 Découpe</button>
+            if (reading) { gameAudio.unlock(); void gameAudio.playPedagogical(reading, word.audioAsset ?? undefined); }
+          }}>🐢 {word.readingMode === 'whole' ? 'Lentement' : 'Découpe'}</button>
         </div>
       </div>
     </>}

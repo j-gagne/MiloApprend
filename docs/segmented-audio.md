@@ -1,4 +1,29 @@
-# Lecture audio pédagogique segmentée
+# Modes de lecture audio pédagogique
+
+**Construction ≠ readingMode.** La construction décrit les blocs de l'exercice ;
+`audioText` décrit le texte vocal d'une unité ; `Word.readingMode` choisit l'aide
+audio du mot, indépendamment de ses slots et de ses exercices.
+
+- `segmented` : bouton **Découpe**, utilisant la construction et les audioText.
+- `whole` : bouton **Lentement**, une seule lecture du mot complet, sans lire ses blocs.
+- Champ absent : compatibilité avec l'ancienne aide segmentée lorsqu'elle est admissible.
+
+AMI et LAMA sont explicitement `segmented` : `a → mi → ami`, `la → ma → lama`.
+VIS et OLIVE sont explicitement `whole` : uniquement `vis` ou `olive`.
+Leurs constructions restent `VI + S` et `O + LI + VE`. VE garde son audioText `vé`.
+Les autres mots ne reçoivent aucune nouvelle décision pédagogique.
+
+`getPedagogicalReading` choisit le mode et réutilise `getSegmentedReading` pour
+les segments. `gameAudio.playPedagogical` est commun au jeu et à Parents → Test audio.
+L'outil Parent affiche la construction, le mode, les textes réellement utilisés
+et les boutons Mot/Découpe ou Mot/Lentement. Aucun éditeur de mode n'est ajouté.
+
+La vitesse du mot entier lent est `max(0.1, vitesse Parent × 0.75)`, centralisée
+dans `audio-settings.ts`. Avec Parent normale : 0.60 → 0.45. Elle s'applique à
+la synthèse et au fichier audio éventuel, sans modifier la vitesse des lectures
+suivantes. Les mêmes règles d'annulation, de muet et de sortie s'appliquent.
+Le mode appartient au contenu, pas au profil enfant ni à un réglage global.
+Les phrases conservent exclusivement la lecture normale.
 
 Le bouton **Mot** conserve la lecture normale. **Découpe** est une aide volontaire :
 chaque bloc pédagogique de la construction est lu séparément, puis le mot complet.
@@ -14,7 +39,7 @@ l'exercice et le programme effectif, incluant les personnalisations Parent.
 Tous les blocs sont considérés dans leur ordre, pas uniquement les slots manquants.
 Aucune segmentation n'est déduite de l'orthographe.
 
-Une lecture est proposée seulement pour une cible Word disponible avec une
+Une lecture segmentée est proposée seulement pour une cible Word disponible avec une
 construction complète et valide, des références pédagogiques disponibles et
 au moins un bloc lisible. Les erreurs de construction, références manquantes,
 futures ou désactivées rendent l'aide indisponible.

@@ -12,9 +12,9 @@
 }
 
 // Vitesse commune à toutes les prononciations pédagogiques du jeu.
-import { readingRate, type ReadingSpeed } from './audio-settings.ts';
+import { readingRate, slowWholeRate, type ReadingSpeed } from './audio-settings.ts';
 import { AudioSequence, SEGMENT_PAUSE_MS, WHOLE_WORD_PAUSE_MS } from './audio-sequence.ts';
-import type { SegmentedReading } from '../content/segmented-reading.ts';
+import type { PedagogicalReading, SegmentedReading } from '../content/segmented-reading.ts';
 
 const language = (voice: SpeechSynthesisVoice) => voice.lang.toLowerCase().replaceAll('_', '-');
 const describeVoice = (voice: SpeechSynthesisVoice) => `${voice.name || '(sans nom)'} — ${voice.lang}`;
@@ -139,7 +139,7 @@ class GameAudio {
   }
 
   // Synchrone : appelé directement depuis le click/tap, sans Promise ni timer avant speak().
-  private speakNow(text: string, french: boolean, finish: () => void) {
+  private speakNow(text: string, french: boolean, finish: () => void, rate = this.rate) {
     const attempt = this.attempt;
     this.prepareSpeech();
     if (!this.enabled) { this.log('lecture ignorée : muted'); finish(); return; }
@@ -158,7 +158,7 @@ class GameAudio {
       if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
       // TEST AUDIO laisse volontairement voice et lang aux valeurs du navigateur.
       utterance.volume = 1;
-      utterance.rate = french ? this.rate : 1;
+      utterance.rate = french ? rate : 1;
       utterance.pitch = 1;
       this.update({ selected: voice ? describeVoice(voice) : 'Voix par défaut du navigateur (sans voice/lang imposés)' });
       utterance.onstart = () => { this.log('onstart', attempt); };
@@ -223,18 +223,24 @@ class GameAudio {
     ], (step) => this.playSingle(step.text, step.src));
   }
 
-  private playSingle(text: string, src?: string): Promise<void> {
+  playPedagogical(reading: PedagogicalReading, wholeSrc?: string): Promise<void> {
+    if (reading.mode === 'segmented') return this.playSegmented(reading, wholeSrc);
+    this.stop();
+    return this.playSingle(reading.whole, wholeSrc, slowWholeRate(this.rate));
+  }
+
+  private playSingle(text: string, src?: string, rate = this.rate): Promise<void> {
     this.beginAttempt(text, src ? 'fichier audio' : 'mot du jeu');
     if (!this.enabled) { this.log('lecture ignorée : muted'); return Promise.resolve(); }
     let resolvePlayback!: () => void;
     const playback = new Promise<void>((resolve) => { resolvePlayback = resolve; });
     const finish = this.watchPlayback(resolvePlayback);
     // La Promise sert uniquement à notifier la fin ; speakNow() n'attend pas son exécution.
-    if (!src) { this.speakNow(text, true, finish); return playback; }
+    if (!src) { this.speakNow(text, true, finish, rate); return playback; }
     const attempt = this.attempt;
     try {
       const audio = new Audio(src);
-      audio.playbackRate = this.rate / readingRate();
+      audio.playbackRate = rate / readingRate();
       this.word = audio;
       let failed = false;
       const fallback = () => {
@@ -245,12 +251,12 @@ class GameAudio {
         audio.pause();
         this.word = undefined;
         this.log('fichier indisponible : tentative de synthèse (activation utilisateur non garantie)');
-        this.speakNow(text, true, finish);
+        this.speakNow(text, true, finish, rate);
       };
       audio.onended = finish;
       audio.onerror = fallback;
       void audio.play().catch(fallback);
-    } catch { this.speakNow(text, true, finish); }
+    } catch { this.speakNow(text, true, finish, rate); }
     return playback;
   }
 
