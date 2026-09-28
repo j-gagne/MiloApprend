@@ -15,6 +15,7 @@
 import { readingRate, slowWholeRate, type ReadingSpeed } from './audio-settings.ts';
 import { AudioSequence, SEGMENT_PAUSE_MS, WHOLE_WORD_PAUSE_MS } from './audio-sequence.ts';
 import type { PedagogicalReading, SegmentedReading } from '../content/segmented-reading.ts';
+import { getCharacter, type CharacterId } from '../game/characters.ts';
 
 const language = (voice: SpeechSynthesisVoice) => voice.lang.toLowerCase().replaceAll('_', '-');
 const describeVoice = (voice: SpeechSynthesisVoice) => `${voice.name || '(sans nom)'} — ${voice.lang}`;
@@ -139,7 +140,7 @@ class GameAudio {
   }
 
   // Synchrone : appelé directement depuis le click/tap, sans Promise ni timer avant speak().
-  private speakNow(text: string, french: boolean, finish: () => void, rate = this.rate) {
+  private speakNow(text: string, french: boolean, finish: () => void, rate = this.rate, pitch = 1) {
     const attempt = this.attempt;
     this.prepareSpeech();
     if (!this.enabled) { this.log('lecture ignorée : muted'); finish(); return; }
@@ -159,7 +160,7 @@ class GameAudio {
       // TEST AUDIO laisse volontairement voice et lang aux valeurs du navigateur.
       utterance.volume = 1;
       utterance.rate = french ? rate : 1;
-      utterance.pitch = 1;
+      utterance.pitch = pitch;
       this.update({ selected: voice ? describeVoice(voice) : 'Voix par défaut du navigateur (sans voice/lang imposés)' });
       utterance.onstart = () => { this.log('onstart', attempt); };
       utterance.onend = () => { this.log('onend', attempt); finish(); };
@@ -211,6 +212,18 @@ class GameAudio {
   playWord(text: string, src?: string): Promise<void> {
     this.stop();
     return this.playSingle(text, src);
+  }
+
+  // Character personality is per utterance, never stored in pedagogical settings.
+  speakCharacter(text: string, characterId: CharacterId): Promise<void> {
+    this.stop();
+    if (!this.enabled) return Promise.resolve();
+    const { voiceProfile } = getCharacter(characterId);
+    this.beginAttempt(text, 'voix du personnage');
+    return new Promise<void>((resolve) => {
+      const finish = this.watchPlayback(resolve);
+      this.speakNow(text, true, finish, voiceProfile.rateMultiplier, voiceProfile.pitch);
+    });
   }
 
   playSegmented(reading: SegmentedReading, wholeSrc?: string): Promise<void> {

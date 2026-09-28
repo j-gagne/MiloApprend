@@ -66,6 +66,7 @@ export function App() {
   function selectCharacter(selectedCharacterId: CharacterId, playerName: string) {
     const next = { ...progress, selectedCharacterId, playerName };
     setCharacterSaved(progressStore.save(next)); setProgress(next); closeCharacters();
+    void gameAudio.speakCharacter(`Salut ${next.playerName} !`, next.selectedCharacterId);
   }
 
   function start() {
@@ -97,7 +98,7 @@ export function App() {
       <h1 ref={title} tabIndex={-1}>Milo <span>apprend</span><span className="title-dot">.</span></h1>
       <p className="home-subtitle">De petits mots, de grandes découvertes !</p>
       <div className="hero-scene"><span className="hello-bubble">Salut {playerName} ! <span aria-hidden="true">✦</span></span><Character id={character.id} /><span className="scene-stone stone-one" /><span className="scene-stone stone-two" /></div>
-      <button ref={characterButton} className="character-picker-button" onClick={() => setScreen('characters')}>CHOISIR MON PERSONNAGE</button>
+      <button ref={characterButton} className="character-picker-button" onClick={() => { gameAudio.stop(); setScreen('characters'); }}>CHOISIR MON PERSONNAGE</button>
       {!characterSaved && <p className="save-note" role="status">Ton prénom et ton personnage restent choisis ici. La sauvegarde est indisponible.</p>}
       <button className="primary-button play-button" onClick={start} disabled={!availableCount}><span aria-hidden="true">▶</span> JOUER</button>
       {!availableCount && <p role="status">Aucun défi disponible pour le contenu autorisé.</p>}

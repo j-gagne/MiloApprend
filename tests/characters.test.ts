@@ -25,6 +25,15 @@ test('absent preference and old saves default to dinosaur without losing complet
   assert.deepEqual(createProgressStore(() => storage).load(), { completedSessions: 7, selectedCharacterId: 'dinosaur' });
 });
 
+test('all character voice profiles are moderate, distinct and independent of system voice names', () => {
+  for (const { voiceProfile } of characterCatalog) {
+    assert.ok(voiceProfile.pitch >= 0.8 && voiceProfile.pitch <= 1.2);
+    assert.ok(voiceProfile.rateMultiplier >= 0.95 && voiceProfile.rateMultiplier <= 1.05);
+    assert.deepEqual(Object.keys(voiceProfile).sort(), ['pitch', 'rateMultiplier']);
+  }
+  assert.equal(new Set(characterCatalog.map((c) => c.voiceProfile.pitch)).size, 5);
+});
+
 test('lion persists using the existing key through new store instances and completed sessions', () => {
   const storage = memory();
   const store = createProgressStore(() => storage);

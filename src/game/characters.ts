@@ -2,11 +2,11 @@ import type { SessionProgress } from './session-progress.ts';
 
 // Local visuals only. Replace a visual here without changing selection or persistence.
 export const characterCatalog = [
-  { id: 'dinosaur', name: 'Dinosaure', visual: { kind: 'dinosaur' } },
-  { id: 'lion', name: 'Lion', visual: { kind: 'emoji', value: '🦁' } },
-  { id: 'monkey', name: 'Singe', visual: { kind: 'emoji', value: '🐵' } },
-  { id: 'tiger', name: 'Tigre', visual: { kind: 'emoji', value: '🐯' } },
-  { id: 'unicorn', name: 'Licorne', visual: { kind: 'emoji', value: '🦄' } },
+  { id: 'dinosaur', name: 'Dinosaure', voiceProfile: { pitch: 0.9, rateMultiplier: 1 }, visual: { kind: 'dinosaur' } },
+  { id: 'lion', name: 'Lion', voiceProfile: { pitch: 0.8, rateMultiplier: 0.95 }, visual: { kind: 'emoji', value: '🦁' } },
+  { id: 'monkey', name: 'Singe', voiceProfile: { pitch: 1.15, rateMultiplier: 1.05 }, visual: { kind: 'emoji', value: '🐵' } },
+  { id: 'tiger', name: 'Tigre', voiceProfile: { pitch: 0.95, rateMultiplier: 1 }, visual: { kind: 'emoji', value: '🐯' } },
+  { id: 'unicorn', name: 'Licorne', voiceProfile: { pitch: 1.2, rateMultiplier: 1 }, visual: { kind: 'emoji', value: '🦄' } },
 ] as const;
 export type ChildCharacter = typeof characterCatalog[number];
 export type CharacterId = ChildCharacter['id'];
