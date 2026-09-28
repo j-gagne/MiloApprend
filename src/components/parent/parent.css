@@ -1,6 +1,6 @@
 ﻿.parents-link{font-size:14px;margin-top:16px;min-height:44px}
 .parent-answer{touch-action:none;user-select:none;-webkit-user-select:none}.parent-answer.dragging{opacity:.4}
-.parent-screen .parent-tabs{grid-template-columns:.85fr 1.3fr 1fr 1fr}.parent-tabs button{white-space:nowrap}
+.parent-screen .parent-tabs{grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}.parent-tabs button{white-space:nowrap}
 .parent-screen{width:100%;max-width:900px;margin:0 auto;padding:12px 0 32px;flex:1;line-height:1.5;overflow-wrap:anywhere}
 .parent-screen h1{font-size:28px;letter-spacing:-.7px}.parent-screen h2{font-size:23px;margin:16px 0 8px}.parent-screen h3{font-size:18px;margin:14px 0 8px}.parent-screen p{margin:8px 0}.parent-screen small{font-size:13px;color:#536950}
 .parent-screen button{min-height:44px;padding:10px 15px;border:1px solid #bfc9ad;border-radius:13px;background:#f9faef;font-weight:600;max-width:100%}.parent-screen button:disabled{opacity:.5}.parent-screen button.parent-primary{background:#ebba58;border-color:#c8963c}

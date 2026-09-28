@@ -78,7 +78,7 @@ export const seedBank: readonly SeedWeek[] = [
     letters: [ 'e', 's', 'v' ],
     syllables: [
       'sa', 'se', 'si', 'so',
-      'su', 'va', 've', 'vi',
+      'su', 'va', { id: 'syllable-ve', display: 've', audioText: 'vé' }, 'vi',
       'vo', 'vu', 'iv', 'os',
       'av', 'us', 'el', 'ol',
       'is', 'uv', 'as', 'ev'

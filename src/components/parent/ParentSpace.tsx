@@ -9,13 +9,14 @@ import { ActivityEditor } from './ActivityEditor';
 import { UnitEditor } from './UnitEditor';
 import { Programme } from './Programme';
 import { Exercises } from './Exercises';
+import { AudioTest } from './AudioTest';
 import { gameAudio } from '../../services/audio';
 import { READING_SPEEDS, DEFAULT_READING_SPEED, type ReadingSpeed } from '../../services/audio-settings';
 import { DEFAULT_GAME_MODE, DEFAULT_CHAIN_LENGTH, DEFAULT_QUESTION_COUNT } from '../../game/play-settings';
 
 interface Props { data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
   onExit: () => void; onDirtyChange: (dirty: boolean) => void }
-const tabs = ['Aperçu', 'Programme', 'Exercices', 'Réglages'] as const;
+const tabs = ['Aperçu', 'Programme', 'Exercices', 'Réglages', 'Test audio'] as const;
 type Tab = typeof tabs[number];
 interface Editing { activity: CompletionActivity; target: CompletionTarget }
 
@@ -77,6 +78,7 @@ export function ParentSpace({ data, service, warning, onChange, onExit, onDirtyC
       {tab === 'Exercices' && <Exercises program={program} data={data} activeWeek={service.activeWeek} onChange={onChange}
         onConstruct={(value) => { setUnit(value); setReturnToExercise(true); setDirty(false); setMessage(''); }}
         onEdit={(activity, target) => { setEditing({ activity, target }); setDirty(false); setMessage(''); }} />}
+      {tab === 'Test audio' && <AudioTest service={service} />}
       {tab === 'Réglages' && <section aria-label="Réglages parents"><h2>Réglages</h2>
         <section className="parent-card"><h3>Mode de jeu</h3>
           <label className="parent-scope-choice"><input type="radio" name="game-mode" checked={(data.gameMode ?? DEFAULT_GAME_MODE) === 'individual'}

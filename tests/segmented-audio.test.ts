@@ -19,6 +19,32 @@ for (const [id, segments, whole] of [
   assert.deepEqual(getSegmentedReading(initialProgram, target, target.segmentations[0], 5), { segments, whole });
 });
 
+test('VE keeps its visible spelling and explicitly requests vé for speech', () => {
+  const ve = initialProgram.units.find((u) => u.id === 'syllable-ve');
+  assert.ok(ve?.type === 'syllable');
+  assert.equal(ve.display, 've');
+  assert.equal(ve.audioText, 'vé');
+});
+
+test('OLIVE reads each referenced audioText then the unchanged whole word', () => {
+  const target = word('practice-olive');
+  const reading = getSegmentedReading(initialProgram, target, target.segmentations[0], 5);
+  assert.deepEqual(reading, { segments: ['o', 'li', 'vé'], whole: 'olive' });
+  assert.deepEqual(reading?.segments, ['letter-o', 'syllable-li', 'syllable-ve'].map(
+    (id) => initialProgram.units.find((u) => u.id === id)!.audioText));
+  assert.equal(reading?.whole, target.audioText);
+  const challenges = getCompleteWordChallenges().challenges.filter((c) => c.wordId === target.id);
+  assert.ok(challenges.length > 0);
+  for (const challenge of challenges) assert.equal(challenge.audioText, 'olive');
+});
+
+test('audio sequence forwards supplied text verbatim without a VE pronunciation mapping', async () => {
+  const spoken: string[] = [];
+  await new AudioSequence().play(['VE', 've', 'vé', 'olive'].map((text) => ({ text })),
+    async (step) => { spoken.push(step.text); });
+  assert.deepEqual(spoken, ['VE', 've', 'vé', 'olive']);
+});
+
 test('LAVAGE literal ge blocks segmented reading without creating units', () => {
   const data = chainParentData();
   const program = effectiveProgram(initialProgram, data);
