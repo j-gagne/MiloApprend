@@ -21,6 +21,7 @@ const texts = (page: Page) => page.evaluate(() => window.speechProbe.calls.map((
 
 for (const speed of ['normal', 'slow', 'fast'] as const) for (const [id, construction, mode, button, spoken] of [
   ['word-ami', 'ami = a + mi', 'Segmenté', 'Découpe', ['a', 'mi', 'ami']],
+  ['word-âne', 'âne = â + ne', 'Segmenté', 'Découpe', ['â', 'ne', 'âne']],
   ['word-vis', 'vis = vi + s', 'Mot complet lent', 'Lentement', ['vis']],
   ['practice-olive', 'olive = o + li + ve', 'Mot complet lent', 'Lentement', ['olive']],
 ] as const) test(`Parent ${id} ${speed}: native utterance, displayed and applied rates`, async ({ page }) => {
@@ -49,7 +50,7 @@ for (const speed of ['normal', 'slow', 'fast'] as const) for (const [id, constru
   const rates = await page.evaluate(() => (window as unknown as { audioRates: number[] }).audioRates);
   expect(rates[0]).toBeCloseTo(normal);
   const expected = slow;
-  for (const rate of rates.slice(1)) expect(rate).toBeCloseTo(expected);
+  for (const rate of rates.slice(1)) expect(rate).toBeCloseTo(expected, 5);
   await expect(page.getByTestId('audio-test-rates')).toContainText(`${button === 'Découpe' ? 'Découpe' : 'Lentement'} : ${expected.toFixed(2)}`);
   await expect(page.getByTestId('audio-test-final-rate')).toContainText(`TTS : ${expected.toFixed(2)}`);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

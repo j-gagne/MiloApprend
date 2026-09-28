@@ -78,7 +78,7 @@ export function App() {
     // pour iOS. Le cycle de vérification StrictMode précède ainsi cette lecture.
     flushSync(() => { setSession(nextSession); setScreen('game'); });
     const first = nextSession.challenges[0];
-    void gameAudio.playWord(first.audioText ?? first.word, first.audioSrc);
+    void gameAudio.playTarget(first.audioText ?? first.word, first.audioSrc, first.firstSegmentAudio);
   }
 
   return <div className="app-shell">

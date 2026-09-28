@@ -217,6 +217,15 @@ class GameAudio {
     return this.playSingle(text, src, this.getPlaybackRates().normal);
   }
 
+  playTarget(text: string, src?: string, firstSegment?: string): Promise<void> {
+    if (!firstSegment) return this.playWord(text, src);
+    this.stop();
+    if (!this.enabled) return Promise.resolve();
+    const rate = this.getPlaybackRates().normal;
+    return this.sequence.play([{ text: firstSegment }, { text: 'comme dans' }, { text, src }],
+      (step) => this.playSingle(step.text, step.src, rate));
+  }
+
   // Character personality is per utterance, never stored in pedagogical settings.
   speakCharacter(text: string, characterId: CharacterId): Promise<void> {
     this.stop();

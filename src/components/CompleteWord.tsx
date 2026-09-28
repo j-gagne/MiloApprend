@@ -52,7 +52,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
   useEffect(() => () => gameAudio.stop(), []);
   useEffect(() => {
     // Le premier mot est lancé directement depuis JOUER ; les suivants à l'affichage.
-    if (index > 0) void gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
+    if (index > 0) void gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
   }, [index, challenge]);
   useEffect(() => {
     if (!solved) return;
@@ -105,14 +105,14 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
         locked.current = true;
         updatePerformance(completeTarget(performanceRef.current));
         setSolved(true);
-        playback.current = gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
+        playback.current = gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
         gameAudio.success();
       }
     } else {
       updatePerformance(incorrectAttempt(performanceRef.current));
       setWrongAnswer(id);
       setAttempt((count) => count + 1);
-      void gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
+      void gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
     }
   }
 
@@ -153,7 +153,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
       </div>
       <div className={challenge.pedagogicalReading ? 'reading-actions' : undefined}>
       <button className="listen-button" disabled={!sound} aria-label={`Réécouter ${challenge.word}`} onClick={() => {
-        playback.current = gameAudio.playWord(challenge.audioText ?? challenge.word, challenge.audioSrc);
+        playback.current = gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
         setReplay((count) => count + 1);
       }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5ZM15 8q4 4 0 8M18 5q7 7 0 14" /></svg>{challenge.pedagogicalReading && <span>Mot</span>}</button>
       {challenge.pedagogicalReading && <button className="listen-button" disabled={!sound} aria-label={`${challenge.pedagogicalReading.mode === 'whole' ? 'Écouter lentement' : 'Découper'} ${challenge.word}`} onClick={() => {

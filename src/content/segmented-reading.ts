@@ -21,8 +21,23 @@ export function getPedagogicalReading(program: LearningProgram, target: Learning
 // Read the entire explicit construction, never just the missing slots or inferred syllables.
 export function getSegmentedReading(program: LearningProgram, target: LearningUnit, construction: Segmentation | undefined,
   week: number): SegmentedReading | null {
-  if (target.type !== 'word' || !construction || !isAvailable(program, target, week)
-    || validateSegmentation(program, target, construction, week).some((issue) => issue.severity === 'error')) return null;
+  if (target.type !== 'word' || !isAvailable(program, target, week)) return null;
+  if (target.readingSequence !== undefined) {
+    const segments: string[] = [];
+    for (const step of target.readingSequence) {
+      let text: string;
+      if ('unitId' in step) {
+        const unit = program.units.find((item) => item.id === step.unitId);
+        if (!unit || !isAvailable(program, unit, week)) return null;
+        text = unit.audioText;
+      } else text = step.text;
+      if (!text?.trim()) return null;
+      segments.push(text);
+    }
+    const whole = target.audioText?.trim() ? target.audioText : target.display;
+    return segments.length && whole?.trim() ? { segments, whole } : null;
+  }
+  if (!construction || validateSegmentation(program, target, construction, week).some((issue) => issue.severity === 'error')) return null;
   const segments: string[] = [];
   for (const block of construction.segments) {
     if ('unitId' in block) {

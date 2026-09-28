@@ -1,5 +1,6 @@
 import type { CompletionActivity, LearningUnit, PedagogicalSegment, Segmentation, Word } from '../content/model.ts';
-import type { ParentData, ParentWeek } from '../parent/model.ts';
+import type { AudioOverride, ParentData, ParentWeek } from '../parent/model.ts';
+import { isReadingSequence } from '../content/reading-sequence.ts';
 import { emptyParentData } from '../parent/model.ts';
 import type { ExerciseScope } from '../content/model.ts';
 import { READING_SPEEDS, type ReadingSpeed } from './audio-settings.ts';
@@ -45,6 +46,8 @@ function word(value: unknown): value is Word {
     && typeof value.enabled === 'boolean' && strings(value.tags) && value.tags.includes('practice')
     && Array.isArray(value.segmentations) && value.segmentations.every(segmentation)
     && value.completeWord === undefined
+    && (value.readingMode === undefined || value.readingMode === 'whole' || value.readingMode === 'segmented')
+    && (value.readingSequence === undefined || isReadingSequence(value.readingSequence))
     && (value.audioAsset == null || typeof value.audioAsset === 'string')
     && (value.imageAsset == null || (record(value.imageAsset) && typeof value.imageAsset.label === 'string'
       && (typeof value.imageAsset.emoji === 'string' || typeof value.imageAsset.src === 'string')));
@@ -92,6 +95,10 @@ export function parseParentData(raw: string): ParentData | undefined {
     || new Set(value.activities.map((item) => item.id)).size !== value.activities.length) return undefined;
   if (value.constructions !== undefined && (!record(value.constructions)
     || !Object.values(value.constructions).every((items) => Array.isArray(items) && items.every(segmentation)))) return undefined;
+  if (value.audioOverrides !== undefined && (!record(value.audioOverrides) || !Object.values(value.audioOverrides).every((audio) =>
+    record(audio) && typeof audio.audioText === 'string'
+    && (audio.readingMode === undefined || audio.readingMode === 'whole' || audio.readingMode === 'segmented')
+    && (audio.readingSequence == null || isReadingSequence(audio.readingSequence))))) return undefined;
   return { version: 2, activeWeek: value.activeWeek as number | undefined, unitEnabled: value.unitEnabled,
     ...(value.gameMode === undefined ? {} : { gameMode: value.gameMode as GameMode }),
     ...(value.chainLength === undefined ? {} : { chainLength: value.chainLength as ChainLength }),
@@ -99,6 +106,7 @@ export function parseParentData(raw: string): ParentData | undefined {
     ...(value.exerciseScope === undefined ? {} : { exerciseScope: value.exerciseScope as unknown as ExerciseScope }),
     ...(value.readingSpeed === undefined ? {} : { readingSpeed: value.readingSpeed as ReadingSpeed }),
     activityEnabled: value.activityEnabled, customUnits: units, customWeeks: weeks, activities: value.activities,
+    ...(value.audioOverrides === undefined ? {} : { audioOverrides: value.audioOverrides as Record<string, AudioOverride> }),
     ...(value.constructions === undefined ? {} : { constructions: value.constructions as Record<string, Segmentation[]> }) };
 }
 

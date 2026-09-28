@@ -397,6 +397,8 @@ export const seedBank: readonly SeedWeek[] = [
       },
       {
         id: 'word-âne',
+        readingMode: 'segmented',
+        readingSequence: [{ text: 'â' }, { unitId: 'syllable-ne' }],
         display: 'âne',
         segmentations: [
           {

@@ -33,7 +33,9 @@ for (const speed of ['normal', 'slow'] as const) for (const [id, word] of [['wor
     const normalRate = speed === 'normal' ? 0.60 : 0.45;
     const slowRate = speed === 'normal' ? 0.45 : 0.3375;
     for (const [index, expected] of [normalRate, slowRate, slowRate, normalRate].entries()) expect(rates[index]).toBeCloseTo(expected, 5);
-    expect(await page.evaluate(() => window.speechProbe.calls.map((c) => c.text))).toEqual([word, word, word, word]);
+    // This mock never ends speech: a first-slot normal hint stays on its first unit.
+    const normalFirst = word === 'vis' ? 'vi' : word;
+    expect(await page.evaluate(() => window.speechProbe.calls.map((c) => c.text))).toEqual([normalFirst, word, word, normalFirst]);
     await expect(page.getByRole('progressbar')).toHaveAttribute('value', '0');
     await expect(page.getByLabel('Étoiles : 0 sur 1')).toBeVisible();
     const beforeMute = await page.evaluate(() => window.speechProbe.cancels);

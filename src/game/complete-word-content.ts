@@ -10,8 +10,10 @@ import type { Challenge, CompletionSlot } from './complete-word.ts';
 import { activityToExercise, toCompletionBoard } from './completion-content.ts';
 import { activitySegmentation } from '../content/activity-segmentation.ts';
 import { getPedagogicalReading, type PedagogicalReading } from '../content/segmented-reading.ts';
+import { firstSegmentAudio } from './first-segment-audio.ts';
 
 export interface ContentChallenge extends Challenge {
+  readonly firstSegmentAudio?: string;
   readonly pedagogicalReading?: PedagogicalReading | null;
   readonly slots: readonly CompletionSlot[];
   readonly wordId: string;
@@ -36,6 +38,7 @@ export function wordToChallenge(service: ContentService, word: Word, variant: Co
     image: word.imageAsset && 'emoji' in word.imageAsset ? word.imageAsset
       : { emoji: '🖼️', label: word.imageAsset?.label ?? 'Illustration indisponible', src: word.imageAsset && 'src' in word.imageAsset ? word.imageAsset.src : undefined },
     audioSrc: word.audioAsset ?? undefined,
+    firstSegmentAudio: firstSegmentAudio(program, word, segmentation, board.slots.map((slot) => slot.segmentIndex), week),
     pedagogicalReading: getPedagogicalReading(program, word, segmentation, week),
   } };
 }
@@ -74,6 +77,7 @@ export function getCompleteWordChallenges(service: ContentService = contentServi
           label: asset?.label ?? (target.type === 'sentence' ? 'Une phrase à compléter' : 'Illustration indisponible'),
           src: asset && 'src' in asset ? asset.src : undefined },
       audioSrc: target.audioAsset ?? undefined,
+      firstSegmentAudio: firstSegmentAudio(program, target, activitySegmentation(program, activity), board.slots.map((slot) => slot.segmentIndex), week),
       pedagogicalReading: getPedagogicalReading(program, target, activitySegmentation(program, activity), week),
     });
   }

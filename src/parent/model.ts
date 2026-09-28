@@ -1,4 +1,4 @@
-import type { CompletionActivity, LearningProgram, LearningUnit, SchoolWeek, Segmentation } from '../content/model.ts';
+import type { CompletionActivity, LearningProgram, LearningUnit, SchoolWeek, Segmentation, Word } from '../content/model.ts';
 import { missingIndexes } from '../content/model.ts';
 import { parentActivities } from './activities.ts';
 import type { ExerciseScope } from '../content/model.ts';
@@ -6,6 +6,11 @@ import type { ReadingSpeed } from '../services/audio-settings.ts';
 import type { PlaySettings } from '../game/play-settings.ts';
 
 export interface ParentWeek extends SchoolWeek { readonly id: string }
+export interface AudioOverride {
+  readonly audioText: string;
+  readonly readingMode?: Word['readingMode'];
+  readonly readingSequence?: Word['readingSequence'] | null;
+}
 
 export interface ParentData extends PlaySettings {
   readonly version: 2;
@@ -18,6 +23,7 @@ export interface ParentData extends PlaySettings {
   readonly customWeeks: readonly ParentWeek[];
   readonly activities: readonly CompletionActivity[];
   readonly constructions?: Readonly<Record<string, readonly Segmentation[]>>;
+  readonly audioOverrides?: Readonly<Record<string, AudioOverride>>;
 }
 export function emptyParentData(): ParentData {
   return { version: 2, unitEnabled: {}, activityEnabled: {}, customUnits: [], customWeeks: [], activities: [] };
@@ -27,8 +33,14 @@ export function emptyParentData(): ParentData {
 export function effectiveProgram(seed: LearningProgram, parent: ParentData): LearningProgram {
   const units = [...seed.units, ...parent.customUnits.filter((unit) => !seed.units.some((item) => item.id === unit.id))]
     .map((original) => {
-      const unit = (original.type === 'word' || original.type === 'sentence') && parent.constructions?.[original.id]
-        ? { ...original, segmentations: parent.constructions[original.id] } : original;
+      const audio = parent.audioOverrides?.[original.id];
+      const voiced = !audio ? original : original.type === 'word'
+        ? { ...original, audioText: audio.audioText || original.display,
+          readingMode: audio.readingMode ?? original.readingMode,
+          readingSequence: audio.readingSequence === null ? undefined : audio.readingSequence ?? original.readingSequence }
+        : { ...original, audioText: audio.audioText || original.display };
+      const unit = (voiced.type === 'word' || voiced.type === 'sentence') && parent.constructions?.[original.id]
+        ? { ...voiced, segmentations: parent.constructions[original.id] } : voiced;
       const enabled = parent.unitEnabled[unit.id] ?? unit.enabled;
       if (unit.type !== 'word') return { ...unit, enabled };
       return { ...unit, enabled, completeWord: unit.completeWord?.map((variant) => ({ ...variant,
@@ -86,7 +98,10 @@ export function saveParentUnit(data: ParentData, program: LearningProgram, unit:
   const old = program.units.find((item) => item.id === unit.id);
   const custom = !old || data.customUnits.some((item) => item.id === unit.id);
   let next: ParentData = custom ? { ...data, customUnits: [...data.customUnits.filter((item) => item.id !== unit.id), unit] }
-    : { ...data, constructions: { ...data.constructions, [unit.id]: unit.type === 'word' || unit.type === 'sentence' ? unit.segmentations ?? [] : [] } };
+    : { ...data,
+      audioOverrides: { ...data.audioOverrides, [unit.id]: { audioText: unit.audioText,
+        ...(unit.type === 'word' ? { readingMode: unit.readingMode ?? 'segmented', readingSequence: unit.readingSequence ?? null } : {}) } },
+      ...((unit.type === 'word' || unit.type === 'sentence') ? { constructions: { ...data.constructions, [unit.id]: unit.segmentations ?? [] } } : {}) };
   if ((unit.type !== 'word' && unit.type !== 'sentence') || (old?.type !== 'word' && old?.type !== 'sentence')) return next;
   for (const activity of parentActivities(program).filter((item) => item.targetId === unit.id && item.segmentationId)) {
     const before = old.segmentations?.find((item) => item.id === activity.segmentationId);

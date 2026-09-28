@@ -8,6 +8,7 @@ import { effectiveProgram } from '../src/parent/model.ts';
 import { chainParentData } from './fixtures/chain-program.ts';
 import { AudioSequence, SEGMENT_PAUSE_MS, WHOLE_WORD_PAUSE_MS } from '../src/services/audio-sequence.ts';
 import type { Word } from '../src/content/model.ts';
+import { validateCompleteWordVariant } from '../src/content/validation.ts';
 
 const word = (id: string): Word => {
   const target = initialProgram.units.find((u) => u.id === id);
@@ -15,6 +16,7 @@ const word = (id: string): Word => {
 };
 for (const [id, segments, whole] of [
   ['word-ami', ['a', 'mi'], 'ami'], ['word-lama', ['la', 'ma'], 'lama'],
+  ['word-lune', ['lu', 'ne'], 'lune'],
 ] as const) test(`${whole}: entire explicit construction then whole word`, () => {
   const target = word(id);
   assert.deepEqual(getSegmentedReading(initialProgram, target, target.segmentations[0], 5), { segments, whole });
@@ -25,6 +27,43 @@ test('VE keeps its visible spelling and explicitly requests vé for speech', () 
   assert.ok(ve?.type === 'syllable');
   assert.equal(ve.display, 've');
   assert.equal(ve.audioText, 'vé');
+});
+
+test('ÂNE explicit audio preserves its construction and grants no exercise permissions', () => {
+  const target = word('word-âne');
+  const construction = target.segmentations[0];
+  assert.equal(target.readingMode, 'segmented');
+  assert.deepEqual(target.readingSequence, [{ text: 'â' }, { unitId: 'syllable-ne' }]);
+  assert.equal('literal' in construction.segments[0] && construction.segments[0].literal, 'â');
+  assert.deepEqual(construction.segments[1], { unitId: 'syllable-ne' });
+  assert.equal(initialProgram.units.some((u) => u.display === 'â'), false);
+  assert.deepEqual(getPedagogicalReading(initialProgram, target, undefined, 5), {
+    mode: 'segmented', segments: ['â', 'ne'], whole: 'âne',
+  });
+  const variant = target.completeWord![0];
+  assert.equal(variant.missingSegmentIndex, 1);
+  assert.ok(validateCompleteWordVariant(initialProgram, target, { ...variant, missingSegmentIndex: 0 }, 5)
+    .some((issue) => issue.severity === 'error'));
+  assert.ok(validateCompleteWordVariant(initialProgram, target, { ...variant, distractorUnitIds: ['â'] }, 5)
+    .some((issue) => issue.severity === 'error'));
+  const challenges = getCompleteWordChallenges().challenges.filter((c) => c.wordId === target.id);
+  assert.ok(challenges.length > 0);
+  for (const challenge of challenges) assert.deepEqual(challenge.pedagogicalReading, { mode: 'segmented', segments: ['â', 'ne'], whole: 'âne' });
+});
+
+test('explicit audio uses reference audioText, rejects unavailable/invalid steps and leaves whole mode unchanged', () => {
+  const target = word('word-âne');
+  const program = { ...initialProgram, units: initialProgram.units.map((u) => u.id === 'syllable-ne' ? { ...u, audioText: 'texte vocal test' } : u) };
+  assert.deepEqual(getSegmentedReading(program, target, undefined, 5)?.segments, ['â', 'texte vocal test']);
+  for (const readingSequence of [[], [{ text: ' ' }], [{ unitId: 'missing' }]]) {
+    assert.equal(getSegmentedReading(initialProgram, { ...target, readingSequence }, undefined, 5), null);
+  }
+  const disabled = { ...program, units: program.units.map((u) => u.id === 'syllable-ne' ? { ...u, enabled: false } : u) };
+  assert.equal(getSegmentedReading(disabled, target, undefined, 5), null);
+  for (const id of ['word-vis', 'practice-olive']) {
+    const whole = { ...word(id), readingSequence: [{ text: 'ignored' }] };
+    assert.deepEqual(getPedagogicalReading(initialProgram, whole, undefined, 5), { mode: 'whole', whole: whole.audioText });
+  }
 });
 
 test('OLIVE reads each referenced audioText then the unchanged whole word', () => {

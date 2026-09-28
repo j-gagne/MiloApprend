@@ -83,6 +83,8 @@ export type ImageAsset =
 export interface Word extends UnitBase {
   readonly type: 'word';
   readonly readingMode?: 'segmented' | 'whole';
+  // Audio instructions only: these texts never become exercise blocks or units.
+  readonly readingSequence?: readonly ({ readonly text: string } | { readonly unitId: string })[];
   readonly text: string;
   readonly segmentations: readonly Segmentation[];
   readonly imageAsset?: ImageAsset | null;

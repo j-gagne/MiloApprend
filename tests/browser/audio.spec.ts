@@ -81,6 +81,8 @@ test('réécoute prolonge la pause, muet arrête et empêche la voix', async ({ 
   expect(await page.evaluate(() => window.speechProbe.calls.length)).toBe(3);
   await page.getByRole('button', { name: 'Activer le son' }).tap();
   await page.getByRole('button', { name: 'Réécouter lama' }).tap();
+  expect(await page.evaluate(() => window.speechProbe.calls.at(-1)?.text)).toBe('la');
+  await page.clock.runFor(400);
   expect(await page.evaluate(() => window.speechProbe.calls.at(-1)?.text)).toBe('lama');
 });
 

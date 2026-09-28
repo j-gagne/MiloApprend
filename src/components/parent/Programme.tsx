@@ -51,6 +51,7 @@ export function Programme({ program, data, onChange, onEdit }: Props) {
         {units.filter((unit) => unit.type === type).map((unit) => <article className="parent-row" key={unit.id} aria-label={`Contenu ${unit.display}`}>
           <div><strong>{unit.display}</strong><p>Semaine {unit.introducedInWeek} · {data.customUnits.some((item) => item.id === unit.id) ? 'Parent / personnalisé' : unit.tags?.includes('practice') ? 'Entraînement initial' : 'École'}</p></div>
           <label><input type="checkbox" aria-label={`Activer ${unit.display}`} checked={unit.enabled} onChange={(event) => onChange({ ...data, unitEnabled: { ...data.unitEnabled, [unit.id]: event.target.checked } })} />Activé</label>
+          {!data.customUnits.some((item) => item.id === unit.id) && unit.type !== 'sentence' && <button onClick={() => onEdit(unit)}>Modifier la prononciation</button>}
           {(unit.type === 'word' || unit.type === 'sentence') && <div><small>{primaryConstruction(unit) ? 'Construction définie' : 'Aucune construction'}</small>
             {!data.customUnits.some((item) => item.id === unit.id) && <button onClick={() => onEdit(unit)}>{primaryConstruction(unit) ? 'Modifier la construction' : 'Définir la construction'}</button>}</div>}
           {data.customUnits.some((item) => item.id === unit.id) && <div className="parent-actions"><button onClick={() => onEdit(unit)}>Modifier {unit.display}</button>

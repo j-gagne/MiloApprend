@@ -15,7 +15,7 @@ async function setup(page: Page, mode: 'individual' | 'chain' = 'individual', en
   const data = { ...previous, gameMode: mode, questionCount: 6, readingSpeed: speed,
     customUnits: [ami, ...previous.customUnits], activities: [
       { id: 'parent-activity-audio-ami', type: 'complete-segments' as const, targetId: ami.id, segmentationId: 'initial',
-        missingSegmentIndexes: [0], distractorUnitIds: ['letter-i', 'letter-o'] }, ...previous.activities,
+        missingSegmentIndexes: [1], distractorUnitIds: ['syllable-ma', 'syllable-mu'] }, ...previous.activities,
     ].map((a, order) => ({ ...a, order })) };
   const settings = { ...data, activityEnabled: Object.fromEntries(automaticActivities(effectiveProgram(initialProgram, data), 6).map((a) => [a.id, false])) };
   await page.addInitScript((data) => localStorage.setItem('milo-apprend.parent.v1', JSON.stringify(data)), settings);
@@ -60,7 +60,7 @@ for (const speed of ['normal', 'slow'] as const) for (const mode of ['individual
   expect(await page.evaluate(() => (window as unknown as { sequenceRates: number[] }).sequenceRates.at(-1))).toBeCloseTo(normalRate);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/segmented-audio-${mode}.png` });
-  await choose(page, 'a'); await expect(page.getByLabel('Étoiles : 1 sur 4')).toBeVisible();
+  await choose(page, 'mi'); await expect(page.getByLabel('Étoiles : 1 sur 4')).toBeVisible();
   await page.clock.runFor(2100);
   await page.getByRole('button', { name: 'Découper lama', exact: true }).tap();
   await page.clock.runFor(1400);
@@ -92,7 +92,7 @@ test('double tap and normal replay replace a sequence, including during pauses',
 test('success and next target never resume old segments; leaving also cancels', async ({ page }) => {
   await setup(page, 'chain');
   await page.getByRole('button', { name: 'Découper ami', exact: true }).tap();
-  await choose(page, 'a');
+  await choose(page, 'mi');
   await page.clock.runFor(2100);
   await expect(page.getByRole('button', { name: 'Réécouter lama', exact: true })).toBeVisible();
   expect(await texts(page)).toEqual(['ami', 'a', 'ami', 'lama']);
@@ -119,5 +119,5 @@ test('missing end event stops the sequence through the existing watchdog', async
   await page.getByRole('button', { name: 'Découper ami', exact: true }).click();
   await page.clock.runFor(10000);
   expect(await texts(page)).toEqual(['ami', 'a']);
-  await expect(page.getByRole('button', { name: 'Choisir a', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Choisir mi', exact: true })).toBeEnabled();
 });

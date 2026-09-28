@@ -50,7 +50,7 @@ export function ParentSpace({ playerName, data, service, warning, onChange, onEx
     {message && <p role="status" className="parent-notice">{message}</p>}
     {editing ? <ActivityEditor key={editing.activity.id} program={program} {...editing} onDirty={() => setDirty(true)} onCancel={closeEditor}
       onSave={(activity) => saved(onChange(saveActivity(data, activity)))} />
-      : unit ? <UnitEditor key={unit.id} program={program} unit={unit}
+      : unit ? <UnitEditor key={unit.id} program={program} unit={unit} activeWeek={service.activeWeek}
         constructionOnly={program.units.some((item) => item.id === unit.id) && !data.customUnits.some((item) => item.id === unit.id)}
         onDirty={() => setDirty(true)} onCancel={closeEditor}
         onSave={(value) => {
