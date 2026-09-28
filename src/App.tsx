@@ -21,10 +21,14 @@ import { parentStore } from './services/parent-store';
 import { effectiveProgram, effectiveWeek } from './parent/model';
 import { ParentGate } from './components/parent/ParentGate';
 import { ParentSpace } from './components/parent/ParentSpace';
+import { parentDrafts } from './services/parent-drafts';
 import './components/parent/parent.css';
 
 export function App() {
-  const [screen, setScreen] = useState<'home' | 'game' | 'celebration' | 'gate' | 'parent' | 'characters'>('home');
+  const [screen, setScreen] = useState<'home' | 'game' | 'celebration' | 'gate' | 'parent' | 'characters'>(() => parentDrafts.navigation().active ? 'parent' : 'home');
+  useEffect(() => {
+    parentDrafts.navigate({ ...parentDrafts.navigation(), active: screen === 'parent' });
+  }, [screen]);
   const [parent, setParent] = useState(() => parentStore.load());
   const service = useMemo(() => createContentService(createContentRepository(effectiveProgram(initialProgram, parent.data)),
     effectiveWeek(initialProgram, parent.data, activeWeek), parent.data.exerciseScope), [parent.data]);

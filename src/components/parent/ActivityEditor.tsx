@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useDraftField } from './ParentDraft';
 import type { CompletionActivity, LearningProgram, CompletionTarget } from '../../content/model';
 import { missingIndexes } from '../../content/model';
 import { activitySegmentation } from '../../content/activity-segmentation';
@@ -14,8 +14,8 @@ import { ActivityPreview } from './ActivityPreview';
 interface Props { program: LearningProgram; activity: CompletionActivity; target: CompletionTarget;
   onSave: (activity: CompletionActivity) => void; onCancel: () => void; onDirty: () => void }
 export function ActivityEditor({ program, activity, target, onSave, onCancel, onDirty }: Props) {
-  const [draft, setDraft] = useState(activity);
-  const [search, setSearch] = useState('');
+  const [draft, setDraft] = useDraftField('activity', activity);
+  const [search, setSearch] = useDraftField('search', '');
   const segmentation = activitySegmentation(program, draft);
   const segments = segmentation?.segments ?? [];
   const week = draft.availableFromWeek ?? segmentation?.availableFromWeek ?? target.introducedInWeek;

@@ -32,3 +32,6 @@
 .reading-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:6px}.reading-actions .listen-button{position:static;width:auto;min-width:84px;min-height:48px;height:auto;padding:9px 13px;display:flex;gap:7px;font-size:15px;font-weight:700}
 
 .player-name{display:block;text-align:left;margin:22px auto 8px;max-width:360px;font-weight:700}.player-name input{display:block;width:100%;min-width:0;min-height:48px;margin-top:8px;padding:12px;border:2px solid var(--theme-selection-border,#bacfa6);border-radius:12px;font:inherit;font-size:18px;background:var(--theme-surface,#fffef7)}.character-picker form>.primary-button{margin:16px auto}.hello-bubble{max-width:95%;overflow-wrap:anywhere}
+/* Keep normal document scrolling and touch gestures; contain boundary overscroll. */
+html,body{overscroll-behavior-y:none}
+.choice-scroll{overscroll-behavior-y:contain}

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useDraftField } from './ParentDraft';
 import type { LearningProgram, LearningUnit } from '../../content/model';
 import { primaryConstruction, recoverPartialConstruction, replacePrimary, sentenceConstruction } from '../../content/construction';
 import { validateParentUnit } from '../../parent/content';
@@ -9,14 +9,14 @@ import { gameAudio } from '../../services/audio';
 interface Props { program: LearningProgram; unit: LearningUnit; activeWeek: number; constructionOnly?: boolean; onSave: (unit: LearningUnit) => void; onCancel: () => void; onDirty: () => void }
 export function UnitEditor({ program, unit, activeWeek, constructionOnly = false, onSave, onCancel, onDirty }: Props) {
   const recovery = unit.type === 'word' || unit.type === 'sentence' ? recoverPartialConstruction(program, unit) : undefined;
-  const [construction, setConstruction] = useState(recovery ?? primaryConstruction(unit));
-  const [text, setText] = useState(unit.display);
-  const [audio, setAudio] = useState(unit.audioText === unit.display ? '' : unit.audioText);
-  const [reading, setReading] = useState<ReadingConfig>(unit.type === 'word' ? { readingMode: unit.readingMode, readingSequence: unit.readingSequence } : {});
-  const [week, setWeek] = useState(unit.introducedInWeek);
+  const [construction, setConstruction] = useDraftField('construction', recovery ?? primaryConstruction(unit));
+  const [text, setText] = useDraftField('text', unit.display);
+  const [audio, setAudio] = useDraftField('audio', unit.audioText === unit.display ? '' : unit.audioText);
+  const [reading, setReading] = useDraftField<ReadingConfig>('reading', unit.type === 'word' ? { readingMode: unit.readingMode, readingSequence: unit.readingSequence } : {});
+  const [week, setWeek] = useDraftField('week', unit.introducedInWeek);
   const asset = unit.type === 'word' || unit.type === 'sentence' ? unit.imageAsset : undefined;
-  const [emoji, setEmoji] = useState(asset && 'emoji' in asset ? asset.emoji : '');
-  const [imageSrc, setImageSrc] = useState(asset && 'src' in asset ? asset.src : '');
+  const [emoji, setEmoji] = useDraftField('emoji', asset && 'emoji' in asset ? asset.emoji : '');
+  const [imageSrc, setImageSrc] = useDraftField('imageSrc', asset && 'src' in asset ? asset.src : '');
   const media = constructionOnly ? asset : imageSrc.trim() ? { src: imageSrc.trim(), label: text.trim() }
     : emoji.trim() ? { emoji: emoji.trim(), label: text.trim() } : null;
   const base = { ...unit, display: unit.type === 'sentence' ? text : text.trim(), audioText: audio.trim() || text.trim(), introducedInWeek: week };

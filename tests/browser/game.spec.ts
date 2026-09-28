@@ -43,7 +43,12 @@ test('partie tactile complète, erreur douce, annulation et sauvegarde', async (
   await expect(page.getByRole('heading', { name: 'Bravo Milo !' })).toBeVisible();
   await expect(page.getByRole('progressbar')).toHaveAttribute('value', '5');
   await expect(page.getByLabel('Étoiles : 4 sur 5')).toBeVisible();
-  expect(await page.evaluate(() => window.speechProbe.calls.map((call) => call.text))).toEqual(['lune', 'lune', 'lune', 'lama', 'lama', 'ami', 'ami', 'vélo', 'vélo', 'nid', 'nid']);
+  // Include the existing first-segment audio hints; the pedagogical audio engine is unchanged.
+  expect(await page.evaluate(() => window.speechProbe.calls.map((call) => call.text))).toEqual([
+    'lune', 'lune', 'lune', 'la', 'comme dans', 'lama', 'la', 'comme dans', 'lama',
+    'a', 'comme dans', 'ami', 'a', 'comme dans', 'ami', 'vélo', 'vélo',
+    'ni', 'comme dans', 'nid', 'ni', 'comme dans', 'nid',
+  ]);
   await page.screenshot({ path: 'test-results/celebration-mobile.png' });
   await page.reload();
   await expect(page.getByText('1 aventure terminée')).toBeVisible();

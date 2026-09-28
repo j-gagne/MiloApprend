@@ -1,10 +1,11 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CompletionActivity, LearningUnit, CompletionTarget } from '../../content/model';
 import type { ContentService } from '../../content/service';
 import { getCompleteWordChallenges } from '../../game/complete-word-content';
 import type { ParentData } from '../../parent/model';
 import { emptyParentData, saveActivity, saveParentUnit, newParentId } from '../../parent/model';
 import { primaryConstruction } from '../../content/construction';
+import { parentActivities } from '../../parent/activities';
 import { ActivityEditor } from './ActivityEditor';
 import { UnitEditor } from './UnitEditor';
 import { Programme } from './Programme';
@@ -14,17 +15,32 @@ import { gameAudio } from '../../services/audio';
 import { READING_SPEEDS, DEFAULT_READING_SPEED, type ReadingSpeed } from '../../services/audio-settings';
 import { DEFAULT_GAME_MODE, DEFAULT_CHAIN_LENGTH, DEFAULT_QUESTION_COUNT } from '../../game/play-settings';
 
+import { ParentDraft } from './ParentDraft';
+import { parentDrafts, parentTabs, draftIdentity, type ParentTab } from '../../services/parent-drafts';
+
 interface Props { playerName: string; data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
   onExit: () => void; onDirtyChange: (dirty: boolean) => void }
-const tabs = ['Aperçu', 'Programme', 'Exercices', 'Réglages', 'Test audio'] as const;
-type Tab = typeof tabs[number];
+const tabs = parentTabs;
+type Tab = ParentTab;
 interface Editing { activity: CompletionActivity; target: CompletionTarget }
 
 export function ParentSpace({ playerName, data, service, warning, onChange, onExit, onDirtyChange }: Props) {
-  const [tab, setTab] = useState<Tab>('Aperçu');
-  const [editing, setEditing] = useState<Editing>();
-  const [unit, setUnit] = useState<LearningUnit>();
-  const [returnToExercise, setReturnToExercise] = useState(false);
+  const [restored] = useState(() => {
+    const key = parentDrafts.navigation().editorKey;
+    const fields = key ? parentDrafts.load(key) : undefined;
+    const editor = fields?.$editor as { unit?: LearningUnit; editing?: Editing; returnToExercise?: boolean } | undefined;
+    if (editor?.unit && typeof editor.unit.id === 'string' && typeof editor.unit.display === 'string'
+      && key?.startsWith(`unit:${editor.unit.type}:`) && key.endsWith(`:${editor.unit.id}`)) return { ...editor, key };
+    if (editor?.editing?.activity?.id && editor.editing.target?.id
+      && key?.startsWith('exercise:') && key.endsWith(`:${editor.editing.activity.id}`)) return { ...editor, key };
+    return undefined;
+  });
+  const [tab, setTab] = useState<Tab>(() => parentDrafts.navigation().tab);
+  const [editing, setEditing] = useState<Editing | undefined>(restored?.editing);
+  const [unit, setUnit] = useState<LearningUnit | undefined>(restored?.unit);
+  const [returnToExercise, setReturnToExercise] = useState(restored?.returnToExercise ?? false);
+  const [draftKey, setDraftKey] = useState(restored?.key);
+  useEffect(() => { parentDrafts.navigate({ active: true, tab, editorKey: draftKey }); }, [tab, draftKey]);
   const [dirty, setDirtyState] = useState(false);
   useEffect(() => () => gameAudio.stop(), []);
   function setDirty(value: boolean) { setDirtyState(value); onDirtyChange(value); }
@@ -39,30 +55,36 @@ export function ParentSpace({ playerName, data, service, warning, onChange, onEx
   const challenges = useMemo(() => getCompleteWordChallenges(service).challenges, [service]);
   const words = service.getAvailableWords();
   function canLeave() { return !dirty || window.confirm('Quitter cet éditeur sans enregistrer les modifications ?'); }
-  function closeEditor() { if (canLeave()) { setEditing(undefined); setUnit(undefined); setDirty(false); } }
-  function navigate(next: Tab) { if (canLeave()) { setEditing(undefined); setUnit(undefined); setDirty(false); setTab(next); setMessage(''); } }
-  function saved(persisted: boolean) { setEditing(undefined); setUnit(undefined); setDirty(false); setMessage(persisted ? 'Modifications enregistrées.' : 'Modifications appliquées pour cette session seulement.'); }
+  function discard() { if (draftKey) parentDrafts.remove(draftKey); setDraftKey(undefined); }
+  function closeEditor() { if (canLeave()) { discard(); setEditing(undefined); setUnit(undefined); setDirty(false); } }
+  function navigate(next: Tab) { if (canLeave()) { setEditing(undefined); setUnit(undefined); setDirty(false); setDraftKey(undefined); setTab(next); setMessage(''); } }
+  function saved(persisted: boolean) {
+    if (!persisted) { setMessage('Sauvegarde impossible : le brouillon est conservé.'); return false; }
+    discard(); setEditing(undefined); setUnit(undefined); setDirty(false); setMessage('Modifications enregistrées.'); return true;
+  }
   return <main className="parent-screen">
     <div className="parent-heading"><h1>Espace parents</h1><button onClick={() => { if (canLeave()) onExit(); }}>Retour au jeu</button></div>
     <nav className="parent-tabs" aria-label="Sections parents">{tabs.map((item) => <button key={item}
       aria-current={tab === item ? 'page' : undefined} onClick={() => navigate(item)}>{item}</button>)}</nav>
     {warning && <p className="parent-errors" role="alert">{warning}</p>}
     {message && <p role="status" className="parent-notice">{message}</p>}
+    {(editing || unit) && draftKey ? <ParentDraft key={draftKey} id={draftKey} editor={{ unit, editing, returnToExercise }} onDirty={() => setDirty(true)}>
     {editing ? <ActivityEditor key={editing.activity.id} program={program} {...editing} onDirty={() => setDirty(true)} onCancel={closeEditor}
       onSave={(activity) => saved(onChange(saveActivity(data, activity)))} />
       : unit ? <UnitEditor key={unit.id} program={program} unit={unit} activeWeek={service.activeWeek}
         constructionOnly={program.units.some((item) => item.id === unit.id) && !data.customUnits.some((item) => item.id === unit.id)}
         onDirty={() => setDirty(true)} onCancel={closeEditor}
         onSave={(value) => {
-          saved(onChange(saveParentUnit(data, program, value)));
+          if (!saved(onChange(saveParentUnit(data, program, value)))) return;
           const construction = primaryConstruction(value);
           if (returnToExercise && construction && (value.type === 'word' || value.type === 'sentence')) {
-            setEditing({ target: value, activity: { id: newParentId('activity'), type: 'complete-segments', targetId: value.id,
+            const id = newParentId('activity'); setDraftKey(draftIdentity('exercise', id, false));
+            setEditing({ target: value, activity: { id, type: 'complete-segments', targetId: value.id,
               segmentationId: construction.id, availableFromWeek: construction.availableFromWeek ?? value.introducedInWeek,
               missingSegmentIndexes: [], distractorUnitIds: [] } });
           }
           setReturnToExercise(false);
-        }} /> : <>
+        }} /> : null}</ParentDraft> : <>
       {tab === 'Aperçu' && <section aria-label="Aperçu du programme"><h2>Le programme de {playerName}</h2>
         <p>Les disponibilités suivent la semaine choisie et vos activations.</p><dl className="parent-stats">
           {[
@@ -74,10 +96,10 @@ export function ParentSpace({ playerName, data, service, warning, onChange, onEx
           ].map(([label, count]) => <div key={label}><dt>{label}</dt><dd>{count}</dd></div>)}
         </dl><p>Les modifications restent sur ce navigateur. La progression de {playerName} est conservée séparément.</p>
       </section>}
-      {tab === 'Programme' && <Programme program={program} data={data} onChange={onChange} onEdit={(value) => { setUnit(value); setReturnToExercise(false); setDirty(false); setMessage(''); }} />}
+      {tab === 'Programme' && <Programme onDirtyChange={setDirty} program={program} data={data} onChange={onChange} onEdit={(value) => { setDraftKey(draftIdentity(`unit:${value.type}`, value.id, program.units.some((item) => item.id === value.id))); setUnit(value); setReturnToExercise(false); setDirty(false); setMessage(''); }} />}
       {tab === 'Exercices' && <Exercises program={program} data={data} activeWeek={service.activeWeek} onChange={onChange}
-        onConstruct={(value) => { setUnit(value); setReturnToExercise(true); setDirty(false); setMessage(''); }}
-        onEdit={(activity, target) => { setEditing({ activity, target }); setDirty(false); setMessage(''); }} />}
+        onConstruct={(value) => { setDraftKey(draftIdentity(`unit:${value.type}`, value.id, true)); setUnit(value); setReturnToExercise(true); setDirty(false); setMessage(''); }}
+        onEdit={(activity, target) => { setDraftKey(draftIdentity('exercise', activity.id, parentActivities(program).some((item) => item.id === activity.id))); setEditing({ activity, target }); setDirty(false); setMessage(''); }} />}
       {tab === 'Test audio' && <AudioTest service={service} />}
       {tab === 'Réglages' && <section aria-label="Réglages parents"><h2>Réglages</h2>
         <section className="parent-card"><h3>Mode de jeu</h3>

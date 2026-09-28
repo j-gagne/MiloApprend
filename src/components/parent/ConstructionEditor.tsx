@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useDraftField } from './ParentDraft';
 import type { LearningProgram, PedagogicalSegment, Segmentation, Word, Sentence } from '../../content/model';
 import { blockText, displayConstruction, unusedBlocks, moveBlock, sentenceConstruction } from '../../content/construction';
 import { comparableText } from '../../content/text';
@@ -8,12 +8,12 @@ import { newParentId } from '../../parent/model';
 
 interface Props { program: LearningProgram; target: Word | Sentence; construction?: Segmentation; onChange: (value?: Segmentation) => void }
 export function ConstructionEditor({ program, target, construction, onChange }: Props) {
-  const [editing, setEditing] = useState<number>();
-  const [type, setType] = useState('learned');
-  const [unitId, setUnitId] = useState('');
-  const [literal, setLiteral] = useState('');
-  const [search, setSearch] = useState('');
-  const [showUsed, setShowUsed] = useState(false);
+  const [editing, setEditing] = useDraftField<number | undefined>('block.editing', undefined);
+  const [type, setType] = useDraftField('block.type', 'learned');
+  const [unitId, setUnitId] = useDraftField('block.unitId', '');
+  const [literal, setLiteral] = useDraftField('block.literal', '');
+  const [search, setSearch] = useDraftField('block.search', '');
+  const [showUsed, setShowUsed] = useDraftField('block.showUsed', false);
   const blocks = construction?.segments ?? [];
   const allowed = unusedBlocks(program.units.filter((unit) => unit.id !== target.id && isAnswerUnit(unit)
     && isAvailable(program, unit, target.introducedInWeek)), blocks, editing, showUsed);
