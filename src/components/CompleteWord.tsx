@@ -117,7 +117,8 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
     }
   }
 
-  return <main className={`game-screen${sentence ? ' sentence-game' : ''}${spelling ? ' spell-game' : ''}`}>
+  return <main className={`game-screen${sentence ? ' sentence-game' : ''}${spelling ? ' spell-game' : ''}`}
+    onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
     <SessionProgress progress={performance} characterId={characterId} local={chain ? { total: chain.targets.length, completed: chain.completed.length + Number(solved) } : undefined} />
     <h1 ref={heading} tabIndex={-1}>{spelling ? 'Écris le mot' : sentence ? 'Complète la phrase' : challenge.targetType === 'syllable' ? 'Retrouve la syllabe' : 'Complète le mot'}</h1>
     <p className="instruction">{spelling ? 'Glisse chaque lettre dans sa case.' : multiple ? 'Glisse chaque morceau dans sa case.' : 'Glisse le bon morceau dans la case.'}</p>
@@ -137,7 +138,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
           const innerStyle = segmentStyle ? { ...segmentStyle, width: '100%' } : undefined;
           return <div key={`${challenge.id}-${segmentIndex}`} style={segmentStyle}
             ref={(element) => { if (element) targets.current.set(segmentIndex, element); else targets.current.delete(segmentIndex); }}>
-            {multiple && filled ? <AnswerTile text={filled} disabled={solved} retry={0}
+            {multiple && filled ? <AnswerTile text={filled} disabled={solved} retry={0} gestureKey={challenge.id}
               className={`${className} placed-tile`} style={innerStyle} label={`Retirer ${filled} de la case ${segmentIndex + 1}`}
               findTarget={findTarget} onHover={setHover} onTap={() => remove(segmentIndex)}
               onAnswer={(_, destination) => answer(placements[segmentIndex]!, destination, segmentIndex)} />
@@ -165,7 +166,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
       </div>
     </section>
     <div className={`answer-tray ${chain ? 'chain-bank ' : ''}${multiple || bank.length > 3 ? 'multiple-answers' : ''}`} aria-label="Morceaux disponibles" key={chain ? `chain-${chainIndex}` : challenge.id}>
-      {availableAnswers(bank, placements).map((choice) => <AnswerTile key={choice.id} text={choice.text} retry={wrongAnswer === choice.id ? attempt : 0} disabled={solved} findTarget={findTarget} onAnswer={(_, destination) => answer(choice.id, destination)} onHover={setHover} />)}
+      {availableAnswers(bank, placements).map((choice) => <AnswerTile key={choice.id} gestureKey={challenge.id} text={choice.text} retry={wrongAnswer === choice.id ? attempt : 0} disabled={solved} findTarget={findTarget} onAnswer={(_, destination) => answer(choice.id, destination)} onHover={setHover} />)}
     </div>
     <div className="game-companion"><Character id={characterId} happy={solved} /><p>{solved ? `Bien joué, ${playerName} !` : attempt ? 'Tu vas y arriver !' : 'On cherche ensemble !'}</p></div>
     <p className="tap-hint">{multiple ? 'Touche une case, puis un morceau. Touche un morceau placé pour le retirer.' : 'Tu peux aussi toucher un morceau.'}</p>

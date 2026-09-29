@@ -40,3 +40,6 @@ html,body{overscroll-behavior-y:none}
 .spell-game .word-segments>div,.spell-game .word-segments>.word-segment{flex:0 0 48px!important;min-width:48px!important}
 .spell-game .word-slot,.spell-game .word-segment{height:64px;font-size:30px!important;padding:0 4px!important}
 .spell-game .answer-tray{flex-wrap:wrap}
+
+/* Child gameplay only: prevent native selection/callout without blocking page scrolling. */
+.game-screen{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
