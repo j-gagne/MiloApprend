@@ -104,3 +104,13 @@ test('Lion uses the registered SVG and its own pastel egg palette', () => {
     assert.equal(lion.eggTheme.spots, '#d3b383');
   }
 });
+
+test('Unicorn uses the registered SVG and its own pastel egg palette', () => {
+  const unicorn = getCharacter('unicorn');
+  assert.deepEqual(unicorn.visual, { kind: 'svg', component: 'unicorn', happyExpression: true });
+  assert.ok('eggTheme' in unicorn);
+  if ('eggTheme' in unicorn) {
+    assert.equal(unicorn.eggTheme.shellBase, '#faf5ed');
+    assert.equal(unicorn.eggTheme.spots, '#b9a6cf');
+  }
+});

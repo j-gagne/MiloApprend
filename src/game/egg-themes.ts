@@ -14,3 +14,8 @@ export const lionEggTheme: EggTheme = {
   shellBase: '#fff5de', shellShade: '#eed8ac', shellStroke: '#d9bc8e', spots: '#d3b383',
   speckles: '#e8c896', interior: '#7d6246', cracks: '#a07a50', brokenStroke: '#ceb083', opening: '#b99161', accent: '#d8ad62',
 };
+
+export const unicornEggTheme: EggTheme = {
+  shellBase: '#faf5ed', shellShade: '#ded5e5', shellStroke: '#b8aabb', spots: '#b9a6cf',
+  speckles: '#dfb9c9', interior: '#706174', cracks: '#96829b', brokenStroke: '#b8aabb', opening: '#baa3b9', accent: '#d9bf83',
+};
