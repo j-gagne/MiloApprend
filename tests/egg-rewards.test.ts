@@ -42,7 +42,7 @@ test('sessions 1 through 5 persist once, including hatch before acknowledgement 
   }
   const hatches = store.load().eggRewards!.hatches;
   assert.equal(new Set(hatches.map(h => h.id)).size, 2);
-  assert.deepEqual(hatches.map(h => h.animalId), ['dinosaur', 'dinosaur']);
+  assert.deepEqual(hatches.map(h => h.animalId), ['rabbit', 'rabbit']);
   assert.ok(hatches.every(h => Number.isFinite(Date.parse(h.hatchedAt))));
 });
 
@@ -62,4 +62,26 @@ test('failed writes are retryable without duplicate reward or premature reset', 
   assert.equal(store.acknowledgeEgg('5').saved, true);
   assert.equal(store.load().eggRewards?.currentEgg.progress, 0);
   assert.equal(store.load().eggRewards?.hatches.length, 1);
+});
+
+
+test('animal freezes through character changes and the next egg uses the new selection', () => {
+  const { store, reload } = fixture();
+  store.save({ completedSessions: 0, selectedCharacterId: 'dinosaur' });
+  for (let n = 1; n <= 5; n++) {
+    const next = store.completeSession(`dino-${n}`);
+    assert.equal(next.progress.eggRewards!.currentEgg.pendingAnimalId, 'dinosaur');
+    if (n === 2) store.save({ ...store.load(), selectedCharacterId: 'rabbit' });
+    store.acknowledgeEgg(`dino-${n}`);
+  }
+  assert.equal(reload().load().eggRewards!.hatches[0].animalId, 'dinosaur');
+  assert.equal(reload().load().eggRewards!.currentEgg.pendingAnimalId, 'rabbit');
+  store.completeSession('rabbit-first');
+  assert.equal(store.load().eggRewards!.currentEgg.pendingAnimalId, 'rabbit');
+});
+
+test('old in-progress dinosaur egg stays dinosaur with a rabbit profile', () => {
+  const { store } = fixture();
+  store.save({ ...store.load(), eggRewards: { ...emptyEggRewards(), currentEgg: { ...emptyEggRewards().currentEgg, progress: 2 } } });
+  assert.equal(store.completeSession('old').progress.eggRewards!.currentEgg.pendingAnimalId, 'dinosaur');
 });

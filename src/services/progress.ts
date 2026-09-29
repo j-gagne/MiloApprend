@@ -35,7 +35,7 @@ export function createProgressStore(storage: () => KeyValueStorage): ProgressSto
   },
   completeSession(sessionId) {
     const progress = this.load();
-    const before = progress.eggRewards ?? emptyEggRewards();
+    const before = progress.eggRewards ?? emptyEggRewards(getCharacter(progress.selectedCharacterId).id);
     const after = advanceEgg(before, sessionId, new Date().toISOString());
     if (after === before) return { progress, saved: before.completedSessionIds.includes(sessionId) };
     const next = { ...progress, completedSessions: progress.completedSessions + 1, eggRewards: after };
@@ -44,7 +44,7 @@ export function createProgressStore(storage: () => KeyValueStorage): ProgressSto
   acknowledgeEgg(sessionId) {
     const progress = this.load();
     if (!progress.eggRewards) return { progress, saved: false };
-    const after = acknowledgeEgg(progress.eggRewards, sessionId);
+    const after = acknowledgeEgg(progress.eggRewards, sessionId, getCharacter(progress.selectedCharacterId).id);
     if (after === progress.eggRewards) return { progress, saved: !after.pendingTransition };
     const next = { ...progress, eggRewards: after };
     return { progress: next, saved: this.save(next) };

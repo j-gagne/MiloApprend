@@ -9,3 +9,4 @@
 @media(prefers-reduced-motion:reduce){.hatching-preview *, .hatching-preview *::before,.hatching-preview *::after{animation:none!important;transition:none!important}}
 .egg-opening{transform-origin:243px 180px;animation:opening-grow .6s ease-out}
 @keyframes opening-grow{from{transform:scale(.45)}to{transform:scale(1)}}
+.hatch-screen select{min-height:44px;font:inherit;padding:6px 10px;margin:8px;border:1px solid #bac5ac;border-radius:10px;background:#fffaf0;color:inherit}

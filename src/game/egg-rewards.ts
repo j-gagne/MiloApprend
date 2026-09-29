@@ -6,8 +6,8 @@ export interface EggRewards {
   hatches: HatchRecord[];
   pendingTransition?: { sessionId: string; progress: number; sessionsToHatch: number; animalId: string };
 }
-export function newEgg() { return { progress: 0, sessionsToHatch: SESSIONS_TO_HATCH, pendingAnimalId: 'dinosaur' }; }
-export function emptyEggRewards(): EggRewards { return { currentEgg: newEgg(), completedSessionIds: [], hatches: [] }; }
+export function newEgg(animalId = 'dinosaur') { return { progress: 0, sessionsToHatch: SESSIONS_TO_HATCH, pendingAnimalId: animalId }; }
+export function emptyEggRewards(animalId = 'dinosaur'): EggRewards { return { currentEgg: newEgg(animalId), completedSessionIds: [], hatches: [] }; }
 export function advanceEgg(state: EggRewards, sessionId: string, now: string): EggRewards {
   if (state.completedSessionIds.includes(sessionId)) return state;
   // The UI must acknowledge the previous transition before starting another session.
@@ -19,11 +19,11 @@ export function advanceEgg(state: EggRewards, sessionId: string, now: string): E
     hatches: hatch ? [...state.hatches, hatch] : state.hatches,
     pendingTransition: { sessionId, progress: currentEgg.progress, sessionsToHatch: currentEgg.sessionsToHatch, animalId: currentEgg.pendingAnimalId } };
 }
-export function acknowledgeEgg(state: EggRewards, sessionId: string): EggRewards {
+export function acknowledgeEgg(state: EggRewards, sessionId: string, nextAnimalId = 'dinosaur'): EggRewards {
   if (state.pendingTransition?.sessionId !== sessionId) return state;
   const { pendingTransition: _pending, ...acknowledged } = state;
   return { ...acknowledged,
-    currentEgg: state.currentEgg.progress === state.currentEgg.sessionsToHatch ? newEgg() : state.currentEgg };
+    currentEgg: state.currentEgg.progress === state.currentEgg.sessionsToHatch ? newEgg(nextAnimalId) : state.currentEgg };
 }
 // Five approved artwork states, independently of the configurable session threshold.
 export function eggVisualStage(progress: number, total: number): 1 | 2 | 3 | 4 | 5 {

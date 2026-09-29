@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import { characterCatalog, getCharacter, characterPosition } from '../src/game/characters.ts';
 import { createProgressStore } from '../src/services/progress.ts';
@@ -72,7 +72,7 @@ test('position uses completed targets only, independently of stars', () => {
 test('rabbit shares the catalogue and persistence mechanisms; existing profiles remain compatible', () => {
   const rabbit = getCharacter('rabbit');
   assert.equal(rabbit.name, 'Lapin');
-  assert.deepEqual(rabbit.visual, { kind: 'emoji', value: '\u{1F430}' });
+  assert.deepEqual(rabbit.visual, { kind: 'svg', component: 'rabbit', happyExpression: true });
   assert.deepEqual(rabbit.voiceProfile, { pitch: 1.1, rateMultiplier: 0.98 });
   for (const character of characterCatalog) {
     const storage = memory();
@@ -81,5 +81,16 @@ test('rabbit shares the catalogue and persistence mechanisms; existing profiles 
     assert.equal(store.load().selectedCharacterId, character.id);
     store.save({ ...store.load(), completedSessions: 8 });
     assert.deepEqual(createProgressStore(() => storage).load(), { completedSessions: 8, selectedCharacterId: character.id });
+  }
+});
+
+
+test('both production SVGs resolve through visual keys and distinct egg themes', () => {
+  const dinosaur = getCharacter('dinosaur'), rabbit = getCharacter('rabbit');
+  assert.equal(dinosaur.visual.kind, 'svg'); assert.equal(rabbit.visual.kind, 'svg');
+  assert.ok('eggTheme' in dinosaur && 'eggTheme' in rabbit);
+  if ('eggTheme' in dinosaur && 'eggTheme' in rabbit) {
+    assert.deepEqual(dinosaur.eggTheme, { shellBase: '#fff5d9', shellShade: '#edcd91', shellStroke: '#e4c895', spots: '#adc69b', speckles: '#eccb90', interior: '#785232', cracks: '#936136', brokenStroke: '#ddbb83', opening: '#c18b50', accent: '#e9b853' });
+    assert.equal(rabbit.eggTheme.shellBase, '#fff8eb'); assert.equal(rabbit.eggTheme.spots, '#bdb3a8'); assert.equal(rabbit.eggTheme.accent, '#dca5b4');
   }
 });
