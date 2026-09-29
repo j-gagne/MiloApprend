@@ -45,10 +45,49 @@ test('five sessions, mistakes allowed, saved hatch before CONTINUER, refresh and
     await expect(page.getByRole('button', { name: 'JOUER', exact: true })).toBeVisible();
     await expect(page.locator('.challenge-card')).toHaveCount(0);
     expect((await stored(page)).eggRewards!.currentEgg.progress).toBe(n === 5 ? 0 : n);
+    await expect(page.getByRole('button', { name: 'CHOISIR MON PERSONNAGE' })).toHaveCount(n === 5 ? 1 : 0);
   }
+  await page.getByRole('button', { name: 'CHOISIR MON PERSONNAGE' }).tap();
+  await page.getByRole('button', { name: 'Licorne', exact: true }).tap();
+  await page.getByRole('button', { name: 'Continuer', exact: true }).tap();
+  expect((await stored(page)).eggRewards!.currentEgg).toMatchObject({ progress: 0, pendingAnimalId: 'unicorn' });
   await finish(page);
   expect((await stored(page)).eggRewards!.currentEgg.progress).toBe(1);
+  expect((await stored(page)).eggRewards!.currentEgg.pendingAnimalId).toBe('unicorn');
   expect((await stored(page)).eggRewards!.hatches).toHaveLength(1);
+});
+
+test('character choice follows persisted egg progress, including an abandoned first session', async ({ page }) => {
+  await setup(page);
+  const choice = page.getByRole('button', { name: 'CHOISIR MON PERSONNAGE' });
+  async function choose(name: string) {
+    await choice.tap();
+    await page.getByRole('button', { name, exact: true }).tap();
+    await page.getByRole('button', { name: 'Continuer', exact: true }).tap();
+  }
+  await expect(choice).toBeVisible();
+  await choose('Lapin');
+  await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
+  await page.getByRole('button', { name: 'Milo apprend, accueil' }).tap();
+  await choose('Licorne');
+  expect((await stored(page)).eggRewards!.currentEgg).toMatchObject({ progress: 0, pendingAnimalId: 'unicorn' });
+  await page.reload();
+  await expect(choice).toBeVisible();
+  expect((await stored(page)).selectedCharacterId).toBe('unicorn');
+  await finish(page);
+  expect((await stored(page)).eggRewards!.currentEgg).toMatchObject({ progress: 1, pendingAnimalId: 'unicorn' });
+  await page.getByRole('button', { name: 'Milo apprend, accueil' }).tap();
+  await expect(choice).toHaveCount(0);
+  await page.reload();
+  await expect(choice).toHaveCount(0);
+  await page.getByRole('button', { name: 'CONTINUER', exact: true }).tap();
+  await expect(choice).toHaveCount(0);
+  await page.reload();
+  await expect(choice).toHaveCount(0);
+  await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
+  await page.getByRole('button', { name: 'Milo apprend, accueil' }).tap();
+  await expect(choice).toHaveCount(0);
+  expect((await stored(page)).eggRewards!.currentEgg.pendingAnimalId).toBe('unicorn');
 });
 
 test('refresh from results resumes pending transition; preview leaves actual rewards intact', async ({ page }) => {

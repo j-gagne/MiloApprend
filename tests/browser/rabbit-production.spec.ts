@@ -32,7 +32,7 @@ async function checkEgg(page: Page, animal: string, stage: number) {
   expect((await state(page)).eggRewards!.currentEgg.pendingAnimalId).toBe(animal);
 }
 
-test('real Rabbit stages 1–5 persist, match preview and survive switching to Dinosaur at 3/5', async ({ page }) => {
+test('real Rabbit stages 1–5 persist, match preview and allow switching only for the next egg', async ({ page }) => {
   await setup(page); await select(page, 'Lapin');
   const images = new Map<number, Buffer>();
   for (let n = 1; n <= 5; n++) {
@@ -48,8 +48,10 @@ test('real Rabbit stages 1–5 persist, match preview and survive switching to D
     await page.reload(); await checkEgg(page, 'rabbit', n);
     expect(await state(page)).toEqual(saved);
     await page.getByRole('button', { name: 'CONTINUER', exact: false }).tap();
-    if (n === 3) await select(page, 'Dinosaure');
+    await expect(page.getByRole('button', { name: 'CHOISIR MON PERSONNAGE' })).toHaveCount(n === 5 ? 1 : 0);
   }
+  expect((await state(page)).eggRewards!.currentEgg).toMatchObject({ pendingAnimalId: 'rabbit', progress: 0 });
+  await select(page, 'Dinosaure');
   const rewards = (await state(page)).eggRewards!;
   expect(rewards.hatches[0].animalId).toBe('rabbit');
   expect(rewards.currentEgg).toMatchObject({ pendingAnimalId: 'dinosaur', progress: 0 });
