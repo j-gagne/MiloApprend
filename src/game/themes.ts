@@ -1,4 +1,4 @@
-// Exact decorative colors from the original dinosaur UI. Feedback/focus colors stay in CSS.
+// Exact decorative colors from the original dinosaur UI. Success tokens preserve the original dinosaur feedback; focus stays in CSS.
 export const dinosaurTheme = {
   text: '#284c43', background: '#f8f6eb', primary: '#628859',
   surface: '#fffef7', 'surface-soft': '#eef0e3', 'brand-soft': '#e1e9cc',
@@ -15,6 +15,9 @@ export const dinosaurTheme = {
   'tile-two': '#dfebcf', 'tile-two-edge': '#9db487',
   'tile-three': '#f2d8c9', 'tile-three-border': '#e1bbaa', 'tile-three-edge': '#c69f8e',
   'drag-surface': '#f5dc9f',
+  'success-bg': '#dcecc8', 'success-border': '#95b472', 'success-text': '#365632',
+  'success-surface': '#f0f7e6', 'success-surface-border': '#a8bd8a',
+  'success-feedback': '#607753', 'success-word': '#284c43',
 } as const;
 export type ThemePalette = { readonly [K in keyof typeof dinosaurTheme]: string };
 interface ThemeColors {
@@ -24,6 +27,9 @@ interface ThemeColors {
 }
 function palette(c: ThemeColors): ThemePalette {
   return { ...dinosaurTheme,
+    'success-bg': c.soft, 'success-border': c.primary, 'success-text': c.text,
+    'success-surface': c.surface, 'success-surface-border': c.primary,
+    'success-feedback': c.text, 'success-word': c.text,
     text: c.text, background: c.background, primary: c.primary, surface: c.surface, 'surface-soft': c.soft,
     'brand-soft': c.soft, border: c.border, 'card-border': c.border, 'bubble-border': c.border,
     'sound-surface': c.surface, 'sound-border': c.border, muted: c.muted, eyebrow: c.muted,

@@ -43,3 +43,23 @@ test('rabbit has a pink palette distinct from lavender unicorn', () => {
   assert.equal(themes.rabbit.accent, '#eeadc3');
   assert.notDeepEqual(themes.rabbit, themes.unicorn);
 });
+
+test('success palettes are complete, readable and preserve Dinosaur exactly', () => {
+  assert.deepEqual(Object.fromEntries(Object.entries(dinosaurTheme).filter(([key]) => key.startsWith('success-'))), {
+    'success-bg': '#dcecc8', 'success-border': '#95b472', 'success-text': '#365632',
+    'success-surface': '#f0f7e6', 'success-surface-border': '#a8bd8a',
+    'success-feedback': '#607753', 'success-word': '#284c43',
+  });
+  for (const { id, theme } of characterCatalog) {
+    assert.equal(themeVariables(theme)['--theme-success-bg'], theme['success-bg']);
+    assert.ok(contrast(theme['success-text'], theme['success-bg']) >= 4.5, id);
+    // Preserve the approved Dinosaur baseline; new palettes meet 4.5:1.
+    const feedbackMinimum = id === 'dinosaur' ? contrast('#607753', '#f0f7e6') : 4.5;
+    assert.ok(contrast(theme['success-feedback'], theme['success-surface']) >= feedbackMinimum, id);
+    assert.ok(contrast(theme['success-word'], theme['success-surface']) >= 4.5, id);
+    if (id !== 'dinosaur') {
+      assert.notEqual(theme['success-bg'], dinosaurTheme['success-bg']);
+      assert.ok(contrast(theme['success-border'], theme['success-bg']) >= 3, id);
+    }
+  }
+});
