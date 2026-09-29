@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Activity, LearningUnit, CompletionTarget } from '../../content/model';
+import type { Activity, LearningUnit, CompletionTarget, LearningProgram } from '../../content/model';
 import type { ContentService } from '../../content/service';
 import { getCompleteWordChallenges } from '../../game/complete-word-content';
 import type { ParentData } from '../../parent/model';
@@ -18,13 +18,13 @@ import { DEFAULT_GAME_MODE, DEFAULT_CHAIN_LENGTH, DEFAULT_QUESTION_COUNT } from 
 import { ParentDraft } from './ParentDraft';
 import { parentDrafts, parentTabs, draftIdentity, type ParentTab } from '../../services/parent-drafts';
 
-interface Props { playerName: string; data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
+interface Props { baseProgram: LearningProgram; playerName: string; data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
   onExit: () => void; onDirtyChange: (dirty: boolean) => void }
 const tabs = parentTabs;
 type Tab = ParentTab;
 interface Editing { activity: Activity; target: CompletionTarget }
 
-export function ParentSpace({ playerName, data, service, warning, onChange, onExit, onDirtyChange }: Props) {
+export function ParentSpace({ baseProgram, playerName, data, service, warning, onChange, onExit, onDirtyChange }: Props) {
   const [restored] = useState(() => {
     const key = parentDrafts.navigation().editorKey;
     const fields = key ? parentDrafts.load(key) : undefined;
@@ -97,7 +97,7 @@ export function ParentSpace({ playerName, data, service, warning, onChange, onEx
         </dl><p>Les modifications restent sur ce navigateur. La progression de {playerName} est conservée séparément.</p>
       </section>}
       {tab === 'Programme' && <Programme onDirtyChange={setDirty} program={program} data={data} onChange={onChange} onEdit={(value) => { setDraftKey(draftIdentity(`unit:${value.type}`, value.id, program.units.some((item) => item.id === value.id))); setUnit(value); setReturnToExercise(false); setDirty(false); setMessage(''); }} />}
-      {tab === 'Exercices' && <Exercises program={program} data={data} activeWeek={service.activeWeek} onChange={onChange}
+      {tab === 'Exercices' && <Exercises baseProgram={baseProgram} program={program} data={data} activeWeek={service.activeWeek} onChange={onChange}
         onConstruct={(value) => { setDraftKey(draftIdentity(`unit:${value.type}`, value.id, true)); setUnit(value); setReturnToExercise(true); setDirty(false); setMessage(''); }}
         onEdit={(activity, target) => { setDraftKey(draftIdentity('exercise', activity.id, parentActivities(program).some((item) => item.id === activity.id))); setEditing({ activity, target }); setDirty(false); setMessage(''); }} />}
       {tab === 'Test audio' && <AudioTest service={service} />}

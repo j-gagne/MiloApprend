@@ -3,12 +3,19 @@ import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { HatchingPreview } from './components/HatchingPreview';
 import './styles.css';
-import { contentService } from './content/service';
+import { loadBaseProgram } from './content/remote-program';
+import { createContentService } from './content/service';
+import { createContentRepository } from './content/repository';
 
-// Avertissements structurés réutilisables par un futur espace Parent, sans écran bloquant.
-for (const issue of contentService.validate()) {
-  console.warn(`[contenu:${issue.severity}:${issue.code}] ${issue.path} : ${issue.message}`);
-}
-
+const root = ReactDOM.createRoot(document.getElementById('root')!);
 const hatchingPreview = new URLSearchParams(window.location.search).get('preview') === 'hatching';
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode>{hatchingPreview ? <HatchingPreview /> : <App />}</React.StrictMode>);
+if (hatchingPreview) root.render(<React.StrictMode><HatchingPreview /></React.StrictMode>);
+else {
+  root.render(<main className="home-screen"><p role="status">Un petit instant…</p></main>);
+  void loadBaseProgram().then(baseProgram => {
+    for (const issue of createContentService(createContentRepository(baseProgram)).validate()) {
+      console.warn(`[contenu:${issue.severity}:${issue.code}] ${issue.path} : ${issue.message}`);
+    }
+    root.render(<React.StrictMode><App baseProgram={baseProgram} /></React.StrictMode>);
+  });
+}

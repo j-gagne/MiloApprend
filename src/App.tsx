@@ -19,6 +19,7 @@ import { getCompleteWordChallenges } from './game/complete-word-content';
 import { createContentRepository } from './content/repository';
 import { createContentService } from './content/service';
 import { initialProgram } from './content/program';
+import type { LearningProgram } from './content/model';
 import { activeWeek } from './content/settings';
 import { parentStore } from './services/parent-store';
 import { effectiveProgram, effectiveWeek } from './parent/model';
@@ -27,15 +28,15 @@ import { ParentSpace } from './components/parent/ParentSpace';
 import { parentDrafts } from './services/parent-drafts';
 import './components/parent/parent.css';
 
-export function App() {
+export function App({ baseProgram = initialProgram }: { baseProgram?: LearningProgram }) {
   const [progress, setProgress] = useState(() => progressStore.load());
   const [screen, setScreen] = useState<'home' | 'game' | 'celebration' | 'egg' | 'gate' | 'parent' | 'characters' | 'collection'>(() => progress.eggRewards?.pendingTransition ? 'egg' : parentDrafts.navigation().active ? 'parent' : 'home');
   useEffect(() => {
     parentDrafts.navigate({ ...parentDrafts.navigation(), active: screen === 'parent' });
   }, [screen]);
   const [parent, setParent] = useState(() => parentStore.load());
-  const service = useMemo(() => createContentService(createContentRepository(effectiveProgram(initialProgram, parent.data)),
-    effectiveWeek(initialProgram, parent.data, activeWeek), parent.data.exerciseScope), [parent.data]);
+  const service = useMemo(() => createContentService(createContentRepository(effectiveProgram(baseProgram, parent.data)),
+    effectiveWeek(baseProgram, parent.data, activeWeek), parent.data.exerciseScope), [baseProgram, parent.data]);
   const availableCount = useMemo(() => Math.min(parent.data.questionCount ?? DEFAULT_QUESTION_COUNT,
     new Set(getCompleteWordChallenges(service).challenges.filter((challenge) => service.exerciseScope.mode === 'all'
       || service.exerciseScope.selectedWeeks.includes(challenge.introducedInWeek)).map((challenge) => challenge.word)).size), [service, parent.data.questionCount]);
@@ -167,7 +168,7 @@ export function App() {
     {screen === 'characters' && canChooseCharacter && <CharacterPicker playerName={playerName} selected={character.id} onPreview={setPreviewCharacter} onSelect={selectCharacter} onClose={closeCharacters} />}
     {screen === 'game' && <CompleteWord audioSessionId={sessionId.current} playerName={playerName} onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}
     {screen === 'gate' && <ParentGate onOpen={() => setScreen('parent')} onCancel={() => setScreen('home')} />}
-    {screen === 'parent' && <ParentSpace playerName={playerName} data={parent.data} service={service} warning={parent.warning}
+    {screen === 'parent' && <ParentSpace baseProgram={baseProgram} playerName={playerName} data={parent.data} service={service} warning={parent.warning}
       onDirtyChange={(dirty) => { parentDirty.current = dirty; }}
       onExit={() => { parentDirty.current = false; setScreen('home'); }} onChange={(data) => {
         const saved = parentStore.save(data);

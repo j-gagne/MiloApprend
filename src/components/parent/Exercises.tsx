@@ -6,22 +6,21 @@ import { validateCompletionActivity } from '../../content/validation';
 import { parentActivities, segmentText } from '../../parent/activities';
 import { duplicateActivity, newParentId, removeCustomActivity } from '../../parent/model';
 import type { ParentData } from '../../parent/model';
-import { initialProgram } from '../../content/program';
 import { primaryConstruction } from '../../content/construction';
 import { activityCatalog, isAutomatic, isCompletionTarget } from '../../content/activity-catalog';
 import type { CompletionTarget } from '../../content/model';
 import { letterPositions, newSpellActivity } from '../../content/spelling';
 
-interface Props { program: LearningProgram; data: ParentData; activeWeek: number; onChange: (data: ParentData) => boolean;
+interface Props { baseProgram: LearningProgram; program: LearningProgram; data: ParentData; activeWeek: number; onChange: (data: ParentData) => boolean;
   onConstruct: (target: Word | Sentence) => void;
   onEdit: (activity: Activity, target: CompletionTarget) => void }
-export function Exercises({ program, data, activeWeek, onChange, onEdit, onConstruct }: Props) {
+export function Exercises({ baseProgram, program, data, activeWeek, onChange, onEdit, onConstruct }: Props) {
   const [adding, setAdding] = useState(false);
   const [kind, setKind] = useState<'complete-segments' | 'spell'>('complete-segments');
   const [targetId, setTargetId] = useState('');
   const [search, setSearch] = useState('');
   const activities = activityCatalog(program, activeWeek, true);
-  const seedIds = new Set(parentActivities(initialProgram).map((item) => item.id));
+  const seedIds = new Set(parentActivities(baseProgram).map((item) => item.id));
   const target = program.units.find((unit) => unit.id === targetId);
   return <section aria-label="Exercices pédagogiques"><h2>Exercices</h2>
     <button className="parent-primary" onClick={() => setAdding(!adding)}>+ Nouvel exercice</button>
@@ -70,7 +69,7 @@ export function Exercises({ program, data, activeWeek, onChange, onEdit, onConst
               onChange={(event) => onChange({ ...data, activityEnabled: { ...data.activityEnabled, [activity.id]: event.target.checked } })} />Activé</label>
               <button onClick={() => onEdit(automatic ? duplicateActivity(activity) : activity, unit)}>{automatic ? 'Personnaliser l’exercice' : 'Modifier l’exercice'}</button>
               <button onClick={() => onEdit(duplicateActivity(activity), unit)}>Dupliquer l’exercice</button>
-              {custom && <button onClick={() => { if (window.confirm(`Supprimer cet exercice de « ${unit.display} » ? Le mot sera conservé.`)) onChange(removeCustomActivity(data, initialProgram, activity.id)); }}>Supprimer l’exercice</button>}
+              {custom && <button onClick={() => { if (window.confirm(`Supprimer cet exercice de « ${unit.display} » ? Le mot sera conservé.`)) onChange(removeCustomActivity(data, baseProgram, activity.id)); }}>Supprimer l’exercice</button>}
             </div>
           </article>;
         })}
