@@ -36,14 +36,14 @@ test('diagnostic uniquement avec debugAudio=1 ; les boutons parlent dans le hand
   }
 });
 
-test('liste vide puis voix tardives ; aucune voix française : pas de fr-CA inventée', async ({ page }) => {
+test('liste vide puis voix tardives : repli par langue sans inventer de voix', async ({ page }) => {
   await mockSpeech(page, []);
   await page.goto('/?debugAudio=1');
   await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
   const panel = page.getByRole('region', { name: 'Diagnostic audio' });
   await page.getByRole('button', { name: 'TEST VOIX FR', exact: true }).tap();
-  await expect(panel).toContainText('no-french-voice');
-  expect(await page.evaluate(() => window.speechProbe.calls.length)).toBe(0);
+  await expect(panel).toContainText('repli lang=fr-CA');
+  expect(await page.evaluate(() => window.speechProbe.calls.length)).toBe(2);
   await page.evaluate(() => {
     window.speechProbe.languages = ['en-US'];
     window.speechSynthesis.dispatchEvent(new Event('voiceschanged'));
@@ -56,7 +56,7 @@ test('liste vide puis voix tardives ; aucune voix française : pas de fr-CA inve
     window.speechSynthesis.dispatchEvent(new Event('voiceschanged'));
   });
   await expect(panel).toContainText('Voix fr-BE — fr-BE');
-  expect(await page.evaluate(() => window.speechProbe.calls.length)).toBe(1);
+  expect(await page.evaluate(() => window.speechProbe.calls.length)).toBe(3);
   await page.getByRole('button', { name: 'TEST VOIX FR', exact: true }).tap();
   expect(await page.evaluate(() => window.speechProbe.calls.at(-1)?.voice)).toBe('fr-BE');
 });

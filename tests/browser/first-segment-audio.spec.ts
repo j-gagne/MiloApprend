@@ -37,5 +37,5 @@ for (const missing of [[0], [1], [0, 1]]) test(`normal hint only for first slot:
   await page.clock.runFor(500);
   expect(await page.evaluate((length) => window.speechProbe.calls.slice(-length).map((c) => c.text), expected.length)).toEqual(expected);
   await page.clock.runFor(2200);
-  await expect(page.getByRole('button', { name: 'REJOUER', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Bravo Milo !', exact: true })).toBeVisible();
 });

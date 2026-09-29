@@ -1,4 +1,4 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { mockSpeech } from './legacy-speech-mock';
 
 test('lecture initiale unique, réécoutes et erreurs rapides remplacent la voix active', async ({ page }) => {
@@ -96,7 +96,7 @@ test('voix chargées tardivement et moteur vocal sans événement de fin', async
     window.speechSynthesis.dispatchEvent(new Event('voiceschanged'));
   });
   await page.getByRole('button', { name: 'Choisir ne', exact: true }).tap();
-  expect(await page.evaluate(() => window.speechProbe.calls[0].voice)).toBe('fr-CA');
+  expect(await page.evaluate(() => window.speechProbe.calls.at(-1)?.voice)).toBe('fr-CA');
   await page.clock.runFor(2000);
   await expect(page.getByRole('status')).toContainText('lune');
   await page.clock.runFor(2600);

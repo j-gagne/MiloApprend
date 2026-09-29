@@ -22,7 +22,22 @@ const language = (voice: SpeechSynthesisVoice) => voice.lang.toLowerCase().repla
 const describeVoice = (voice: SpeechSynthesisVoice) => `${voice.name || '(sans nom)'} — ${voice.lang}`;
 
 // Seul cet adaptateur connaît Web Speech ; les fichiers restent prioritaires.
-class GameAudio {
+export class GameAudio {
+  private activityOwner?: string;
+  private automaticId?: string;
+  playAutomatic(id: string, text: string, src?: string, firstSegment?: string): Promise<void> {
+    if (this.automaticId === id) return Promise.resolve();
+    this.automaticId = id;
+    this.activityOwner = id;
+    this.log(`automatique : ${id}`);
+    return this.playTarget(text, src, firstSegment);
+  }
+  stopActivity(id: string) {
+    if (this.activityOwner !== id) return;
+    this.log(`sortie du défi : ${id}`);
+    this.stop();
+    this.activityOwner = undefined;
+  }
   private sequence = new AudioSequence();
   private rate = readingRate();
   setReadingSpeed(speed?: ReadingSpeed) { this.rate = readingRate(speed); this.update({}); }
@@ -74,8 +89,8 @@ class GameAudio {
       this.update({ available,
         voices: this.voices.map(({ name, lang }) => ({ name, lang })),
         voiceStatus: !available ? 'Web Speech indisponible' : voice ? `Meilleure voix française : ${describeVoice(voice)}`
-          : this.voices.length === 0 ? 'Liste vide : chargement en cours ou aucune voix exposée. Réessayer après chargement.'
-            : 'Aucune voix française disponible. Lecture française ignorée ; TEST AUDIO peut tester la voix par défaut.',
+          : this.voices.length === 0 ? 'Liste vide : lecture demandée en français via lang, sans voix imposée.'
+            : 'Aucune voix française disponible dans la liste : repli français via lang.',
       });
     } catch (error) {
       this.voices = [];
@@ -148,22 +163,17 @@ class GameAudio {
     if (!this.enabled) { this.log('lecture ignorée : muted'); finish(); return; }
     if (!this.diagnostics.available) { this.log('lecture ignorée : Web Speech indisponible'); finish(); return; }
     const voice = french ? this.frenchVoice() : undefined;
-    if (french && !voice) {
-      this.update({ lastError: 'no-french-voice (application) : aucune voix française retournée par getVoices()' });
-      this.log('lecture ignorée : aucune voix française');
-      finish();
-      return;
-    }
     try {
       const synthesis = window.speechSynthesis;
       const utterance = new SpeechSynthesisUtterance(text);
       this.utterance = utterance; // Conserver une référence jusqu'à la fin sur WebKit.
       if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
+      else if (french) { utterance.lang = 'fr-CA'; this.log('repli lang=fr-CA : aucune voix française exposée'); }
       // TEST AUDIO laisse volontairement voice et lang aux valeurs du navigateur.
       utterance.volume = 1;
       utterance.rate = french ? rate : 1;
       utterance.pitch = pitch;
-      this.update({ selected: voice ? describeVoice(voice) : 'Voix par défaut du navigateur (sans voice/lang imposés)' });
+      this.update({ selected: voice ? describeVoice(voice) : french ? 'Voix choisie par le navigateur pour fr-CA' : 'Voix par défaut du navigateur (sans voice/lang imposés)' });
       utterance.onstart = () => { this.log('onstart', attempt); };
       utterance.onend = () => { this.log('onend', attempt); finish(); };
       utterance.onerror = (event) => {

@@ -117,7 +117,7 @@ export function App() {
     // pour iOS. Le cycle de vérification StrictMode précède ainsi cette lecture.
     flushSync(() => { setSession(nextSession); setScreen('game'); });
     const first = nextSession.challenges[0];
-    void gameAudio.playTarget(first.audioText ?? first.word, first.audioSrc, first.firstSegmentAudio);
+    void gameAudio.playAutomatic(`${sessionId.current}:0:${first.id}`, first.audioText ?? first.word, first.audioSrc, first.firstSegmentAudio);
   }
 
   const pending = progress.eggRewards?.pendingTransition;
@@ -155,7 +155,7 @@ export function App() {
     </main>}
 
     {screen === 'characters' && <CharacterPicker playerName={playerName} selected={character.id} onPreview={setPreviewCharacter} onSelect={selectCharacter} onClose={closeCharacters} />}
-    {screen === 'game' && <CompleteWord playerName={playerName} onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}
+    {screen === 'game' && <CompleteWord audioSessionId={sessionId.current} playerName={playerName} onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}
     {screen === 'gate' && <ParentGate onOpen={() => setScreen('parent')} onCancel={() => setScreen('home')} />}
     {screen === 'parent' && <ParentSpace playerName={playerName} data={parent.data} service={service} warning={parent.warning}
       onDirtyChange={(dirty) => { parentDirty.current = dirty; }}

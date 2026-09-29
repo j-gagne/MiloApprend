@@ -15,9 +15,9 @@ import { AudioDiagnostics } from './AudioDiagnostics';
 import { WordImage } from './WordImage';
 import { CompletionLine } from './CompletionLine';
 
-export function CompleteWord({ onComplete, sound, challenges, chains, characterId = DEFAULT_CHARACTER_ID, playerName }: {
+export function CompleteWord({ onComplete, sound, challenges, chains, characterId = DEFAULT_CHARACTER_ID, playerName, audioSessionId = '' }: {
   onComplete: (progress: Progress) => void; sound: boolean; challenges: readonly ContentChallenge[]; chains?: readonly ChainState[];
-  characterId?: CharacterId; playerName: string;
+  characterId?: CharacterId; playerName: string; audioSessionId?: string;
 }) {
   const [chain, setChain] = useState(chains?.[0]);
   const [chainIndex, setChainIndex] = useState(0);
@@ -37,6 +37,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
   const targets = useRef(new Map<number, HTMLDivElement>());
   const locked = useRef(false);
   const challenge = challenges[index];
+  const audioId = `${audioSessionId}:${index}:${challenge.id}`;
   const individualBank = useMemo(() => chains ? [] : createAnswerBank(challenge), [challenge, chains]);
   const bank = useMemo(() => chain ? remainingChainBank(chain) : individualBank, [chain, individualBank]);
   const texts = placementTexts(bank, placements);
@@ -50,11 +51,11 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
   const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [index]);
-  useEffect(() => () => gameAudio.stop(), []);
+  useEffect(() => () => gameAudio.stopActivity(audioId), [audioId]);
   useEffect(() => {
     // Le premier mot est lancé directement depuis JOUER ; les suivants à l'affichage.
-    if (index > 0) void gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
-  }, [index, challenge]);
+    if (index > 0) void gameAudio.playAutomatic(audioId, challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
+  }, [index, challenge, audioId]);
   useEffect(() => {
     if (!solved) return;
     let cancelled = false;
