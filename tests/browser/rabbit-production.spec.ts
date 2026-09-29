@@ -79,7 +79,7 @@ test('two real Rabbit cycles award two distinct instances without duplicate rewa
   await page.reload(); expect(await state(page)).toEqual(before);
 });
 
-for (const [name, id, emoji] of [['Singe','monkey','🐵'], ['Tigre','tiger','🐯']]) {
+for (const [name, id, emoji] of [['Tigre','tiger','🐯']]) {
   test(`real ${name} keeps its temporary avatar and safe egg fallback`, async ({ page }) => {
     await setup(page); await select(page, name);
     await expect(page.locator('.hero-scene .character-emoji')).toHaveText(emoji);

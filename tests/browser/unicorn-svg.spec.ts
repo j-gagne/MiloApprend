@@ -2,41 +2,44 @@
 import { mockSpeech } from './speech-mock';
 import { chainParentData } from '../fixtures/chain-program';
 
-test('Unicorn SVG registration, mobile expressions and existing egg masks', async ({ page }) => {
+for (const { id, name, shell } of [
+  { id: 'unicorn', name: 'Licorne', shell: '#faf5ed' },
+  { id: 'monkey', name: 'Singe', shell: '#fff4e3' },
+]) test(`${id} SVG registration, mobile expressions and existing egg masks`, async ({ page }) => {
   await mockSpeech(page);
   await page.addInitScript(data => { if (!localStorage.getItem('milo-apprend.parent.v1')) localStorage.setItem('milo-apprend.parent.v1', JSON.stringify(data)); }, chainParentData(1));
   await page.goto('/?preview=hatching');
   const before = await page.evaluate(() => ({ ...localStorage }));
-  await page.getByLabel('Animal à prévisualiser').selectOption('unicorn');
+  await page.getByLabel('Animal à prévisualiser').selectOption(id);
   for (const stage of [1,2,3,4,5]) {
     await page.getByRole('button', { name: `État ${stage}`, exact: true }).click();
-    await expect(page.getByTestId('hatching-animal').locator('svg.unicorn')).toHaveCount(1);
-    await expect(page.locator('.hatching-egg stop').first()).toHaveAttribute('stop-color', '#faf5ed');
+    await expect(page.getByTestId('hatching-animal').locator(`svg.${id}`)).toHaveCount(1);
+    await expect(page.locator('.hatching-egg stop').first()).toHaveAttribute('stop-color', shell);
     await expect(page.locator('[data-reveal]')).toHaveAttribute('data-reveal', ['hidden','hidden','small','large','full'][stage-1]);
-    if (stage >= 3) await page.screenshot({ path: `test-results/unicorn-stage-${stage}.png`, fullPage: true });
+    if (stage >= 3) await page.screenshot({ path: `test-results/${id}-stage-${stage}.png`, fullPage: true });
   }
   expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(before);
-  for (const animal of ['dinosaur','rabbit','lion']) {
+  for (const animal of ['dinosaur','rabbit','lion','unicorn'].filter(animal => animal !== id)) {
     await page.getByLabel('Animal à prévisualiser').selectOption(animal);
-    await page.screenshot({ path: `test-results/unicorn-compare-${animal}.png`, fullPage: true });
+    await page.screenshot({ path: `test-results/${id}-compare-${animal}.png`, fullPage: true });
   }
   await page.goto('/');
   await page.getByRole('button', { name: 'CHOISIR MON PERSONNAGE' }).tap();
-  const unicorn = page.getByRole('button', { name: 'Licorne', exact: true });
-  await expect(unicorn.locator('svg.unicorn')).toBeVisible();
-  await expect(unicorn.locator('.character-emoji')).toHaveCount(0);
-  await unicorn.tap();
-  await page.screenshot({ path: 'test-results/unicorn-selector.png', fullPage: true });
+  const character = page.getByRole('button', { name, exact: true });
+  await expect(character.locator(`svg.${id}`)).toBeVisible();
+  await expect(character.locator('.character-emoji')).toHaveCount(0);
+  await character.tap();
+  await page.screenshot({ path: `test-results/${id}-selector.png`, fullPage: true });
   await page.getByRole('button', { name: 'Continuer', exact: true }).tap();
   await page.clock.install();
   await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
-  await expect(page.locator('.game-companion svg.unicorn')).toBeVisible();
-  await page.screenshot({ path: 'test-results/unicorn-game.png', fullPage: true });
+  await expect(page.locator(`.game-companion svg.${id}`)).toBeVisible();
+  await page.screenshot({ path: `test-results/${id}-game.png`, fullPage: true });
   for (const text of ['la','ma']) await page.getByRole('button', { name: `Choisir ${text}`, exact: true }).tap();
-  await expect(page.locator('.game-companion .character-happy svg.unicorn')).toBeVisible();
+  await expect(page.locator(`.game-companion .character-happy svg.${id}`)).toBeVisible();
   await page.clock.runFor(2200);
-  await page.screenshot({ path: 'test-results/unicorn-happy.png', fullPage: true });
+  await page.screenshot({ path: `test-results/${id}-happy.png`, fullPage: true });
   await page.getByRole('button', { name: 'DÉCOUVRIR MON ŒUF' }).tap();
-  await expect(page.getByTestId('hatching-animal').locator('svg.unicorn')).toHaveCount(1);
-  await expect(page.locator('.hatching-egg stop').first()).toHaveAttribute('stop-color', '#faf5ed');
+  await expect(page.getByTestId('hatching-animal').locator(`svg.${id}`)).toHaveCount(1);
+  await expect(page.locator('.hatching-egg stop').first()).toHaveAttribute('stop-color', shell);
 });
