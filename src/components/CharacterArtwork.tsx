@@ -3,13 +3,14 @@ import { Rabbit } from './Rabbit';
 import { Lion } from './Lion';
 import { Unicorn } from './Unicorn';
 import { Monkey } from './Monkey';
+import { Tiger } from './Tiger';
 import { getCharacter, type ChildCharacter } from '../game/characters';
 
 // React stays in the visual adapter; domain/storage/audio use the plain-data catalogue.
 type SvgKey = Extract<ChildCharacter['visual'], { kind: 'svg' }>['component'];
-const svgCharacters = { dinosaur: Dinosaur, rabbit: Rabbit, lion: Lion, unicorn: Unicorn, monkey: Monkey } satisfies Record<SvgKey, typeof Dinosaur>;
+const svgCharacters = { dinosaur: Dinosaur, rabbit: Rabbit, lion: Lion, unicorn: Unicorn, monkey: Monkey, tiger: Tiger } satisfies Record<SvgKey, typeof Dinosaur>;
 export function CharacterArtwork({ id, happy = false }: { id: string; happy?: boolean }) {
   const { visual } = getCharacter(id);
-  if (visual.kind === 'svg') { const Artwork = svgCharacters[visual.component]; return <Artwork happy={happy} />; }
-  return <svg viewBox="0 0 340 300" aria-hidden="true"><text x="170" y="235" textAnchor="middle" fontSize="190">{visual.value}</text></svg>;
+  const Artwork = svgCharacters[visual.component];
+  return <Artwork happy={happy} />;
 }

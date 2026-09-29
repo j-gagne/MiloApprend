@@ -5,6 +5,7 @@ import { chainParentData } from '../fixtures/chain-program';
 for (const { id, name, shell } of [
   { id: 'unicorn', name: 'Licorne', shell: '#faf5ed' },
   { id: 'monkey', name: 'Singe', shell: '#fff4e3' },
+  { id: 'tiger', name: 'Tigre', shell: '#fff5e3' },
 ]) test(`${id} SVG registration, mobile expressions and existing egg masks`, async ({ page }) => {
   await mockSpeech(page);
   await page.addInitScript(data => { if (!localStorage.getItem('milo-apprend.parent.v1')) localStorage.setItem('milo-apprend.parent.v1', JSON.stringify(data)); }, chainParentData(1));
@@ -19,7 +20,7 @@ for (const { id, name, shell } of [
     if (stage >= 3) await page.screenshot({ path: `test-results/${id}-stage-${stage}.png`, fullPage: true });
   }
   expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(before);
-  for (const animal of ['dinosaur','rabbit','lion','unicorn'].filter(animal => animal !== id)) {
+  for (const animal of ['dinosaur','rabbit','lion','unicorn','monkey'].filter(animal => animal !== id)) {
     await page.getByLabel('Animal à prévisualiser').selectOption(animal);
     await page.screenshot({ path: `test-results/${id}-compare-${animal}.png`, fullPage: true });
   }

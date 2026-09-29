@@ -78,14 +78,3 @@ test('two real Rabbit cycles award two distinct instances without duplicate rewa
   expect(new Set(before.eggRewards!.hatches.map(h => h.id)).size).toBe(2);
   await page.reload(); expect(await state(page)).toEqual(before);
 });
-
-for (const [name, id, emoji] of [['Tigre','tiger','🐯']]) {
-  test(`real ${name} keeps its temporary avatar and safe egg fallback`, async ({ page }) => {
-    await setup(page); await select(page, name);
-    await expect(page.locator('.hero-scene .character-emoji')).toHaveText(emoji);
-    await complete(page);
-    expect((await state(page)).eggRewards!.currentEgg.pendingAnimalId).toBe(id);
-    await expect(page.getByTestId('hatching-animal').locator('text')).toHaveText(emoji);
-    await expect(page.locator('.hatching-egg stop').first()).toHaveAttribute('stop-color', '#fff5d9');
-  });
-}

@@ -124,3 +124,10 @@ test('Monkey uses the registered SVG and warm cream egg palette', () => {
     assert.equal(monkey.eggTheme.spots, '#b99075');
   }
 });
+
+test('Tiger uses the registered SVG and apricot egg palette', () => {
+  const tiger = getCharacter('tiger');
+  assert.deepEqual(tiger.visual, { kind: 'svg', component: 'tiger', happyExpression: true });
+  assert.equal(tiger.eggTheme.shellBase, '#fff5e3');
+  assert.equal(tiger.eggTheme.spots, '#dda477');
+});

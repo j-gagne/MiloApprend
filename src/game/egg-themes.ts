@@ -24,3 +24,8 @@ export const monkeyEggTheme: EggTheme = {
   shellBase: '#fff4e3', shellShade: '#e5cfb7', shellStroke: '#c4a58d', spots: '#b99075',
   speckles: '#dbb7a0', interior: '#796253', cracks: '#997b65', brokenStroke: '#c4a58d', opening: '#b79278', accent: '#d8aa98',
 };
+
+export const tigerEggTheme: EggTheme = {
+  shellBase: '#fff5e3', shellShade: '#ecd3ba', shellStroke: '#c7a68a', spots: '#dda477',
+  speckles: '#8b6b56', interior: '#7e6350', cracks: '#9e785b', brokenStroke: '#c7a68a', opening: '#bb916f', accent: '#d9aa98',
+};
