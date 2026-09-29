@@ -2408,7 +2408,7 @@ export const seedBank: readonly SeedWeek[] = [
 
       'mè', 'lè', 'sè', 'vè', 'nè', 'rè', 'fè', 'chè',
 
-      'mê', 'lê', 'sê', 'vê', 'nê', 'rê', 'fê', 'chê',
+      { id: 'syllable-mê', display: 'mê', audioText: 'mè' }, { id: 'syllable-lê', display: 'lê', audioText: 'lè' }, { id: 'syllable-sê', display: 'sê', audioText: 'sè' }, { id: 'syllable-vê', display: 'vê', audioText: 'vè' }, { id: 'syllable-nê', display: 'nê', audioText: 'nè' }, { id: 'syllable-rê', display: 'rê', audioText: 'rè' }, { id: 'syllable-fê', display: 'fê', audioText: 'fè' }, { id: 'syllable-chê', display: 'chê', audioText: 'chè' },
 
       'mou', 'lou', 'sou', 'vou', 'nou', 'rou', 'fou', 'chou'
 
@@ -3033,7 +3033,7 @@ export const seedBank: readonly SeedWeek[] = [
 
     syllables: [
 
-      'ta', 'te', 'ti', 'to', 'tu', 'té', 'tè', 'tê', 'tou'
+      'ta', 'te', 'ti', 'to', 'tu', 'té', 'tè', { id: 'syllable-tê', display: 'tê', audioText: 'tè' }, 'tou'
 
     ],
 
