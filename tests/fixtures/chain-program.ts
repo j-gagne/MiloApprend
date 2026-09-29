@@ -1,5 +1,5 @@
 import { initialProgram } from '../../src/content/program.ts';
-import { automaticActivities } from '../../src/content/activity-catalog.ts';
+import { activityCatalog } from '../../src/content/activity-catalog.ts';
 import { effectiveProgram, emptyParentData } from '../../src/parent/model.ts';
 import type { ParentData } from '../../src/parent/model.ts';
 import type { Word, Sentence, Syllable } from '../../src/content/model.ts';
@@ -26,6 +26,8 @@ export function chainParentData(count = 3, withSyllable = false): ParentData {
       missingSegmentIndexes: u.type === 'sentence' ? [1, 3] : [0, 1], distractorUnitIds: ['syllable-li', 'syllable-so'],
     })),
   };
-  const all = automaticActivities(effectiveProgram(initialProgram, data), 6);
-  return { ...data, activityEnabled: Object.fromEntries(all.map((a) => [a.id, a.targetId === syllable.id])) };
+  // Isolate this fixture from newly added explicit seed activities as well as automatic ones.
+  const all = activityCatalog(effectiveProgram(initialProgram, data), 6);
+  return { ...data, activityEnabled: Object.fromEntries(all.map((a) => [a.id,
+    a.targetId === syllable.id || data.activities.some(custom => custom.id === a.id)])) };
 }

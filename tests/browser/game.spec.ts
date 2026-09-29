@@ -37,6 +37,8 @@ test('partie tactile complète, erreur douce, annulation et sauvegarde', async (
   for (const [answer, word] of [['la', 'lama'], ['a', 'ami'], ['lo', 'vélo'], ['ni', 'nid']]) {
     const button = page.getByRole('button', { name: `Choisir ${answer}`, exact: true });
     await expect(button).toBeEnabled();
+    // Let the automatic hint finish before the answer replaces the current audio.
+    await expect.poll(() => page.evaluate(() => window.speechProbe.calls.at(-1)?.text)).toBe(word);
     await button.tap();
     await expect(page.getByRole('status')).toContainText(`Bravo ! ${word}`);
   }
@@ -51,6 +53,8 @@ test('partie tactile complète, erreur douce, annulation et sauvegarde', async (
   ]);
   await page.screenshot({ path: 'test-results/celebration-mobile.png' });
   await page.reload();
+  await expect(page.getByLabel('Éclosion : 1 sur 5')).toBeVisible();
+  await page.getByRole('button', { name: 'CONTINUER' }).tap();
   await expect(page.getByText('1 aventure terminée')).toBeVisible();
   await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
   await expect(page.getByRole('progressbar')).toHaveAttribute('value', '0');

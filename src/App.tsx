@@ -3,6 +3,8 @@ import { flushSync } from 'react-dom';
 import { CompleteWord } from './components/CompleteWord';
 import { Character } from './components/Character';
 import { CharacterPicker } from './components/CharacterPicker';
+import { HatchingScreen } from './components/HatchingPreview';
+import { eggVisualStage } from './game/egg-rewards';
 import { getCharacter, type CharacterId } from './game/characters';
 import { themeVariables } from './game/themes';
 import { gameAudio } from './services/audio';
@@ -25,7 +27,8 @@ import { parentDrafts } from './services/parent-drafts';
 import './components/parent/parent.css';
 
 export function App() {
-  const [screen, setScreen] = useState<'home' | 'game' | 'celebration' | 'gate' | 'parent' | 'characters'>(() => parentDrafts.navigation().active ? 'parent' : 'home');
+  const [progress, setProgress] = useState(() => progressStore.load());
+  const [screen, setScreen] = useState<'home' | 'game' | 'celebration' | 'egg' | 'gate' | 'parent' | 'characters'>(() => progress.eggRewards?.pendingTransition ? 'egg' : parentDrafts.navigation().active ? 'parent' : 'home');
   useEffect(() => {
     parentDrafts.navigate({ ...parentDrafts.navigation(), active: screen === 'parent' });
   }, [screen]);
@@ -35,7 +38,6 @@ export function App() {
   const availableCount = useMemo(() => Math.min(parent.data.questionCount ?? DEFAULT_QUESTION_COUNT,
     new Set(getCompleteWordChallenges(service).challenges.filter((challenge) => service.exerciseScope.mode === 'all'
       || service.exerciseScope.selectedWeeks.includes(challenge.introducedInWeek)).map((challenge) => challenge.word)).size), [service, parent.data.questionCount]);
-  const [progress, setProgress] = useState(() => progressStore.load());
   const character = getCharacter(progress.selectedCharacterId);
   const [previewCharacter, setPreviewCharacter] = useState<CharacterId>();
   const themeCharacter = screen === 'characters' && previewCharacter ? getCharacter(previewCharacter) : character;
@@ -56,6 +58,7 @@ export function App() {
   const [result, setResult] = useState(() => createSessionProgress(0));
   const title = useRef<HTMLHeadingElement>(null);
   const completed = useRef(false);
+  const sessionId = useRef('');
   const parentDirty = useRef(false);
 
   useEffect(() => {
@@ -69,12 +72,30 @@ export function App() {
   const finish = useCallback((performance: Progress) => {
     if (completed.current) return;
     completed.current = true;
-    const next = { ...progress, completedSessions: progress.completedSessions + 1 };
-    setSaved(progressStore.save(next));
-    setProgress(next);
+    const completion = progressStore.completeSession(sessionId.current);
+    setSaved(completion.saved);
+    setProgress(completion.progress);
     setResult(performance);
     setScreen('celebration');
-  }, [progress]);
+  }, []);
+
+  function showEgg() {
+    if (!saved) {
+      const completion = progressStore.completeSession(sessionId.current);
+      setSaved(completion.saved); setProgress(completion.progress);
+      if (!completion.saved) return;
+    }
+    gameAudio.stop(); setScreen('egg');
+  }
+
+  function continueFromEgg() {
+    const pending = progress.eggRewards?.pendingTransition;
+    if (!pending) return;
+    const acknowledgement = progressStore.acknowledgeEgg(pending.sessionId);
+    setSaved(acknowledgement.saved);
+    if (!acknowledgement.saved) return;
+    setProgress(acknowledgement.progress); setScreen('home');
+  }
 
   function closeCharacters() { setPreviewCharacter(undefined); returnToCharacterButton.current = true; setScreen('home'); }
   function selectCharacter(selectedCharacterId: CharacterId, playerName: string) {
@@ -84,9 +105,13 @@ export function App() {
   }
 
   function start() {
+    const stored = progressStore.load();
+    if (stored.eggRewards?.pendingTransition) { setProgress(stored); setScreen('egg'); return; }
     const nextSession = createPlaySession(service, parent.data);
     if (!nextSession.challenges.length) return;
     completed.current = false;
+    // getRandomValues also works on local-network HTTP (unlike randomUUID).
+    sessionId.current = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16).padStart(8, '0')).join('');
     gameAudio.unlock();
     // Monter le défi avant de parler, tout en restant dans le geste JOUER/REJOUER
     // pour iOS. Le cycle de vérification StrictMode précède ainsi cette lecture.
@@ -95,12 +120,20 @@ export function App() {
     void gameAudio.playTarget(first.audioText ?? first.word, first.audioSrc, first.firstSegmentAudio);
   }
 
+  const pending = progress.eggRewards?.pendingTransition;
+  if (screen === 'egg' && pending) return <HatchingScreen
+    stage={eggVisualStage(pending.progress, pending.sessionsToHatch)} progress={pending.progress} total={pending.sessionsToHatch}
+    animalId={pending.animalId} onContinue={continueFromEgg}
+    notice={!saved && <p className="save-note" role="status">La sauvegarde est indisponible. Ton œuf reste en attente. Réessaie CONTINUER.</p>} />;
+
   return <div className="app-shell">
     <div className="landscape" aria-hidden="true"><div className="sun" /><div className="hill hill-back" /><div className="hill hill-front" /><div className="plant plant-left">✦</div><div className="plant plant-right">✦</div></div>
     <header className="topbar">
       <button className="brand" aria-label="Milo apprend, accueil" onClick={() => {
         if (screen === 'parent' && parentDirty.current && !window.confirm('Quitter cet éditeur sans enregistrer les modifications ?')) return;
-        parentDirty.current = false; gameAudio.stop(); setScreen('home');
+        parentDirty.current = false; gameAudio.stop();
+        if (screen === 'celebration') { showEgg(); return; }
+        setScreen('home');
       }}><span className="brand-icon" aria-hidden="true">m.</span><span>milo <b>apprend</b></span></button>
       <button className="sound-button" aria-label={sound ? 'Couper le son' : 'Activer le son'} aria-pressed={sound} onClick={() => { gameAudio.setEnabled(!sound); if (!sound) gameAudio.unlock(); setSound(!sound); }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z" />{sound ? <><path d="M15 8q4 4 0 8M18 5q7 7 0 14" /></> : <path d="m16 9 6 6m0-6-6 6" />}</svg>
@@ -138,9 +171,8 @@ export function App() {
       <p>{result.completedTargets} exercices terminés</p>
       <SessionProgress progress={result} characterId={character.id} />
       <Character id={character.id} happy />
-      <button className="primary-button" onClick={start}><span aria-hidden="true">↻</span> REJOUER</button>
-      <button className="text-button" onClick={() => setScreen('home')}>Retour à l’accueil</button>
-      {!saved && <p className="save-note" role="status">La partie est terminée. La sauvegarde est indisponible.</p>}
+      <button className="primary-button" onClick={showEgg}>{saved ? 'DÉCOUVRIR MON ŒUF' : 'RÉESSAYER LA SAUVEGARDE'}</button>
+      {!saved && <p className="save-note" role="status">La partie est terminée. La sauvegarde est indisponible. Garde cette page ouverte pour réessayer.</p>}
     </main>}
     <footer>Un petit pas à la fois <span aria-hidden="true">✦</span></footer>
   </div>;

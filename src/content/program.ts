@@ -2099,11 +2099,11 @@ export const seedBank: readonly SeedWeek[] = [
 
     syllables: [
 
-      'ra', 're', 'ri', 'ro', 'ru', 'ré',
+      { id: 'syllable-ra', display: 'ra', audioText: 'rat' }, { id: 'syllable-re', display: 're', audioText: 'reu' }, { id: 'syllable-ri', display: 'ri', audioText: 'riz' }, { id: 'syllable-ro', display: 'ro', audioText: 'rot' }, { id: 'syllable-ru', display: 'ru', audioText: 'rue' }, { id: 'syllable-ré', display: 'ré', audioText: 'rez' },
 
       'fa', 'fe', 'fi', 'fo', 'fu', 'fé',
 
-      'cha', 'che', 'chi', 'cho', 'chu', 'ché'
+      { id: 'syllable-cha', display: 'cha', audioText: 'chat' }, { id: 'syllable-che', display: 'che', audioText: 'cheu' }, 'chi', 'cho', 'chu', { id: 'syllable-ché', display: 'ché', audioText: 'chez' }
 
     ],
 
