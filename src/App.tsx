@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { CompleteWord } from './components/CompleteWord';
 import { Character } from './components/Character';
 import { CharacterPicker } from './components/CharacterPicker';
+import { Collection } from './components/Collection';
 import { HatchingScreen } from './components/HatchingPreview';
 import { eggVisualStage, emptyEggRewards } from './game/egg-rewards';
 import { getCharacter, type CharacterId } from './game/characters';
@@ -28,7 +29,7 @@ import './components/parent/parent.css';
 
 export function App() {
   const [progress, setProgress] = useState(() => progressStore.load());
-  const [screen, setScreen] = useState<'home' | 'game' | 'celebration' | 'egg' | 'gate' | 'parent' | 'characters'>(() => progress.eggRewards?.pendingTransition ? 'egg' : parentDrafts.navigation().active ? 'parent' : 'home');
+  const [screen, setScreen] = useState<'home' | 'game' | 'celebration' | 'egg' | 'gate' | 'parent' | 'characters' | 'collection'>(() => progress.eggRewards?.pendingTransition ? 'egg' : parentDrafts.navigation().active ? 'parent' : 'home');
   useEffect(() => {
     parentDrafts.navigate({ ...parentDrafts.navigation(), active: screen === 'parent' });
   }, [screen]);
@@ -157,10 +158,12 @@ export function App() {
       <button className="primary-button play-button" onClick={start} disabled={!availableCount}><span aria-hidden="true">▶</span> JOUER</button>
       {!availableCount && <p role="status">Aucun défi disponible pour le contenu autorisé.</p>}
       <p className="adventure-note">{availableCount} petits défis avec ton ami</p>
+      <button className="collection-button" onClick={() => { gameAudio.stop(); setScreen('collection'); }}>MA COLLECTION</button>
       <div className="progress-pill"><span aria-hidden="true">●</span> {progress.completedSessions === 0 ? 'Ta première aventure t’attend !' : `${progress.completedSessions} aventure${progress.completedSessions > 1 ? 's' : ''} terminée${progress.completedSessions > 1 ? 's' : ''}`}</div>
       <button className="text-button parents-link" onClick={() => { gameAudio.stop(); setScreen('gate'); }}>Parents</button>
     </main>}
 
+    {screen === 'collection' && <Collection hatches={progress.eggRewards?.hatches ?? []} onHome={() => setScreen('home')} />}
     {screen === 'characters' && canChooseCharacter && <CharacterPicker playerName={playerName} selected={character.id} onPreview={setPreviewCharacter} onSelect={selectCharacter} onClose={closeCharacters} />}
     {screen === 'game' && <CompleteWord audioSessionId={sessionId.current} playerName={playerName} onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}
     {screen === 'gate' && <ParentGate onOpen={() => setScreen('parent')} onCancel={() => setScreen('home')} />}
