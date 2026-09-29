@@ -6,7 +6,7 @@ export interface AnswerOccurrence extends Answer { readonly id: string }
 export type OccurrencePlacements = Readonly<Record<number, string | undefined>>;
 
 export function createAnswerBank(board: CompletionBoard): readonly AnswerOccurrence[] {
-  const bank = board.choices.map((choice, index) => ({ ...choice, id: `choice-${index}` }));
+  const bank = board.choices.map((choice, index) => ({ ...choice, id: board.tileOrder?.[index] ?? `choice-${index}` }));
   // Content choices can be deduplicated; repeated expected segments need distinct tiles.
   for (const text of new Set(board.slots.map((slot) => slot.expected))) {
     const choice = bank.find((answer) => answer.text === text);

@@ -80,6 +80,8 @@ export interface SpellActivity extends Omit<CompletionParameters, 'missingSegmen
   readonly targetText: string;
   readonly missingPositions: readonly number[];
   readonly letterUnitIds: Readonly<Record<number, string>>;
+  // Occurrence keys: answer:<word position> or distractor:<unit ID>.
+  readonly tileOrder?: readonly string[];
   readonly label?: string;
 }
 export type Activity = CompletionActivity | SpellActivity;

@@ -1,6 +1,6 @@
 import type { Answer, CompletionBoard } from './complete-word.ts';
 import { isComplete } from './complete-word.ts';
-import { availableAnswers, placementTexts } from './answer-bank.ts';
+import { availableAnswers, createAnswerBank, placementTexts } from './answer-bank.ts';
 import type { AnswerOccurrence, OccurrencePlacements } from './answer-bank.ts';
 
 export interface ChainState {
@@ -12,7 +12,9 @@ export interface ChainState {
 // One occurrence per selected slot, never per inferred syllable or unique text.
 // Optional extra answers prepare distractors without changing completion rules.
 export function createChain(targets: readonly CompletionBoard[], distractors: readonly Answer[] = []): ChainState {
-  const bank: AnswerOccurrence[] = targets.flatMap((target, index) => target.slots.map((slot) => {
+  const bank: AnswerOccurrence[] = targets.flatMap((target, index) => target.tileOrder
+    ? createAnswerBank(target).map(answer => ({ ...answer, id: `target-${index}-${answer.id}` }))
+    : target.slots.map((slot) => {
     const answer = target.choices.find((choice) => choice.text === slot.expected);
     if (!answer) throw new Error('Slot sans réponse dans un exercice sélectionné.');
     return { ...answer, id: `target-${index}-slot-${slot.segmentIndex}` };

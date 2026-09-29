@@ -1,5 +1,6 @@
 import type { ContentIssue, LearningProgram, Letter, SpellActivity, Word } from './model.ts';
 import { isAvailable, isValidWeek } from './selectors.ts';
+import { spellTiles } from './spell-tile-order.ts';
 
 // Preserve exact graphemes (including combining accents); never strip accents.
 export function letterPositions(text: string): string[] {
@@ -23,6 +24,12 @@ export function newSpellActivity(program: LearningProgram, word: Word, week: num
 
 export function validateSpellActivity(program: LearningProgram, activity: SpellActivity, week: number): ContentIssue[] {
   const issues: ContentIssue[] = [];
+  if (activity.tileOrder !== undefined) {
+    const expected = spellTiles(activity);
+    if (activity.tileOrder.length !== expected.length || new Set(activity.tileOrder).size !== expected.length
+      || activity.tileOrder.some(id => !expected.includes(id))) issues.push({ severity: 'error', code: 'invalid-tile-order',
+      path: `activities.${activity.id}.tileOrder`, message: 'L’ordre doit contenir chaque lettre proposée exactement une fois.' });
+  }
   const add = (code: string, message: string) => issues.push({ severity: 'error', code, path: `activities.${activity.id}`, message });
   if (!activity.id || program.activities?.filter((a) => a.id === activity.id).length !== 1) add('unknown-activity', 'Activité absente ou ambiguë.');
   if (activity.enabled === false) add('disabled-exercise', 'Cette activité est désactivée.');

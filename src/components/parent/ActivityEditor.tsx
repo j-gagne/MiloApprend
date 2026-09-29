@@ -13,6 +13,7 @@ import { ActivityPreview } from './ActivityPreview';
 import { useEffect } from 'react';
 import { letterForPosition, letterPositions, newSpellActivity } from '../../content/spelling';
 import { primaryConstruction } from '../../content/construction';
+import { reconcileSpellOrder, spellTileText } from '../../content/spell-tile-order';
 
 interface Props { program: LearningProgram; activity: Activity; target: CompletionTarget;
   onSave: (activity: Activity) => void; onCancel: () => void; onDirty: () => void }
@@ -37,7 +38,9 @@ export function ActivityEditor({ program, activity, target, onSave, onCancel, on
   const expected = spelling ? indexes.flatMap((index) => positions[index] === undefined ? [] : [positions[index]]) : indexes.map((index) => segments[index]).filter((segment) => segment && 'unitId' in segment)
     .map((segment) => segmentText(program, segment));
   const isCorrect = (text: string) => expected.some((value) => comparableText(value) === comparableText(text));
-  function change(next: Activity) { setDraft(next); onDirty(); }
+  function change(next: Activity) {
+    setDraft(next.type === 'spell' && next.tileOrder ? { ...next, tileOrder: reconcileSpellOrder(next) } : next); onDirty();
+  }
   function hide(index: number, checked: boolean) {
     const missing = checked ? [...indexes, index].sort((a, b) => a - b) : indexes.filter((item) => item !== index);
     const correct = missing.map((i) => comparableText(positions[i]));
@@ -46,7 +49,8 @@ export function ActivityEditor({ program, activity, target, onSave, onCancel, on
       const ids = { ...draft.letterUnitIds };
       if (checked) { const letter = letterForPosition(program, positions[index], week); if (!letter) return; ids[index] = letter.id; }
       else delete ids[index];
-      change({ ...draft, missingPositions: missing, letterUnitIds: ids, distractorUnitIds: distractors }); return;
+      change({ ...draft, missingPositions: missing, letterUnitIds: ids, distractorUnitIds: distractors,
+        answerPosition: Math.min(draft.answerPosition ?? 0, distractors.length) }); return;
     }
     change({ ...draft, missingSegmentIndex: undefined, missingSegmentIndexes: missing, distractorUnitIds: distractors,
       answerPosition: Math.min(draft.answerPosition ?? 0, distractors.length) });
@@ -66,7 +70,7 @@ export function ActivityEditor({ program, activity, target, onSave, onCancel, on
         </select></label>
       </div>
       {draft.type === 'spell' && draft.targetText !== target.display && target.type === 'word' && <button type="button" onClick={() => {
-        change({ ...newSpellActivity(program, target, week, draft.id), label: draft.label, enabled: draft.enabled, order: draft.order });
+        change({ ...newSpellActivity(program, target, week, draft.id), label: draft.label, enabled: draft.enabled, order: draft.order, tileOrder: draft.tileOrder });
       }}>Reconfigurer les positions pour ce mot</button>}
       <h3>{spelling ? 'Positions des lettres' : target.type === 'word' ? 'Construction du mot' : target.type === 'sentence' ? 'Construction de la phrase' : 'Syllabe à retrouver'}</h3><div className="parent-tokens">{positions.map((text, index) => <span key={index}>{text}</span>)}</div>
       <fieldset><legend>Parties à trouver</legend><div className="parent-checks">{positions.map((text, index) => {
@@ -92,6 +96,21 @@ export function ActivityEditor({ program, activity, target, onSave, onCancel, on
             change({ ...draft, distractorUnitIds: ids, answerPosition: Math.min(draft.answerPosition ?? 0, ids.length) });
           }}>Retirer ce distracteur</button></p>)}
       </fieldset>
+      {draft.type === 'spell' && <fieldset><legend>Ordre des lettres proposées</legend>
+        <p>Déplacez chaque lettre. Cet ordre sera conservé après sauvegarde.</p>
+        <div className="parent-actions">{reconcileSpellOrder(draft).map((id, index, order) => {
+          const text = spellTileText(draft, id, unitId => program.units.find(unit => unit.id === unitId)?.display ?? '?');
+          function move(offset: number) {
+            if (draft.type !== 'spell') return;
+            const next = [...order]; [next[index], next[index + offset]] = [next[index + offset], next[index]];
+            change({ ...draft, tileOrder: next });
+          }
+          return <span key={id}><strong>{text}</strong>
+            <button type="button" disabled={index === 0} aria-label={`Déplacer ${text} (${index + 1}) à gauche`} onClick={() => move(-1)}>←</button>
+            <button type="button" disabled={index === order.length - 1} aria-label={`Déplacer ${text} (${index + 1}) à droite`} onClick={() => move(1)}>→</button>
+          </span>;
+        })}</div>
+      </fieldset>}
       {!!errors.length && <div className="parent-errors" role="alert"><strong>À corriger avant de sauvegarder :</strong><ul>{[...new Set(errors)].map((message) => <li key={message}>{message}</li>)}</ul></div>}
       {!errors.length && result.exercise && <ActivityPreview key={JSON.stringify(result.exercise)} exercise={result.exercise} />}
       <div className="parent-actions"><button type="submit" className="parent-primary" disabled={!!errors.length}>Sauvegarder l’exercice</button><button type="button" onClick={onCancel}>Annuler</button></div>

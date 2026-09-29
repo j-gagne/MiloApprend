@@ -7,6 +7,7 @@ import type { Answer, CompletionBoard } from './complete-word.ts';
 import type { CompletionTarget, ImageAsset } from '../content/model.ts';
 import { constructionText, terminalSuffix } from '../content/construction.ts';
 import { letterPositions } from '../content/spelling.ts';
+import { spellTileText } from '../content/spell-tile-order.ts';
 
 // Conversion commune, uniquement après validation des références et des emplacements.
 export function toCompletionBoard(service: ContentService, segmentation: Segmentation, config: CompletionParameters): CompletionBoard {
@@ -46,7 +47,11 @@ export function activityToExercise(service: ContentService, activity: Activity, 
     const segments = letterPositions(target.display);
     const choices: Answer[] = activity.distractorUnitIds.map((id) => ({ text: service.getProgram().units.find((u) => u.id === id)!.display, kind: 'letter' }));
     choices.splice(activity.answerPosition ?? 0, 0, ...[...new Set(activity.missingPositions.map((i) => segments[i]))].map((text): Answer => ({ text, kind: 'letter' })));
+    if (activity.tileOrder) choices.splice(0, choices.length, ...activity.tileOrder.map((id): Answer => ({
+      text: spellTileText(activity, id, unitId => service.getProgram().units.find(unit => unit.id === unitId)!.display), kind: 'letter',
+    })));
     return { issues, exercise: { id: activity.id, activityType: 'spell', target: { id: target.id, type: 'word', text: target.display, audioText: target.audioText, imageAsset: target.imageAsset },
+      ...(activity.tileOrder ? { tileOrder: activity.tileOrder } : {}),
       segments, slots: activity.missingPositions.map((segmentIndex) => ({ segmentIndex, expected: segments[segmentIndex] })), choices } };
   }
   const segmentation = activitySegmentation(service.getProgram(), activity)!;

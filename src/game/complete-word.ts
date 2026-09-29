@@ -3,6 +3,7 @@ export type AnswerKind = 'letter' | 'grapheme' | 'syllable' | 'word';
 export interface Answer { text: string; kind: AnswerKind }
 export interface CompletionSlot { readonly segmentIndex: number; readonly expected: string }
 export interface CompletionBoard {
+  readonly tileOrder?: readonly string[];
   readonly gaps?: readonly string[];
   readonly segments: readonly string[];
   readonly choices: readonly Answer[];
