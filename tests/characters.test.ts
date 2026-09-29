@@ -94,3 +94,13 @@ test('both production SVGs resolve through visual keys and distinct egg themes',
     assert.equal(rabbit.eggTheme.shellBase, '#fff8eb'); assert.equal(rabbit.eggTheme.spots, '#bdb3a8'); assert.equal(rabbit.eggTheme.accent, '#dca5b4');
   }
 });
+
+test('Lion uses the registered SVG and its own pastel egg palette', () => {
+  const lion = getCharacter('lion');
+  assert.deepEqual(lion.visual, { kind: 'svg', component: 'lion', happyExpression: true });
+  assert.ok('eggTheme' in lion);
+  if ('eggTheme' in lion) {
+    assert.equal(lion.eggTheme.shellBase, '#fff5de');
+    assert.equal(lion.eggTheme.spots, '#d3b383');
+  }
+});

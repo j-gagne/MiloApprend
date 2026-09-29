@@ -44,4 +44,4 @@ html,body{overscroll-behavior-y:none}
 /* Child gameplay only: prevent native selection/callout without blocking page scrolling. */
 .game-screen{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 
-.child-character .rabbit{width:100%;height:100%}
+.child-character .rabbit,.child-character .lion{width:100%;height:100%}

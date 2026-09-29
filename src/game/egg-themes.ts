@@ -10,3 +10,7 @@ export const rabbitEggTheme: EggTheme = {
   shellBase: '#fff8eb', shellShade: '#ebddc9', shellStroke: '#d3bda9', spots: '#bdb3a8',
   speckles: '#e6bdc6', interior: '#78635e', cracks: '#9c7c73', brokenStroke: '#c5aa99', opening: '#bd9298', accent: '#dca5b4',
 };
+export const lionEggTheme: EggTheme = {
+  shellBase: '#fff5de', shellShade: '#eed8ac', shellStroke: '#d9bc8e', spots: '#d3b383',
+  speckles: '#e8c896', interior: '#7d6246', cracks: '#a07a50', brokenStroke: '#ceb083', opening: '#b99161', accent: '#d8ad62',
+};
