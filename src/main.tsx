@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
 import { HatchingPreview } from './components/HatchingPreview';
+import { LionRevealPreview } from './components/LionRevealPreview';
+import { MonkeyRevealPreview } from './components/MonkeyRevealPreview';
 import './styles.css';
 import { loadBaseProgram } from './content/remote-program';
 import { createContentService } from './content/service';
@@ -10,6 +12,8 @@ import { createContentRepository } from './content/repository';
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 const hatchingPreview = new URLSearchParams(window.location.search).get('preview') === 'hatching';
 if (hatchingPreview) root.render(<React.StrictMode><HatchingPreview /></React.StrictMode>);
+else if (new URLSearchParams(window.location.search).get('preview') === 'lion-reveal') root.render(<React.StrictMode><LionRevealPreview /></React.StrictMode>);
+else if (new URLSearchParams(window.location.search).get('preview') === 'monkey-reveal') root.render(<React.StrictMode><MonkeyRevealPreview /></React.StrictMode>);
 else {
   root.render(<main className="home-screen"><p role="status">Un petit instant…</p></main>);
   void loadBaseProgram().then(baseProgram => {

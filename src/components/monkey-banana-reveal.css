@@ -1,0 +1,7 @@
+.monkey-banana-scene{display:block;width:100%;max-width:480px;height:auto;margin:-12px 0 -18px}
+.monkey-banana-scene[data-stage="1"] .banana-reaction{transform-origin:0 0;animation:banana-peek 9s ease-in-out infinite}
+.monkey-banana-scene[data-stage="1"] .banana-side{animation-duration:13s;animation-delay:3s}
+.monkey-banana-scene[data-stage="1"] .banana-lower{animation-name:banana-nudge;animation-duration:11s;animation-delay:5s}
+@keyframes banana-peek{0%,12%,100%{transform:rotate(0)}4%{transform:rotate(2.5deg)}8%{transform:rotate(-1deg)}}
+@keyframes banana-nudge{0%,12%,100%{transform:translate(0,0)}5%{transform:translate(2px,-2px)}9%{transform:translate(-1px,0)}}
+@media(prefers-reduced-motion:reduce){.monkey-banana-scene[data-stage="1"] .banana-reaction{animation:none}}
