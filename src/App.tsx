@@ -101,6 +101,13 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
   }
 
   function closeCharacters() { setPreviewCharacter(undefined); returnToCharacterButton.current = true; setScreen('home'); }
+  function resetProgress() {
+    const reset = progressStore.reset();
+    if (!reset.saved) return false;
+    setProgress(reset.progress); setSaved(true); setCharacterSaved(true);
+    setResult(createSessionProgress(0)); completed.current = false; sessionId.current = '';
+    return true;
+  }
   function selectCharacter(selectedCharacterId: CharacterId, playerName: string) {
     const stored = progressStore.load();
     if (!canChooseCharacter || (stored.eggRewards?.currentEgg.progress ?? 0) !== 0) {
@@ -169,6 +176,7 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
     {screen === 'game' && <CompleteWord audioSessionId={sessionId.current} playerName={playerName} onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}
     {screen === 'gate' && <ParentGate onOpen={() => setScreen('parent')} onCancel={() => setScreen('home')} />}
     {screen === 'parent' && <ParentSpace baseProgram={baseProgram} playerName={playerName} data={parent.data} service={service} warning={parent.warning}
+      onResetProgress={resetProgress}
       onDirtyChange={(dirty) => { parentDirty.current = dirty; }}
       onExit={() => { parentDirty.current = false; setScreen('home'); }} onChange={(data) => {
         const saved = parentStore.save(data);

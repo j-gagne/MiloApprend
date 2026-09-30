@@ -12,6 +12,7 @@ export interface Progress { completedSessions: number; selectedCharacterId?: Cha
 export interface ProgressStore {
   load(): Progress;
   save(progress: Progress): boolean;
+  reset(): { progress: Progress; saved: boolean };
   completeSession(sessionId: string): { progress: Progress; saved: boolean };
   acknowledgeEgg(sessionId: string): { progress: Progress; saved: boolean };
 }
@@ -32,6 +33,10 @@ export function createProgressStore(storage: () => KeyValueStorage): ProgressSto
   save(progress) {
     try { storage().setItem(key, JSON.stringify(progress)); return true; }
     catch { return false; }
+  },
+  reset() {
+    const progress: Progress = { completedSessions: 0, selectedCharacterId: getCharacter(undefined).id };
+    return { progress, saved: this.save(progress) };
   },
   completeSession(sessionId) {
     const progress = this.load();

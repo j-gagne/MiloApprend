@@ -85,3 +85,30 @@ test('old in-progress dinosaur egg stays dinosaur with a rabbit profile', () => 
   store.save({ ...store.load(), eggRewards: { ...emptyEggRewards(), currentEgg: { ...emptyEggRewards().currentEgg, progress: 2 } } });
   assert.equal(store.completeSession('old').progress.eggRewards!.currentEgg.pendingAnimalId, 'dinosaur');
 });
+
+test('reset restores a new child profile, clearing egg, hatches, session IDs and pending transition', () => {
+  const { store, reload } = fixture();
+  for (let n = 1; n <= 5; n++) { store.completeSession(String(n)); store.acknowledgeEgg(String(n)); }
+  const before = store.completeSession('6').progress;
+  assert.equal(before.eggRewards?.hatches.length, 1);
+  assert.ok(before.eggRewards?.pendingTransition);
+  const fresh = createProgressStore(() => ({ getItem: () => null, setItem: () => {} })).load();
+  assert.deepEqual(store.reset(), { progress: fresh, saved: true });
+  assert.deepEqual(reload().load(), fresh);
+  const restarted = reload().completeSession('6').progress;
+  assert.equal(restarted.completedSessions, 1);
+  assert.equal(restarted.eggRewards?.currentEgg.progress, 1);
+  assert.deepEqual(restarted.eggRewards?.hatches, []);
+  assert.deepEqual(restarted.eggRewards?.completedSessionIds, ['6']);
+});
+
+test('failed progress reset preserves stored progression and can be retried', () => {
+  const { store, block } = fixture();
+  const before = store.completeSession('first').progress;
+  block(true);
+  assert.equal(store.reset().saved, false);
+  assert.deepEqual(store.load(), before);
+  block(false);
+  assert.equal(store.reset().saved, true);
+  assert.equal(store.load().completedSessions, 0);
+});

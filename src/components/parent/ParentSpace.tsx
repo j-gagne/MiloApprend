@@ -19,12 +19,12 @@ import { ParentDraft } from './ParentDraft';
 import { parentDrafts, parentTabs, draftIdentity, type ParentTab } from '../../services/parent-drafts';
 
 interface Props { baseProgram: LearningProgram; playerName: string; data: ParentData; service: ContentService; warning?: string; onChange: (data: ParentData) => boolean;
-  onExit: () => void; onDirtyChange: (dirty: boolean) => void }
+  onExit: () => void; onDirtyChange: (dirty: boolean) => void; onResetProgress: () => boolean }
 const tabs = parentTabs;
 type Tab = ParentTab;
 interface Editing { activity: Activity; target: CompletionTarget }
 
-export function ParentSpace({ baseProgram, playerName, data, service, warning, onChange, onExit, onDirtyChange }: Props) {
+export function ParentSpace({ baseProgram, playerName, data, service, warning, onChange, onExit, onDirtyChange, onResetProgress }: Props) {
   const [restored] = useState(() => {
     const key = parentDrafts.navigation().editorKey;
     const fields = key ? parentDrafts.load(key) : undefined;
@@ -141,6 +141,15 @@ export function ParentSpace({ baseProgram, playerName, data, service, warning, o
             onClick={() => { gameAudio.setReadingSpeed(speed); onChange({ ...data, readingSpeed: speed }); }}>{READING_SPEEDS[speed].label}</button>)}
           <button onClick={() => { gameAudio.unlock(); const example = service.getAvailableWords()[0]; if (example) void gameAudio.playWord(example.audioText, example.audioAsset ?? undefined); }}>Écouter un exemple</button>
         </div></section>
+        <section className="parent-card"><h3>Progression enfant</h3>
+          <p>Efface les aventures terminées, l’œuf en cours et les animaux de la Collection. Vos contenus et réglages Parent sont conservés.</p>
+          <button onClick={() => {
+            if (window.confirm('Réinitialiser la progression enfant ? Les aventures terminées, l’œuf et les récompenses en cours ainsi que tous les animaux de la Collection seront effacés. Le prénom et le personnage reprendront leurs valeurs initiales. Le programme éducatif, les contenus, exercices, personnalisations et réglages Parent seront conservés.')) {
+              setMessage(onResetProgress() ? 'Progression enfant réinitialisée. Les contenus et réglages Parent sont conservés.'
+                : 'Réinitialisation impossible : la sauvegarde locale est indisponible. La progression est conservée.');
+            }
+          }}>Réinitialiser la progression</button>
+        </section>
         <section className="parent-card"><h3>Revenir au programme initial</h3>
           <p>Supprime vos semaines, contenus, exercices et réglages personnalisés. Les aventures terminées de {playerName} seront conservées.</p>
           <button onClick={() => {
