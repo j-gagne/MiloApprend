@@ -1,4 +1,5 @@
-import { Rabbit } from './Rabbit';
+import { CharacterArtwork } from './CharacterArtwork';
+import type { VariantId } from '../game/character-variants';
 import type { EggStage } from './HatchingPreview';
 import './environment-reveal.css';
 
@@ -30,7 +31,7 @@ function Plant({ x, y, size = 1, color, flower, motion }: { x: number; y: number
 }
 const greens = ['#a6b985', '#8ca578', '#b7c69a'];
 const flowers = ['#e6bacb', '#bca8cf', '#ce9db6', '#ab97bd'];
-export function RabbitReveal({ stage }: { stage: EggStage }) {
+export function RabbitReveal({ stage, variantId = 'normal' }: { stage: EggStage; variantId?: VariantId }) {
   return <svg className="environment-reveal rabbit-reveal-scene" viewBox="0 0 400 400" role="img" aria-label={`Lapin près du terrier : ${stage} sur 5`} data-stage={stage}>
     <g data-layer="background">
       <ellipse cx="200" cy="221" rx="166" ry="153" fill="#edf0dc" />
@@ -41,7 +42,7 @@ export function RabbitReveal({ stage }: { stage: EggStage }) {
       <Plant x={344} y={330} size={.8} color="#a6b985" flower="#ce9db6" />
     </g>
     <g data-layer="rabbit" visibility={stage === 1 ? 'hidden' : undefined}>
-      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300"><Rabbit /></svg>
+      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300"><CharacterArtwork id="rabbit" variantId={variantId} /></svg>
     </g>
     <g data-layer="foreground">
       {plants.map((plant, index) => stage <= plant.until && <g key={index} data-cluster={index}>

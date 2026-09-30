@@ -1,5 +1,6 @@
 import { useId, useState, type ReactNode } from 'react';
 import { CharacterArtwork } from './CharacterArtwork';
+import type { VariantId } from '../game/character-variants';
 import { characterCatalog, getCharacter } from '../game/characters';
 import { dinosaurEggTheme } from '../game/egg-themes';
 import './hatching-preview.css';
@@ -14,7 +15,7 @@ const openings = {
 };
 
 // The animal is replaceable independently; no player, reward or collection state.
-export function HatchingEgg({ stage, animalId = 'dinosaur' }: { stage: EggStage; animalId?: string }) {
+export function HatchingEgg({ stage, animalId = 'dinosaur', variantId }: { stage: EggStage; animalId?: string; variantId?: VariantId }) {
   const character = getCharacter(animalId);
   const theme = 'eggTheme' in character ? character.eggTheme : dinosaurEggTheme;
   const id = useId().replace(/:/g, '');
@@ -35,7 +36,7 @@ export function HatchingEgg({ stage, animalId = 'dinosaur' }: { stage: EggStage;
     <g className="egg-motion" key={stage}>
       {stage < 5 && <path d={egg} fill={theme.interior} />}
       <g clipPath={`url(#${id}-reveal)`} data-reveal={stage === 5 ? 'full' : stage === 4 ? 'large' : stage === 3 ? 'small' : 'hidden'}>
-        <g className="hatching-animal" data-testid="hatching-animal"><svg aria-hidden="true" x="40" y="110" width="300" height="265" viewBox="0 0 340 300"><CharacterArtwork id={character.id} /></svg></g>
+        <g className="hatching-animal" data-testid="hatching-animal"><svg aria-hidden="true" x="40" y="110" width="300" height="265" viewBox="0 0 340 300"><CharacterArtwork id={character.id} variantId={variantId} /></svg></g>
       </g>
       {stage < 5 ? <g mask={`url(#${id}-shell)`} data-testid="egg-shell">
         <path d={egg} fill={`url(#${id}-cream)`} stroke={theme.shellStroke} strokeWidth="2" />
@@ -61,16 +62,16 @@ export function HatchingEgg({ stage, animalId = 'dinosaur' }: { stage: EggStage;
   </svg>;
 }
 
-export function HatchingScreen({ stage, progress = stage, total = 5, onContinue, children, notice, animalId = 'dinosaur' }: {
+export function HatchingScreen({ stage, progress = stage, total = 5, onContinue, children, notice, animalId = 'dinosaur', variantId }: {
   stage: EggStage; progress?: number; total?: number; onContinue?: () => void;
-  children?: ReactNode; notice?: ReactNode; animalId?: string;
+  children?: ReactNode; notice?: ReactNode; animalId?: string; variantId?: VariantId;
 }) {
   return <div className="app-shell hatching-preview">
     <header className="topbar"><a className="brand" href={window.location.pathname}><span className="brand-icon">m.</span><span>milo <b>apprend</b></span></a>{!onContinue && <span className="hatch-preview-label">Aperçu visuel</span>}</header>
     <main className="hatch-screen">
       <p className="eyebrow">UNE PETITE SURPRISE</p>
       <h1 aria-live="polite">{titles[stage - 1]}</h1>
-      <HatchingEgg stage={stage} animalId={animalId} />
+      <HatchingEgg stage={stage} animalId={animalId} variantId={variantId} />
       <div className="hatch-progress" aria-label={`Éclosion : ${progress} sur ${total}`}>{[1, 2, 3, 4, 5].map(n => <span key={n} className={n <= stage ? 'reached' : ''} aria-hidden="true">{n === 5 && stage === 5 ? '★' : ''}</span>)}<strong>{progress}/{total}</strong></div>
       <button className="primary-button" type="button" onClick={onContinue} aria-disabled={!onContinue || undefined} aria-describedby={!onContinue ? 'hatch-note' : undefined}>CONTINUER <span aria-hidden="true">→</span></button>
       {!onContinue && <p id="hatch-note" className="hatch-note">Bouton de démonstration, sans action.</p>}

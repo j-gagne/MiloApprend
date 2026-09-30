@@ -5,7 +5,7 @@ import { Character } from './components/Character';
 import { CharacterPicker } from './components/CharacterPicker';
 import { Collection } from './components/Collection';
 import { CharacterRewardScreen } from './components/CharacterRewardReveal';
-import { eggVisualStage, emptyEggRewards } from './game/egg-rewards';
+import { eggVisualStage, emptyEggRewards, newEgg } from './game/egg-rewards';
 import { getCharacter, type CharacterId } from './game/characters';
 import { themeVariables } from './game/themes';
 import { gameAudio } from './services/audio';
@@ -113,9 +113,10 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
     if (!canChooseCharacter || (stored.eggRewards?.currentEgg.progress ?? 0) !== 0) {
       setProgress(stored); closeCharacters(); return;
     }
-    const eggRewards = progress.eggRewards ?? emptyEggRewards(selectedCharacterId);
-    const next = { ...progress, selectedCharacterId, playerName,
-      eggRewards: { ...eggRewards, currentEgg: { ...eggRewards.currentEgg, pendingAnimalId: selectedCharacterId } } };
+    const eggRewards = stored.eggRewards ?? emptyEggRewards(selectedCharacterId);
+    const next = { ...stored, selectedCharacterId, playerName,
+      eggRewards: { ...eggRewards, currentEgg: eggRewards.currentEgg.pendingAnimalId === selectedCharacterId
+        ? eggRewards.currentEgg : newEgg(selectedCharacterId, eggRewards.hatches) } };
     setCharacterSaved(progressStore.save(next)); setProgress(next); closeCharacters();
     void gameAudio.speakCharacter(`Salut ${next.playerName} !`, next.selectedCharacterId);
   }
@@ -125,6 +126,7 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
     if (stored.eggRewards?.pendingTransition) { setProgress(stored); setScreen('egg'); return; }
     const nextSession = createPlaySession(service, parent.data);
     if (!nextSession.challenges.length) return;
+    setProgress(progressStore.ensureReward().progress);
     completed.current = false;
     // getRandomValues also works on local-network HTTP (unlike randomUUID).
     sessionId.current = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16).padStart(8, '0')).join('');
@@ -140,7 +142,7 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
   const pending = progress.eggRewards?.pendingTransition;
   if (screen === 'egg' && pending) return <CharacterRewardScreen
     stage={eggVisualStage(pending.progress, pending.sessionsToHatch)} progress={pending.progress} total={pending.sessionsToHatch}
-    animalId={pending.animalId} onContinue={continueFromEgg}
+    animalId={pending.animalId} variantId={progress.eggRewards?.currentEgg.pendingVariantId} onContinue={continueFromEgg}
     notice={!saved && <p className="save-note" role="status">La sauvegarde est indisponible. Ta surprise reste en attente. Réessaie CONTINUER.</p>} />;
 
   return <div className="app-shell">

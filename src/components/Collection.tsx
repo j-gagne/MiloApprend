@@ -11,7 +11,7 @@ export function Collection({ hatches, onHome }: { hatches: readonly HatchRecord[
     <button className="collection-button" onClick={onHome}>RETOUR À L’ACCUEIL</button>
     {hatches.length ? <ul className="collection-grid" aria-label="Animaux collectionnés">
       {hatches.map(hatch => <li key={hatch.id} data-hatch-id={hatch.id}>
-        <Character id={getCharacter(hatch.animalId).id} />
+        <Character id={getCharacter(hatch.animalId).id} variantId={hatch.variantId} />
       </li>)}
     </ul> : <p className="collection-empty">Fais éclore ton premier œuf pour commencer ta collection !</p>}
     <p className="collection-count">{hatches.length} {hatches.length === 1 ? 'animal collectionné' : 'animaux collectionnés'}</p>

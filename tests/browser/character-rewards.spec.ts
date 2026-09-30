@@ -129,12 +129,12 @@ for (const id of ['lion', 'monkey', 'unicorn', 'rabbit', 'tiger'] as const) {
       expect(progress.completedSessions).toBe(5 + stage);
       const rewards = progress.eggRewards!;
       expect(Object.keys(rewards).sort()).toEqual(['completedSessionIds', 'currentEgg', 'hatches', 'pendingTransition']);
-      expect(rewards.currentEgg).toEqual({ progress: stage, sessionsToHatch: 5, pendingAnimalId: id });
+      expect(rewards.currentEgg).toEqual({ progress: stage, sessionsToHatch: 5, pendingAnimalId: id, pendingVariantId: expect.stringMatching(/^(normal|sleeping)$/) });
+      await expect(scene.locator(`svg.${id}`)).toHaveAttribute('data-variant', rewards.currentEgg.pendingVariantId!);
       expect(rewards.completedSessionIds).toHaveLength(stage + 1);
       expect(rewards.hatches).toHaveLength(stage === 5 ? 2 : 1);
       expect(rewards.hatches[0]).toEqual(previous);
-      if (stage === 5) expect(rewards.hatches[1]).toEqual({ id: `hatch:${rewards.pendingTransition!.sessionId}`, animalId: id, hatchedAt: expect.any(String) });
-      await page.screenshot({ path: `test-results/production-${id}-${stage}.png`, fullPage: true });
+      if (stage === 5) expect(rewards.hatches[1]).toEqual({ id: `hatch:${rewards.pendingTransition!.sessionId}`, animalId: id, variantId: rewards.currentEgg.pendingVariantId, hatchedAt: expect.any(String) });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.reload();
       await expect(scene).toHaveAttribute('data-stage', String(stage));

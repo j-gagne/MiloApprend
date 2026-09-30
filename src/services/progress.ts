@@ -13,11 +13,12 @@ export interface ProgressStore {
   load(): Progress;
   save(progress: Progress): boolean;
   reset(): { progress: Progress; saved: boolean };
+  ensureReward(): { progress: Progress; saved: boolean };
   completeSession(sessionId: string): { progress: Progress; saved: boolean };
   acknowledgeEgg(sessionId: string): { progress: Progress; saved: boolean };
 }
 const key = 'milo-apprend.progress.v1';
-export function createProgressStore(storage: () => KeyValueStorage): ProgressStore { return {
+export function createProgressStore(storage: () => KeyValueStorage, rng: () => number = Math.random): ProgressStore { return {
   load() {
     try {
       const value: unknown = JSON.parse(storage().getItem(key) ?? 'null');
@@ -38,9 +39,15 @@ export function createProgressStore(storage: () => KeyValueStorage): ProgressSto
     const progress: Progress = { completedSessions: 0, selectedCharacterId: getCharacter(undefined).id };
     return { progress, saved: this.save(progress) };
   },
+  ensureReward() {
+    const progress = this.load();
+    if (progress.eggRewards) return { progress, saved: true };
+    const next = { ...progress, eggRewards: emptyEggRewards(getCharacter(progress.selectedCharacterId).id, rng) };
+    return { progress: next, saved: this.save(next) };
+  },
   completeSession(sessionId) {
     const progress = this.load();
-    const before = progress.eggRewards ?? emptyEggRewards(getCharacter(progress.selectedCharacterId).id);
+    const before = progress.eggRewards ?? emptyEggRewards(getCharacter(progress.selectedCharacterId).id, rng);
     const after = advanceEgg(before, sessionId, new Date().toISOString());
     if (after === before) return { progress, saved: before.completedSessionIds.includes(sessionId) };
     const next = { ...progress, completedSessions: progress.completedSessions + 1, eggRewards: after };
@@ -49,7 +56,7 @@ export function createProgressStore(storage: () => KeyValueStorage): ProgressSto
   acknowledgeEgg(sessionId) {
     const progress = this.load();
     if (!progress.eggRewards) return { progress, saved: false };
-    const after = acknowledgeEgg(progress.eggRewards, sessionId, getCharacter(progress.selectedCharacterId).id);
+    const after = acknowledgeEgg(progress.eggRewards, sessionId, getCharacter(progress.selectedCharacterId).id, rng);
     if (after === progress.eggRewards) return { progress, saved: !after.pendingTransition };
     const next = { ...progress, eggRewards: after };
     return { progress: next, saved: this.save(next) };

@@ -1,5 +1,6 @@
-export function Unicorn({ happy = false }: { happy?: boolean }) {
-  return <svg className="unicorn" viewBox="0 0 340 300" aria-hidden="true">
+import { SleepingEyes } from './SleepingEyes';
+export function Unicorn({ happy = false, sleeping = false }: { happy?: boolean; sleeping?: boolean }) {
+  return <svg className="unicorn" data-variant={sleeping ? 'sleeping' : 'normal'} viewBox="0 0 340 300" aria-hidden="true">
     <ellipse cx="171" cy="270" rx="111" ry="14" fill="#304f36" opacity=".12" />
     <path d="M131 216Q90 192 78 222Q73 242 57 242Q87 265 111 243Z" fill="#b9a6cf" />
     <path d="M112 219Q91 211 85 232Q80 245 70 247Q99 253 112 232Z" fill="#dfb9c9" />
@@ -14,14 +15,14 @@ export function Unicorn({ happy = false }: { happy?: boolean }) {
     <path d="M199 57Q217 48 229 64Q217 75 205 68Z" fill="#dfb9c9" />
     <path d="M191 62L202 24Q205 17 208 25L218 63Q205 69 191 62Z" fill="#d9bf83" />
     <path d="m198 43 15 5m-18 5 20 6" stroke="#bda575" strokeWidth="2" strokeLinecap="round" />
-    <ellipse cx="179" cy="97" rx="7" ry="10" fill="#3f4643" /><ellipse cx="231" cy="93" rx="7" ry="10" fill="#3f4643" />
-    <circle cx="181" cy="94" r="2" fill="white" /><circle cx="233" cy="90" r="2" fill="white" />
+    {sleeping ? <SleepingEyes /> : <><ellipse cx="179" cy="97" rx="7" ry="10" fill="#3f4643" /><ellipse cx="231" cy="93" rx="7" ry="10" fill="#3f4643" />
+    <circle cx="181" cy="94" r="2" fill="white" /><circle cx="233" cy="90" r="2" fill="white" /></>}
     <ellipse cx="160" cy="119" rx="10" ry="6" fill="#dfb9c9" />
     <ellipse cx="236" cy="131" rx="36" ry="21" fill="#eadcc4" />
     <ellipse cx="252" cy="124" rx="3" ry="2.5" fill="#a99689" />
     {happy ? <><path d="M214 137Q231 146 247 135Q243 152 231 153Q219 152 214 137Z" fill="#3f4643" /><path d="M223 148Q232 144 239 149Q232 155 223 148Z" fill="#dfb9c9" /></>
       : <path d="M220 138Q231 147 243 138" fill="none" stroke="#3f4643" strokeWidth="3" strokeLinecap="round" />}
-    <path d={happy ? 'M145 184q-22-6-26-28M218 184q22-5 27-27' : 'M146 179q-17 15-10 28M218 179q17 15 10 28'} fill="none" stroke="#e1d3bf" strokeWidth="13" strokeLinecap="round" />
+    <path d={sleeping ? 'M146 179q-6 31 21 35M218 179q6 31-21 35' : happy ? 'M145 184q-22-6-26-28M218 184q22-5 27-27' : 'M146 179q-17 15-10 28M218 179q17 15 10 28'} fill="none" stroke="#e1d3bf" strokeWidth="13" strokeLinecap="round" />
     <ellipse cx="142" cy="261" rx="25" ry="12" fill="#b9a6cf" /><ellipse cx="211" cy="261" rx="25" ry="12" fill="#b9a6cf" />
   </svg>;
 }

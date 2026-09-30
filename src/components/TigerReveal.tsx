@@ -1,4 +1,5 @@
-import { Tiger } from './Tiger';
+import { CharacterArtwork } from './CharacterArtwork';
+import type { VariantId } from '../game/character-variants';
 import type { EggStage } from './HatchingPreview';
 import './environment-reveal.css';
 
@@ -25,7 +26,7 @@ function Grass({ x, y, width = 1, height = 1, color, motion, shelter = false }: 
   </g>;
 }
 const greens = ['#91a778', '#b2bf87', '#7f9c70', '#a1b683'];
-export function TigerReveal({ stage }: { stage: EggStage }) {
+export function TigerReveal({ stage, variantId = 'normal' }: { stage: EggStage; variantId?: VariantId }) {
   return <svg className="environment-reveal tiger-reveal-scene" viewBox="0 0 400 400" role="img" aria-label={`Tigre dans les hautes herbes : ${stage} sur 5`} data-stage={stage}>
     <g data-layer="background">
       <ellipse cx="200" cy="216" rx="165" ry="159" fill="#e9edda" />
@@ -33,7 +34,7 @@ export function TigerReveal({ stage }: { stage: EggStage }) {
       <ellipse cx="200" cy="351" rx="164" ry="20" fill="#d1dcb6" />
     </g>
     <g data-layer="tiger" visibility={stage === 1 ? 'hidden' : undefined}>
-      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300"><Tiger /></svg>
+      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300"><CharacterArtwork id="tiger" variantId={variantId} /></svg>
     </g>
     <g data-layer="foreground">
       {grasses.map((grass, index) => stage <= grass.until && <g key={index} data-cluster={index}>

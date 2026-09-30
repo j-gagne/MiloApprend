@@ -1,4 +1,5 @@
-import { Monkey } from './Monkey';
+import { CharacterArtwork } from './CharacterArtwork';
+import type { VariantId } from '../game/character-variants';
 import type { EggStage } from './HatchingPreview';
 import './monkey-banana-reveal.css';
 
@@ -34,7 +35,7 @@ function Bunch({ x, y, angle, small = false, reaction, id }: { x: number; y: num
   </g>;
 }
 
-export function MonkeyBananaReveal({ stage }: { stage: EggStage }) {
+export function MonkeyBananaReveal({ stage, variantId = 'normal' }: { stage: EggStage; variantId?: VariantId }) {
   return <svg className="monkey-banana-scene" viewBox="0 0 400 400" role="img" aria-label={`Singe et bananes : ${stage} sur 5`} data-stage={stage}>
     <g data-layer="background">
       <ellipse cx="200" cy="215" rx="162" ry="157" fill="#f3ead4" />
@@ -44,7 +45,7 @@ export function MonkeyBananaReveal({ stage }: { stage: EggStage }) {
       <Bunch x={339} y={313} angle={43} small />
     </g>
     <g data-layer="monkey" visibility={stage === 1 ? 'hidden' : undefined} data-reveal={stage === 1 ? 'hidden' : stage === 5 ? 'full' : 'partial'}>
-      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300" aria-hidden="true"><Monkey /></svg>
+      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300" aria-hidden="true"><CharacterArtwork id="monkey" variantId={variantId} /></svg>
     </g>
     <g data-layer="foreground">
       {bunches.filter(bunch => stage <= bunch.until).map(bunch => <Bunch key={bunch.id} {...bunch}

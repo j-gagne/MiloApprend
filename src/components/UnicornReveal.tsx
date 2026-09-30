@@ -1,4 +1,5 @@
-import { Unicorn } from './Unicorn';
+import { CharacterArtwork } from './CharacterArtwork';
+import type { VariantId } from '../game/character-variants';
 import type { EggStage } from './HatchingPreview';
 import './environment-reveal.css';
 
@@ -27,7 +28,7 @@ function Cloud({ x, y, size = 1, color, motion }: { x: number; y: number; size?:
     </g>
   </g>;
 }
-export function UnicornReveal({ stage }: { stage: EggStage }) {
+export function UnicornReveal({ stage, variantId = 'normal' }: { stage: EggStage; variantId?: VariantId }) {
   return <svg className="environment-reveal unicorn-reveal-scene" viewBox="0 0 400 400" role="img" aria-label={`Licorne dans les nuages : ${stage} sur 5`} data-stage={stage}>
     <g data-layer="background">
       <ellipse cx="200" cy="213" rx="164" ry="162" fill="#f0eaf3" />
@@ -35,7 +36,7 @@ export function UnicornReveal({ stage }: { stage: EggStage }) {
       <Cloud x={190} y={352} size={1.3} color="#f4dfcf" />
     </g>
     <g data-layer="unicorn" visibility={stage === 1 ? 'hidden' : undefined}>
-      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300"><Unicorn /></svg>
+      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300"><CharacterArtwork id="unicorn" variantId={variantId} /></svg>
     </g>
     <g data-layer="foreground">
       {clouds.map((cloud, index) => stage <= cloud.until && <g key={index} data-cluster={index}>

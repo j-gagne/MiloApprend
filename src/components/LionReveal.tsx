@@ -1,5 +1,6 @@
 import { useId } from 'react';
-import { Lion } from './Lion';
+import { CharacterArtwork } from './CharacterArtwork';
+import type { VariantId } from '../game/character-variants';
 
 export type LionRevealStage = 1 | 2 | 3 | 4 | 5;
 const openings = {
@@ -26,7 +27,7 @@ function Leaf({ x, y, rotate, size = 1, color, motion }: { x: number; y: number;
 }
 
 // Visual prototype only: the existing Lion stays independent of the foliage.
-export function LionReveal({ stage }: { stage: LionRevealStage }) {
+export function LionReveal({ stage, variantId = 'normal' }: { stage: LionRevealStage; variantId?: VariantId }) {
   const id = useId().replace(/:/g, '');
   const opening = stage === 2 || stage === 3 || stage === 4 ? openings[stage] : undefined;
   return <svg className="lion-reveal-scene" viewBox="0 0 400 400" role="img"
@@ -49,7 +50,7 @@ export function LionReveal({ stage }: { stage: LionRevealStage }) {
       <Leaf x={325} y={323} rotate={55} size={1.1} color="#8fa77a" />
     </g>
     <g clipPath={`url(#${id}-opening)`} data-layer="lion" data-reveal={stage === 1 ? 'hidden' : stage === 5 ? 'full' : 'partial'}>
-      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300" aria-hidden="true"><Lion /></svg>
+      <svg x="30" y="55" width="340" height="300" viewBox="0 0 340 300" aria-hidden="true"><CharacterArtwork id="lion" variantId={variantId} /></svg>
     </g>
     <g data-layer="foreground">
       {stage < 5 && <g mask={`url(#${id}-bush)`}>
