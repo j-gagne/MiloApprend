@@ -1,6 +1,6 @@
 import { getCharacter } from './characters.ts';
 
-export const variantIds = ['normal', 'sleeping'] as const;
+export const variantIds = ['normal', 'sleeping', 'celebrating'] as const;
 export type VariantId = typeof variantIds[number];
 export const characterVariants = {
   dinosaur: variantIds, lion: variantIds, monkey: variantIds,

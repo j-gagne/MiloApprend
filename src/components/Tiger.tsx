@@ -1,6 +1,7 @@
 import { SleepingEyes } from './SleepingEyes';
-export function Tiger({ happy = false, sleeping = false }: { happy?: boolean; sleeping?: boolean }) {
-  return <svg className="tiger" data-variant={sleeping ? 'sleeping' : 'normal'} viewBox="0 0 340 300" aria-hidden="true">
+export function Tiger({ happy = false, sleeping = false, celebrating = false }: { happy?: boolean; sleeping?: boolean; celebrating?: boolean }) {
+  happy = happy || celebrating;
+  return <svg className="tiger" data-variant={sleeping ? 'sleeping' : celebrating ? 'celebrating' : 'normal'} viewBox="0 0 340 300" aria-hidden="true">
     <ellipse cx="171" cy="270" rx="111" ry="14" fill="#304f36" opacity=".12" />
     <path d="M130 232C95 254 68 231 76 198Q81 181 92 186" fill="none" stroke="#dda477" strokeWidth="14" strokeLinecap="round" />
     <path d="m76 207 12 3m-8 19 10-7m-8-33 10-3" stroke="#8b6b56" strokeWidth="6" strokeLinecap="round" />

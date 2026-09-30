@@ -13,5 +13,5 @@ const svgCharacters = { dinosaur: Dinosaur, rabbit: Rabbit, lion: Lion, unicorn:
 export function CharacterArtwork({ id, happy = false, variantId = 'normal' }: { id: string; happy?: boolean; variantId?: VariantId }) {
   const { visual } = getCharacter(id);
   const Artwork = svgCharacters[visual.component];
-  return <Artwork happy={variantId === 'normal' && happy} sleeping={variantId === 'sleeping'} />;
+  return <Artwork happy={variantId === 'normal' && happy} sleeping={variantId === 'sleeping'} celebrating={variantId === 'celebrating'} />;
 }

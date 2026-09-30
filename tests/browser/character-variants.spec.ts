@@ -14,11 +14,12 @@ async function setup(page: Page) {
 }
 const stored = (page: Page): Promise<Progress> => page.evaluate(key => JSON.parse(localStorage.getItem(key)!), key);
 
-for (const { id } of characterCatalog) test(`${id}: both variants pass through the real reveal and Collection`, async ({ page }) => {
+for (const { id } of characterCatalog) test(`${id}: all variants pass through the real reveal and Collection`, async ({ page }) => {
   await setup(page);
   await page.goto('/');
   const selector = id === 'dinosaur' ? '.hatching-egg' : id === 'monkey' ? '.monkey-banana-scene' : `.${id}-reveal-scene`;
-  for (const variantId of ['normal', 'sleeping'] as const) {
+  let normalArms: string | null = null;
+  for (const variantId of ['normal', 'sleeping', 'celebrating'] as const) {
     const progress: Progress = { completedSessions: 5, selectedCharacterId: id === 'lion' ? 'tiger' : 'lion', eggRewards: {
       currentEgg: { progress: 5, sessionsToHatch: 5, pendingAnimalId: id, pendingVariantId: variantId },
       completedSessionIds: ['complete'], pendingTransition: { sessionId: 'complete', progress: 5, sessionsToHatch: 5, animalId: id },
@@ -31,9 +32,12 @@ for (const { id } of characterCatalog) test(`${id}: both variants pass through t
     const artwork = scene.locator(`svg.${id}`);
     await expect(artwork).toBeVisible();
     await expect(artwork).toHaveAttribute('data-variant', variantId);
-    await expect(artwork.locator('[data-sleeping-eyes] path')).toHaveCount(variantId === 'normal' ? 0 : id === 'dinosaur' ? 1 : 2);
+    await expect(artwork.locator('[data-sleeping-eyes] path')).toHaveCount(variantId !== 'sleeping' ? 0 : id === 'dinosaur' ? 1 : 2);
     await expect(artwork.locator('ellipse[rx="7"][ry="10"]')).toHaveCount(variantId === 'sleeping' ? 0 : id === 'dinosaur' ? 1 : 2);
     const revealed = await artwork.innerHTML();
+    const arms = await artwork.locator(`path[stroke-width="${id === 'dinosaur' ? 12 : 13}"]`).last().getAttribute('d');
+    if (variantId === 'normal') normalArms = arms;
+    if (variantId === 'celebrating') expect(arms).not.toBe(normalArms);
     await page.reload();
     expect(await stored(page)).toEqual(progress);
     expect(await artwork.innerHTML()).toBe(revealed);
@@ -67,7 +71,7 @@ test('new cycle variant is saved before play, survives zero-stage navigation, an
   await page.clock.install();
   await page.getByRole('button', { name: 'JOUER', exact: true }).click();
   const initial = (await stored(page)).eggRewards!.currentEgg;
-  expect(['normal', 'sleeping']).toContain(initial.pendingVariantId);
+  expect(['normal', 'sleeping', 'celebrating']).toContain(initial.pendingVariantId);
   expect(initial.progress).toBe(0);
   await page.getByRole('button', { name: 'Milo apprend, accueil' }).click();
   await page.getByRole('button', { name: 'CHOISIR MON PERSONNAGE' }).click();
@@ -88,6 +92,6 @@ test('new cycle variant is saved before play, survives zero-stage navigation, an
     await page.getByRole('button', { name: 'CONTINUER', exact: true }).click();
   }
   const next = (await stored(page)).eggRewards!;
-  expect(next.currentEgg.pendingVariantId).toBe(initial.pendingVariantId === 'normal' ? 'sleeping' : 'normal');
+  expect(['normal', 'sleeping', 'celebrating'].filter(id => id !== initial.pendingVariantId)).toContain(next.currentEgg.pendingVariantId);
   expect(next.hatches).toHaveLength(1);
 });
