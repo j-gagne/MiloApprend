@@ -14,6 +14,7 @@ for (const id of ['unicorn', 'rabbit', 'tiger'] as const) test(`${id}: environme
   await page.goto(`/?preview=${id}-reveal`);
   const before = await page.evaluate(() => ({ ...localStorage }));
   const scene = page.locator(`.${id}-reveal-scene`);
+  await expect(scene.locator('[data-cluster]')).toHaveCount(id === 'unicorn' ? 14 : 11);
   await expect(scene.locator(`[data-layer="${id}"]`)).toHaveCSS('visibility', 'hidden');
   expect(await scene.locator('.environment-motion').evaluateAll(nodes => nodes.map(node => getComputedStyle(node).animationDuration))).toEqual(['9s', '13s', '11s']);
   await scene.evaluate(el => el.getAnimations({ subtree: true }).forEach(animation => { animation.pause(); animation.currentTime = 0; }));
@@ -28,6 +29,7 @@ for (const id of ['unicorn', 'rabbit', 'tiger'] as const) test(`${id}: environme
     await page.getByRole('button', { name: `Étape ${stage}`, exact: true }).click();
     await expect(scene).toHaveAttribute('data-stage', String(stage));
     await expect(scene.locator('mask, clipPath')).toHaveCount(0);
+    if (stage >= 4) await expect(scene.locator('[data-cluster]')).toHaveCount(stage === 4 ? 2 : 0);
     expect(await scene.locator(`svg.${id}`).innerHTML()).toBe(artwork);
     await page.screenshot({ path: `test-results/environment-${id}-${stage}.png`, fullPage: true });
     if (stage === 1) continue;
@@ -51,11 +53,23 @@ for (const id of ['unicorn', 'rabbit', 'tiger'] as const) test(`${id}: environme
         if (contains(character, x, y)) { total++; if (!contains(foreground, x, y)) visible++; }
       }
       const points = id === 'unicorn' ? [[234, 88], [154, 193], [209, 152], [261, 148]]
-        : id === 'rabbit' ? [[178, 92], [141, 276], [211, 158], [263, 153]]
+        : id === 'rabbit' ? [[178, 85], [122, 276], [211, 158], [263, 153]]
         : [[178, 117], [108, 265], [209, 152], [261, 148]];
-      return { fraction: visible / total, clues: points.map(([x, y]) => contains(character, x, y) && !contains(foreground, x, y)) };
+      const eyes = points.slice(2).map(([x, y]) => {
+        let exposed = 0, samples = 0;
+        for (let dx = -6; dx <= 6; dx += 2) for (let dy = -9; dy <= 9; dy += 2) {
+          if ((dx / 7) ** 2 + (dy / 10) ** 2 <= 1) { samples++; if (!contains(foreground, x + dx, y + dy)) exposed++; }
+        }
+        return exposed / samples;
+      });
+      return { fraction: visible / total, clues: points.map(([x, y]) => contains(character, x, y) && !contains(foreground, x, y)), eyes };
     }, id);
-    console.log(id, stage, coverage);
+    const [minimum, maximum] = [[.10, .15], [.25, .35], [.65, .75], [1, 1]][stage - 2];
+    expect(coverage.fraction).toBeGreaterThanOrEqual(minimum);
+    expect(coverage.fraction).toBeLessThanOrEqual(maximum);
+    expect(coverage.clues).toEqual(stage === 2 ? [true, true, false, false] : stage === 3 ? [true, true, true, false] : [true, true, true, true]);
+    if (stage === 2) expect(coverage.eyes).toEqual([0, 0]);
+    if (stage === 3) { expect(coverage.eyes[0]).toBeGreaterThan(.85); expect(coverage.eyes[1]).toBe(0); }
   }
   expect(await page.evaluate(() => ({ ...localStorage }))).toEqual(before);
   expect(requests).toEqual([]);
@@ -77,6 +91,15 @@ for (const id of ['lion', 'monkey', 'dinosaur', 'rabbit', 'unicorn', 'tiger']) {
     const eggRewards = advanceEgg(emptyEggRewards(id), 'pending', '2026-09-30');
     await setup(page, { completedSessions: 1, selectedCharacterId: 'rabbit', eggRewards });
     const selector = id === 'monkey' ? '.monkey-banana-scene' : id === 'dinosaur' ? '.hatching-egg' : `.${id}-reveal-scene`;
+    await expect(page.locator(selector)).toHaveAttribute('data-stage', '1');
+    await expect(page.locator(`${selector} svg.${id}`)).toHaveCount(1);
+    expect((await stored(page)).eggRewards).toEqual(eggRewards);
+    await page.evaluate(key => {
+      const progress = JSON.parse(localStorage.getItem(key)!);
+      progress.selectedCharacterId = 'unicorn';
+      localStorage.setItem(key, JSON.stringify(progress));
+    }, key);
+    await page.reload();
     await expect(page.locator(selector)).toHaveAttribute('data-stage', '1');
     await expect(page.locator(`${selector} svg.${id}`)).toHaveCount(1);
     expect((await stored(page)).eggRewards).toEqual(eggRewards);

@@ -33,6 +33,15 @@ async function checkEgg(page: Page, animal: string, stage: number) {
   expect((await state(page)).eggRewards!.currentEgg.pendingAnimalId).toBe(animal);
 }
 
+async function revealImage(page: Page) {
+  const scene = page.locator('.rabbit-reveal-scene');
+  // Match rasterization coordinates across the preview and production page layouts.
+  const previous = await scene.getAttribute('style');
+  await scene.evaluate(el => el.setAttribute('style', 'position:fixed;left:24px;top:100px;width:342px;margin:0;background:#fff8e9;z-index:10'));
+  try { return await scene.screenshot(); }
+  finally { await scene.evaluate((el, style) => style === null ? el.removeAttribute('style') : el.setAttribute('style', style), previous); }
+}
+
 test('real Rabbit stages 1–5 persist, match preview and allow switching only for the next egg', async ({ page }) => {
   await setup(page); await select(page, 'Lapin');
   const images = new Map<number, Buffer>();
@@ -43,7 +52,7 @@ test('real Rabbit stages 1–5 persist, match preview and allow switching only f
     expect(saved.eggRewards!.hatches).toHaveLength(n === 5 ? 1 : 0);
     if (n >= 3) {
 
-      images.set(n, await page.locator('.rabbit-reveal-scene').screenshot());
+      images.set(n, await revealImage(page));
       await page.screenshot({ path: `test-results/production-rabbit-${n}.png`, fullPage: true });
     }
     await page.reload(); await checkEgg(page, 'rabbit', n);
@@ -61,7 +70,7 @@ test('real Rabbit stages 1–5 persist, match preview and allow switching only f
   await page.goto('/?preview=rabbit-reveal');
   for (const [n, image] of images) {
     await page.getByRole('button', { name: 'Étape ' + n, exact: true }).click();
-    expect(await page.locator('.rabbit-reveal-scene').screenshot()).toEqual(image);
+    expect((await revealImage(page)).equals(image), `Stage ${n}: preview matches production`).toBe(true);
   }
   expect(await state(page)).toEqual(saved);
 });

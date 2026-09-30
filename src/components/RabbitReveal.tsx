@@ -5,15 +5,15 @@ import './environment-reveal.css';
 const plants = [
   { x: 174, y: 112, size: .85, until: 1 },
   { x: 264, y: 119, size: .95, until: 3 },
-  { x: 197, y: 163, size: .9, until: 2 },
-  { x: 271, y: 174, size: 1, until: 3 },
-  { x: 157, y: 213, size: .9, until: 3 },
-  { x: 235, y: 225, size: 1.1, until: 3 },
+  { x: 197, y: 177, size: .9, until: 2 },
+  { x: 281, y: 174, size: 1, until: 3 },
+  { x: 142, y: 231, size: .8, until: 3 },
+  { x: 260, y: 244, size: 1, until: 3 },
   { x: 141, y: 286, size: .8, until: 1 },
-  { x: 198, y: 292, size: 1.05, until: 4 },
+  { x: 198, y: 292, size: .85, until: 4 },
   { x: 268, y: 285, size: .9, until: 2 },
   { x: 157, y: 340, size: .8, until: 3 },
-  { x: 246, y: 345, size: .8, until: 4 },
+  { x: 246, y: 345, size: .7, until: 4 },
 ];
 function Plant({ x, y, size = 1, color, flower, motion }: { x: number; y: number; size?: number; color: string; flower?: string; motion?: number }) {
   return <g transform={`translate(${x} ${y}) scale(${size})`}>
