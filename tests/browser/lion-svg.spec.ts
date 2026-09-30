@@ -1,4 +1,4 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { mockSpeech } from './speech-mock';
 import { chainParentData } from '../fixtures/chain-program';
 
@@ -36,7 +36,7 @@ test('Lion SVG registration, mobile expressions and existing egg masks', async (
   await expect(page.locator('.game-companion .character-happy svg.lion')).toBeVisible();
   await page.clock.runFor(2200);
   await page.screenshot({ path: 'test-results/lion-happy.png', fullPage: true });
-  await page.getByRole('button', { name: 'DÉCOUVRIR MA SURPRISE' }).tap();
+  await page.getByRole('button', { name: 'DÉCOUVRE TA SURPRISE' }).tap();
   await expect(page.locator('.lion-reveal-scene svg.lion')).toHaveCount(1);
   await expect(page.locator('.lion-reveal-scene')).toHaveAttribute('data-stage', '1');
 });

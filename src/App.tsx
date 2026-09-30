@@ -141,7 +141,7 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
   if (screen === 'egg' && pending) return <CharacterRewardScreen
     stage={eggVisualStage(pending.progress, pending.sessionsToHatch)} progress={pending.progress} total={pending.sessionsToHatch}
     animalId={pending.animalId} onContinue={continueFromEgg}
-    notice={!saved && <p className="save-note" role="status">La sauvegarde est indisponible. {pending.animalId === 'lion' || pending.animalId === 'monkey' ? 'Ta surprise reste en attente.' : 'Ton œuf reste en attente.'} Réessaie CONTINUER.</p>} />;
+    notice={!saved && <p className="save-note" role="status">La sauvegarde est indisponible. Ta surprise reste en attente. Réessaie CONTINUER.</p>} />;
 
   return <div className="app-shell">
     <div className="landscape" aria-hidden="true"><div className="sun" /><div className="hill hill-back" /><div className="hill hill-front" /><div className="plant plant-left">✦</div><div className="plant plant-right">✦</div></div>
@@ -191,7 +191,7 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
       <p>{result.completedTargets} exercices terminés</p>
       <SessionProgress progress={result} characterId={character.id} />
       <Character id={character.id} happy />
-      <button className="primary-button" onClick={showEgg}>{saved ? pending?.animalId === 'lion' || pending?.animalId === 'monkey' ? 'DÉCOUVRIR MA SURPRISE' : 'DÉCOUVRIR MON ŒUF' : 'RÉESSAYER LA SAUVEGARDE'}</button>
+      <button className="primary-button" onClick={showEgg}>{saved ? 'DÉCOUVRE TA SURPRISE' : 'RÉESSAYER LA SAUVEGARDE'}</button>
       {!saved && <p className="save-note" role="status">La partie est terminée. La sauvegarde est indisponible. Garde cette page ouverte pour réessayer.</p>}
     </main>}
     <footer>Un petit pas à la fois <span aria-hidden="true">✦</span></footer>

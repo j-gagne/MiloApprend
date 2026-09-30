@@ -1,4 +1,4 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { mockSpeech } from './speech-mock';
 import { chainParentData } from '../fixtures/chain-program';
 
@@ -40,12 +40,12 @@ for (const { id, name, shell } of [
   await expect(page.locator(`.game-companion .character-happy svg.${id}`)).toBeVisible();
   await page.clock.runFor(2200);
   await page.screenshot({ path: `test-results/${id}-happy.png`, fullPage: true });
-  await page.getByRole('button', { name: id === 'monkey' ? 'DÉCOUVRIR MA SURPRISE' : 'DÉCOUVRIR MON ŒUF' }).tap();
+  await page.getByRole('button', { name: 'DÉCOUVRE TA SURPRISE' }).tap();
   if (id === 'monkey') {
     await expect(page.locator('.monkey-banana-scene svg.monkey')).toHaveCount(1);
     await expect(page.locator('.monkey-banana-scene')).toHaveAttribute('data-stage', '1');
   } else {
-    await expect(page.getByTestId('hatching-animal').locator(`svg.${id}`)).toHaveCount(1);
-    await expect(page.locator('.hatching-egg stop').first()).toHaveAttribute('stop-color', shell);
+    await expect(page.locator(`.${id}-reveal-scene svg.${id}`)).toHaveCount(1);
+    await expect(page.locator(`.${id}-reveal-scene`)).toHaveAttribute('data-stage', '1');
   }
 });

@@ -23,12 +23,13 @@ async function complete(page: Page) {
   for (const text of ['la','ma']) await page.getByRole('button', { name: `Choisir ${text}`, exact: true }).tap();
   await page.clock.runFor(2200);
   await expect(page.getByRole('heading', { name: 'Bravo Milo !' })).toBeVisible();
-  await page.getByRole('button', { name: 'DÉCOUVRIR MON ŒUF' }).tap();
+  await page.getByRole('button', { name: 'DÉCOUVRE TA SURPRISE' }).tap();
 }
 async function checkEgg(page: Page, animal: string, stage: number) {
-  await expect(page.locator('.hatching-egg')).toHaveAttribute('data-stage', String(stage));
-  await expect(page.getByTestId('hatching-animal').locator(`svg.${animal}`)).toHaveCount(1);
-  await expect(page.locator('.hatching-egg stop').first()).toHaveAttribute('stop-color', animal === 'rabbit' ? '#fff8eb' : '#fff5d9');
+  const scene = page.locator(animal === 'rabbit' ? '.rabbit-reveal-scene' : '.hatching-egg');
+  await expect(scene).toHaveAttribute('data-stage', String(stage));
+  await expect(scene.locator(`svg.${animal}`)).toHaveCount(1);
+  if (animal === 'dinosaur') await expect(scene.locator('stop').first()).toHaveAttribute('stop-color', '#fff5d9');
   expect((await state(page)).eggRewards!.currentEgg.pendingAnimalId).toBe(animal);
 }
 
@@ -42,7 +43,7 @@ test('real Rabbit stages 1–5 persist, match preview and allow switching only f
     expect(saved.eggRewards!.hatches).toHaveLength(n === 5 ? 1 : 0);
     if (n >= 3) {
 
-      images.set(n, await page.locator('.hatching-egg').screenshot());
+      images.set(n, await page.locator('.rabbit-reveal-scene').screenshot());
       await page.screenshot({ path: `test-results/production-rabbit-${n}.png`, fullPage: true });
     }
     await page.reload(); await checkEgg(page, 'rabbit', n);
@@ -57,11 +58,10 @@ test('real Rabbit stages 1–5 persist, match preview and allow switching only f
   expect(rewards.currentEgg).toMatchObject({ pendingAnimalId: 'dinosaur', progress: 0 });
   await complete(page); await checkEgg(page, 'dinosaur', 1);
   const saved = await state(page);
-  await page.goto('/?preview=hatching');
-  await page.getByLabel('Animal à prévisualiser').selectOption('rabbit');
+  await page.goto('/?preview=rabbit-reveal');
   for (const [n, image] of images) {
-    await page.getByRole('button', { name: 'État ' + n, exact: true }).click();
-    expect(await page.locator('.hatching-egg').screenshot()).toEqual(image);
+    await page.getByRole('button', { name: 'Étape ' + n, exact: true }).click();
+    expect(await page.locator('.rabbit-reveal-scene').screenshot()).toEqual(image);
   }
   expect(await state(page)).toEqual(saved);
 });

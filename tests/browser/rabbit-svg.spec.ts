@@ -1,4 +1,4 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 import { mockSpeech } from './speech-mock';
 import { chainParentData } from '../fixtures/chain-program';
@@ -46,7 +46,7 @@ test('Rabbit SVG selects, saves and restores across all child avatar locations',
   await page.clock.runFor(2200);
   await expect(page.locator('.celebration-screen svg.rabbit').last()).toBeVisible();
   await page.screenshot({ path: 'test-results/rabbit-happy.png', fullPage: true });
-  await page.getByRole('button', { name: 'DÉCOUVRIR MON ŒUF' }).tap();
-  await expect(page.getByTestId('hatching-animal').locator('svg.rabbit')).toHaveCount(1);
+  await page.getByRole('button', { name: 'DÉCOUVRE TA SURPRISE' }).tap();
+  await expect(page.locator('.rabbit-reveal-scene svg.rabbit')).toHaveCount(1);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('milo-apprend.progress.v1')!).eggRewards.currentEgg.pendingAnimalId)).toBe('rabbit');
 });

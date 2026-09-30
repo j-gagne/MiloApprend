@@ -2,6 +2,9 @@ import type { ReactNode } from 'react';
 import { HatchingEgg, HatchingScreen, type EggStage } from './HatchingPreview';
 import { LionReveal } from './LionReveal';
 import { MonkeyBananaReveal } from './MonkeyBananaReveal';
+import { UnicornReveal } from './UnicornReveal';
+import { RabbitReveal } from './RabbitReveal';
+import { TigerReveal } from './TigerReveal';
 import { getCharacter } from '../game/characters';
 import { themeVariables } from '../game/themes';
 import './lion-reveal-preview.css';
@@ -9,15 +12,19 @@ import './lion-reveal-preview.css';
 export function CharacterRewardReveal({ characterId, stage }: { characterId: string; stage: EggStage }) {
   if (characterId === 'lion') return <LionReveal stage={stage} />;
   if (characterId === 'monkey') return <MonkeyBananaReveal stage={stage} />;
+  if (characterId === 'unicorn') return <UnicornReveal stage={stage} />;
+  if (characterId === 'rabbit') return <RabbitReveal stage={stage} />;
+  if (characterId === 'tiger') return <TigerReveal stage={stage} />;
   return <HatchingEgg animalId={characterId} stage={stage} />;
 }
 
 export function CharacterRewardScreen({ animalId, stage, progress = stage, total = 5, onContinue, notice }: {
   animalId: string; stage: EggStage; progress?: number; total?: number; onContinue: () => void; notice?: ReactNode;
 }) {
-  if (animalId !== 'lion' && animalId !== 'monkey') return <HatchingScreen {...{ animalId, stage, progress, total, onContinue, notice }} />;
-  const name = animalId === 'lion' ? 'lion' : 'singe';
-  const titles = ['Qui se cache ici ?', animalId === 'lion' ? 'Ça bouge dans les feuilles…' : 'Ça bouge dans les bananes…', `Coucou, petit ${name} !`, 'Le voilà presque sorti !', `Bonjour, petit ${name} !`];
+  if (!['lion', 'monkey', 'unicorn', 'rabbit', 'tiger'].includes(animalId)) return <HatchingScreen {...{ animalId, stage, progress, total, onContinue, notice }} />;
+  const names: Record<string, string> = { lion: 'petit lion', monkey: 'petit singe', unicorn: 'petite licorne', rabbit: 'petit lapin', tiger: 'petit tigre' };
+  const places: Record<string, string> = { lion: 'dans les feuilles', monkey: 'dans les bananes', unicorn: 'dans les nuages', rabbit: 'près du terrier', tiger: 'dans les hautes herbes' };
+  const titles = ['Qui se cache ici ?', `Ça bouge ${places[animalId]}…`, `Coucou, ${names[animalId]} !`, animalId === 'unicorn' ? 'La voilà presque sortie !' : 'Le voilà presque sorti !', `Bonjour, ${names[animalId]} !`];
   return <div className="app-shell lion-reveal-preview" style={themeVariables(getCharacter(animalId).theme)}>
     <header className="topbar"><a className="brand" href={window.location.pathname}><span className="brand-icon">m.</span><span>milo <b>apprend</b></span></a></header>
     <main className="lion-reveal-main">

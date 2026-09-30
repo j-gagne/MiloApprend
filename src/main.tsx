@@ -4,6 +4,7 @@ import { App } from './App';
 import { HatchingPreview } from './components/HatchingPreview';
 import { LionRevealPreview } from './components/LionRevealPreview';
 import { MonkeyRevealPreview } from './components/MonkeyRevealPreview';
+import { EnvironmentRevealPreview } from './components/EnvironmentRevealPreview';
 import './styles.css';
 import { loadBaseProgram } from './content/remote-program';
 import { createContentService } from './content/service';
@@ -14,6 +15,9 @@ const hatchingPreview = new URLSearchParams(window.location.search).get('preview
 if (hatchingPreview) root.render(<React.StrictMode><HatchingPreview /></React.StrictMode>);
 else if (new URLSearchParams(window.location.search).get('preview') === 'lion-reveal') root.render(<React.StrictMode><LionRevealPreview /></React.StrictMode>);
 else if (new URLSearchParams(window.location.search).get('preview') === 'monkey-reveal') root.render(<React.StrictMode><MonkeyRevealPreview /></React.StrictMode>);
+else if (new URLSearchParams(window.location.search).get('preview') === 'unicorn-reveal') root.render(<React.StrictMode><EnvironmentRevealPreview characterId="unicorn" /></React.StrictMode>);
+else if (new URLSearchParams(window.location.search).get('preview') === 'rabbit-reveal') root.render(<React.StrictMode><EnvironmentRevealPreview characterId="rabbit" /></React.StrictMode>);
+else if (new URLSearchParams(window.location.search).get('preview') === 'tiger-reveal') root.render(<React.StrictMode><EnvironmentRevealPreview characterId="tiger" /></React.StrictMode>);
 else {
   root.render(<main className="home-screen"><p role="status">Un petit instant…</p></main>);
   void loadBaseProgram().then(baseProgram => {

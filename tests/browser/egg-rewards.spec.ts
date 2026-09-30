@@ -1,4 +1,4 @@
-﻿import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { mockSpeech } from './speech-mock';
 import { chainParentData } from '../fixtures/chain-program';
 import type { Progress } from '../../src/services/progress';
@@ -31,7 +31,7 @@ test('five sessions, mistakes allowed, saved hatch before CONTINUER, refresh and
     expect(completed.completedSessions).toBe(n);
     expect(completed.eggRewards!.currentEgg.progress).toBe(n);
     expect(completed.eggRewards!.hatches).toHaveLength(n === 5 ? 1 : 0);
-    await page.getByRole('button', { name: 'DÉCOUVRIR MON ŒUF' }).tap();
+    await page.getByRole('button', { name: 'DÉCOUVRE TA SURPRISE' }).tap();
     await expect(page.getByLabel(`Éclosion : ${n} sur 5`, { exact: true })).toBeVisible();
     await expect(page.locator('.hatching-egg')).toHaveAttribute('data-stage', String(n));
     await expect(page.locator('.hatch-controls')).toHaveCount(0);
@@ -125,7 +125,7 @@ test('completion and acknowledgement can retry failed storage without losing or 
     Storage.prototype.setItem = () => { throw Error('blocked'); };
   });
   await page.getByRole('button', { name: 'CONTINUER' }).tap();
-  await expect(page.getByText(/Ton œuf reste en attente/)).toBeVisible();
+  await expect(page.getByText(/Ta surprise reste en attente/)).toBeVisible();
   expect((await stored(page)).eggRewards!.pendingTransition).toBeTruthy();
   await page.evaluate(() => (window as unknown as { restoreWrites(): void }).restoreWrites());
   await page.getByRole('button', { name: 'CONTINUER' }).tap();
