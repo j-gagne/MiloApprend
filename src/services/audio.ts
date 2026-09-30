@@ -12,6 +12,8 @@
   events: string[];
 }
 
+export interface ActiveReadingSegment { readonly activityId: string; readonly segmentIndex: number }
+
 // Vitesse commune à toutes les prononciations pédagogiques du jeu.
 import { readingRate, slowWholeRate, type ReadingSpeed } from './audio-settings.ts';
 import { AudioSequence, SEGMENT_PAUSE_MS, WHOLE_WORD_PAUSE_MS } from './audio-sequence.ts';
@@ -25,12 +27,12 @@ const describeVoice = (voice: SpeechSynthesisVoice) => `${voice.name || '(sans n
 export class GameAudio {
   private activityOwner?: string;
   private automaticId?: string;
-  playAutomatic(id: string, text: string, src?: string, firstSegment?: string): Promise<void> {
+  playAutomatic(id: string, text: string, src?: string, firstSegment?: string, segmentIndex?: number): Promise<void> {
     if (this.automaticId === id) return Promise.resolve();
     this.automaticId = id;
     this.activityOwner = id;
     this.log(`automatique : ${id}`);
-    return this.playTarget(text, src, firstSegment);
+    return this.playTarget(text, src, firstSegment, segmentIndex === undefined ? undefined : { activityId: id, segmentIndex });
   }
   stopActivity(id: string) {
     if (this.activityOwner !== id) return;
@@ -52,6 +54,12 @@ export class GameAudio {
   private pollingStarted = false;
   private tones = new Set<OscillatorNode>();
   private listeners = new Set<() => void>();
+  private activeReadingSegment?: ActiveReadingSegment;
+  getActiveReadingSegment = () => this.activeReadingSegment;
+  private setActiveReadingSegment(segment?: ActiveReadingSegment) {
+    this.activeReadingSegment = segment;
+    this.listeners.forEach((listener) => listener());
+  }
   private attempt = 0;
   private diagnostics: AudioDiagnostics = {
     available: false, voices: [], selected: 'Aucune lecture', muted: false,
@@ -157,7 +165,7 @@ export class GameAudio {
   }
 
   // Synchrone : appelé directement depuis le click/tap, sans Promise ni timer avant speak().
-  private speakNow(text: string, french: boolean, finish: () => void, rate = this.rate, pitch = 1) {
+  private speakNow(text: string, french: boolean, finish: () => void, rate = this.rate, pitch = 1, onStart?: () => void) {
     const attempt = this.attempt;
     this.prepareSpeech();
     if (!this.enabled) { this.log('lecture ignorée : muted'); finish(); return; }
@@ -174,7 +182,7 @@ export class GameAudio {
       utterance.rate = french ? rate : 1;
       utterance.pitch = pitch;
       this.update({ selected: voice ? describeVoice(voice) : french ? 'Voix choisie par le navigateur pour fr-CA' : 'Voix par défaut du navigateur (sans voice/lang imposés)' });
-      utterance.onstart = () => { this.log('onstart', attempt); };
+      utterance.onstart = () => { this.log('onstart', attempt); if (this.utterance === utterance) onStart?.(); };
       utterance.onend = () => { this.log('onend', attempt); finish(); };
       utterance.onerror = (event) => {
         const message = 'message' in event ? String(event.message) : '';
@@ -222,18 +230,19 @@ export class GameAudio {
     return finish;
   }
 
-  playWord(text: string, src?: string): Promise<void> {
+  playWord(text: string, src?: string, readingSegment?: ActiveReadingSegment): Promise<void> {
     this.stop();
-    return this.playSingle(text, src, this.getPlaybackRates().normal);
+    return this.playSingle(text, src, this.getPlaybackRates().normal, readingSegment);
   }
 
-  playTarget(text: string, src?: string, firstSegment?: string): Promise<void> {
+  playTarget(text: string, src?: string, firstSegment?: string, readingSegment?: ActiveReadingSegment): Promise<void> {
     if (!firstSegment) return this.playWord(text, src);
     this.stop();
     if (!this.enabled) return Promise.resolve();
     const rate = this.getPlaybackRates().normal;
-    return this.sequence.play([{ text: firstSegment }, { text: 'comme dans' }, { text, src }],
-      (step) => this.playSingle(step.text, step.src, rate));
+    const isolated = { text: firstSegment };
+    return this.sequence.play([isolated, { text: 'comme dans' }, { text, src }],
+      (step) => this.playSingle(step.text, step.src, rate, step === isolated ? readingSegment : undefined));
   }
 
   // Character personality is per utterance, never stored in pedagogical settings.
@@ -248,31 +257,35 @@ export class GameAudio {
     });
   }
 
-  playSegmented(reading: SegmentedReading, wholeSrc?: string): Promise<void> {
+  playSegmented(reading: SegmentedReading, wholeSrc?: string, readingSegments?: readonly (ActiveReadingSegment | undefined)[]): Promise<void> {
     this.stop();
     if (!this.enabled) return Promise.resolve();
     const rate = this.getPlaybackRates().slowWhole;
     return this.sequence.play([
-      ...reading.segments.map((text, index) => ({ text,
+      ...reading.segments.map((text, index) => ({ text, readingSegment: readingSegments?.[index],
         pauseAfter: index === reading.segments.length - 1 ? WHOLE_WORD_PAUSE_MS : SEGMENT_PAUSE_MS })),
-      { text: reading.whole, src: wholeSrc },
-    ], (step) => this.playSingle(step.text, step.src, rate));
+      { text: reading.whole, src: wholeSrc, readingSegment: undefined },
+    ], (step) => this.playSingle(step.text, step.src, rate, step.readingSegment));
   }
 
-  playPedagogical(reading: PedagogicalReading, wholeSrc?: string): Promise<void> {
-    if (reading.mode === 'segmented') return this.playSegmented(reading, wholeSrc);
+  playPedagogical(reading: PedagogicalReading, wholeSrc?: string, readingSegments?: readonly (ActiveReadingSegment | undefined)[]): Promise<void> {
+    if (reading.mode === 'segmented') return this.playSegmented(reading, wholeSrc, readingSegments);
     this.stop();
     return this.playSingle(reading.whole, wholeSrc, this.getPlaybackRates().slowWhole);
   }
 
-  private playSingle(text: string, src?: string, rate = this.rate): Promise<void> {
+  private playSingle(text: string, src?: string, rate = this.rate, readingSegment?: ActiveReadingSegment): Promise<void> {
     this.beginAttempt(text, src ? 'fichier audio' : 'mot du jeu');
     if (!this.enabled) { this.log('lecture ignorée : muted'); return Promise.resolve(); }
     let resolvePlayback!: () => void;
     const playback = new Promise<void>((resolve) => { resolvePlayback = resolve; });
-    const finish = this.watchPlayback(resolvePlayback);
+    const finish = this.watchPlayback(() => {
+      if (readingSegment && this.activeReadingSegment === readingSegment) this.setActiveReadingSegment(undefined);
+      resolvePlayback();
+    });
+    const onStart = () => { if (readingSegment) this.setActiveReadingSegment(readingSegment); };
     // La Promise sert uniquement à notifier la fin ; speakNow() n'attend pas son exécution.
-    if (!src) { this.speakNow(text, true, finish, rate); return playback; }
+    if (!src) { this.speakNow(text, true, finish, rate, 1, onStart); return playback; }
     const attempt = this.attempt;
     try {
       const audio = new Audio(src);
@@ -287,12 +300,13 @@ export class GameAudio {
         audio.pause();
         this.word = undefined;
         this.log('fichier indisponible : tentative de synthèse (activation utilisateur non garantie)');
-        this.speakNow(text, true, finish, rate);
+        this.speakNow(text, true, finish, rate, 1, onStart);
       };
       audio.onended = finish;
+      audio.onplaying = () => { if (this.word === audio) onStart(); };
       audio.onerror = fallback;
       void audio.play().catch(fallback);
-    } catch { this.speakNow(text, true, finish, rate); }
+    } catch { this.speakNow(text, true, finish, rate, 1, onStart); }
     return playback;
   }
 

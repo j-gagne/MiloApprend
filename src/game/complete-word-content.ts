@@ -9,13 +9,14 @@ import { isValidWeek } from '../content/selectors.ts';
 import type { Challenge, CompletionSlot } from './complete-word.ts';
 import { activityToExercise, toCompletionBoard } from './completion-content.ts';
 import { activitySegmentation } from '../content/activity-segmentation.ts';
-import { getPedagogicalReading, type PedagogicalReading } from '../content/segmented-reading.ts';
+import { getPedagogicalReading, getReadingSegmentIndexes, type PedagogicalReading } from '../content/segmented-reading.ts';
 import { firstSegmentAudio } from './first-segment-audio.ts';
 import { primaryConstruction } from '../content/construction.ts';
 
 export interface ContentChallenge extends Challenge {
   readonly firstSegmentAudio?: string;
   readonly pedagogicalReading?: PedagogicalReading | null;
+  readonly readingSegmentIndexes?: readonly (number | undefined)[];
   readonly slots: readonly CompletionSlot[];
   readonly wordId: string;
   readonly variantId: string;
@@ -41,6 +42,7 @@ export function wordToChallenge(service: ContentService, word: Word, variant: Co
     audioSrc: word.audioAsset ?? undefined,
     firstSegmentAudio: firstSegmentAudio(program, word, segmentation, board.slots.map((slot) => slot.segmentIndex), week),
     pedagogicalReading: getPedagogicalReading(program, word, segmentation, week),
+    readingSegmentIndexes: getReadingSegmentIndexes(word, segmentation),
   } };
 }
 
@@ -80,6 +82,7 @@ export function getCompleteWordChallenges(service: ContentService = contentServi
       audioSrc: target.audioAsset ?? undefined,
       firstSegmentAudio: activity.type === 'spell' ? undefined : firstSegmentAudio(program, target, activitySegmentation(program, activity), board.slots.map((slot) => slot.segmentIndex), week),
       pedagogicalReading: getPedagogicalReading(program, target, activity.type === 'spell' ? primaryConstruction(target) : activitySegmentation(program, activity), week),
+      readingSegmentIndexes: activity.type === 'spell' ? undefined : getReadingSegmentIndexes(target, activitySegmentation(program, activity)),
     });
   }
   const order = new Map(activities.map((activity) => [activity.id, activity.order ?? Infinity]));

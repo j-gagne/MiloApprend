@@ -133,7 +133,8 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
     // pour iOS. Le cycle de vérification StrictMode précède ainsi cette lecture.
     flushSync(() => { setSession(nextSession); setScreen('game'); });
     const first = nextSession.challenges[0];
-    void gameAudio.playAutomatic(`${sessionId.current}:0:${first.id}`, first.audioText ?? first.word, first.audioSrc, first.firstSegmentAudio);
+    void gameAudio.playAutomatic(`${sessionId.current}:0:${first.id}`, first.audioText ?? first.word, first.audioSrc, first.firstSegmentAudio,
+      first.activityType !== 'spell' && first.targetType === 'word' && first.slots.length === 1 ? first.slots[0].segmentIndex : undefined);
   }
 
   const pending = progress.eggRewards?.pendingTransition;

@@ -8,7 +8,7 @@ export class AudioSequence {
 
   cancel() { this.cancelCurrent?.(); this.cancelCurrent = undefined; }
 
-  play(steps: readonly AudioStep[], speak: (step: AudioStep) => Promise<void>): Promise<void> {
+  play<Step extends AudioStep>(steps: readonly Step[], speak: (step: Step & AudioStep) => Promise<void>): Promise<void> {
     this.cancel();
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;

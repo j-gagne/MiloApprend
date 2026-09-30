@@ -6,7 +6,7 @@ test('first automatic speech survives empty voices, StrictMode, rerenders and la
   await page.goto('/?debugAudio=1');
   await page.clock.install();
   await page.getByRole('button', { name: 'JOUER', exact: true }).tap();
-  expect(await page.evaluate(() => window.speechProbe.calls)).toEqual([{ text: 'lune', lang: 'fr-CA', voice: undefined }]);
+  expect(await page.evaluate(() => window.speechProbe.calls)).toEqual([{ text: 'ne', lang: 'fr-CA', voice: undefined }]);
   expect(await page.evaluate(() => window.speechProbe.cancels)).toBe(0);
   await page.evaluate(() => {
     window.speechProbe.languages = ['fr-FR'];
@@ -17,6 +17,6 @@ test('first automatic speech survives empty voices, StrictMode, rerenders and la
   expect(await page.evaluate(() => window.speechProbe.calls.length)).toBe(1);
   await page.getByRole('button', { name: 'Réécouter lune' }).tap();
   await page.evaluate(() => window.speechSynthesis.dispatchEvent(new Event('voiceschanged')));
-  expect(await page.evaluate(() => window.speechProbe.calls.map(c => c.text))).toEqual(['lune','lune']);
+  expect(await page.evaluate(() => window.speechProbe.calls.map(c => c.text))).toEqual(['ne','ne']);
   expect(await page.evaluate(() => window.speechProbe.calls.at(-1)?.voice)).toBe('fr-FR');
 });

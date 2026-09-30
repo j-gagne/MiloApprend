@@ -56,3 +56,4 @@ html,body{overscroll-behavior-y:none}
 .collection-count{font-size:18px;font-weight:700}
 @media(min-width:650px){.collection-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}}
 @media(min-width:1000px){.collection-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.game-screen .active-reading-segment{border:5px solid var(--theme-primary)}

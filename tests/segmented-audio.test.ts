@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { initialProgram } from '../src/content/program.ts';
-import { getSegmentedReading, getPedagogicalReading } from '../src/content/segmented-reading.ts';
+import { getSegmentedReading, getPedagogicalReading, getReadingSegmentIndexes } from '../src/content/segmented-reading.ts';
 import { READING_SPEEDS, slowWholeRate, SLOW_WHOLE_FACTOR } from '../src/services/audio-settings.ts';
 import { getCompleteWordChallenges } from '../src/game/complete-word-content.ts';
 import { effectiveProgram } from '../src/parent/model.ts';
@@ -14,6 +14,20 @@ const word = (id: string): Word => {
   const target = initialProgram.units.find((u) => u.id === id);
   assert.ok(target?.type === 'word'); return target;
 };
+
+test('reading indexes follow construction identity, not pronunciation text or compacted positions', () => {
+  const lama = word('word-lama');
+  const construction = { id: 'test', segments: [{ literal: ' ' }, { unitId: 'syllable-la' }, { separator: '-' }, { unitId: 'syllable-ma' }] };
+  assert.deepEqual(getReadingSegmentIndexes(lama, construction), [1, 3]);
+  assert.deepEqual(getReadingSegmentIndexes({ ...lama, readingSequence: [{ unitId: 'syllable-ma' }, { unitId: 'syllable-la' }] }, construction), [3, 1]);
+  assert.deepEqual(getReadingSegmentIndexes({ ...lama, readingSequence: [{ text: 'la' }, { unitId: 'syllable-ma' }, { unitId: 'syllable-li' }] }, construction), [undefined, 3, undefined]);
+  const repeated = { id: 'repeat', segments: [{ unitId: 'syllable-ma' }, { unitId: 'syllable-ma' }] };
+  assert.deepEqual(getReadingSegmentIndexes({ ...lama, readingSequence: [{ unitId: 'syllable-ma' }, { unitId: 'syllable-ma' }] }, repeated), [0, 1]);
+  assert.deepEqual(getReadingSegmentIndexes({ ...lama, readingSequence: [{ unitId: 'syllable-ma' }] }, repeated), [undefined]);
+  assert.equal(getReadingSegmentIndexes(lama, undefined), undefined);
+  const ane = word('word-âne');
+  assert.deepEqual(getReadingSegmentIndexes(ane, ane.segmentations[0]), [undefined, 1]);
+});
 for (const [id, segments, whole] of [
   ['word-ami', ['a', 'mi'], 'ami'], ['word-lama', ['la', 'ma'], 'lama'],
   ['word-lune', ['lu', 'ne'], 'lune'],

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { ContentChallenge } from '../game/complete-word-content';
 import { availableAnswers, createAnswerBank, placementTexts, placeOccurrence, removeOccurrence } from '../game/answer-bank';
 import type { OccurrencePlacements } from '../game/answer-bank';
@@ -44,6 +44,10 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
   const multiple = challenge.slots.length > 1;
   const sentence = challenge.targetType === 'sentence';
   const spelling = challenge.activityType === 'spell';
+  const readingSegmentIndex = !spelling && challenge.targetType === 'word' && !multiple ? challenge.slots[0]?.segmentIndex : undefined;
+  const readingSegment = readingSegmentIndex === undefined ? undefined : { activityId: audioId, segmentIndex: readingSegmentIndex };
+  const activeReadingSegment = useSyncExternalStore(gameAudio.subscribe, gameAudio.getActiveReadingSegment);
+  const activeReadingSegmentIndex = !spelling && activeReadingSegment?.activityId === audioId ? activeReadingSegment.segmentIndex : undefined;
   // Les mots à trois segments gardent les mêmes blocs, ajustés à la largeur du téléphone.
   const segmentStyle = sentence ? { minWidth: 44, fontSize: 'clamp(24px, 6vw, 32px)', padding: '0 6px' } : challenge.segments.length > 2
     ? { minWidth: 0, flex: '0 1 94px', fontSize: 'clamp(26px, 7vw, 43px)', padding: '0 8px' }
@@ -54,8 +58,8 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
   useEffect(() => () => gameAudio.stopActivity(audioId), [audioId]);
   useEffect(() => {
     // Le premier mot est lancé directement depuis JOUER ; les suivants à l'affichage.
-    if (index > 0) void gameAudio.playAutomatic(audioId, challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
-  }, [index, challenge, audioId]);
+    if (index > 0) void gameAudio.playAutomatic(audioId, challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio, readingSegmentIndex);
+  }, [index, challenge, audioId, readingSegmentIndex]);
   useEffect(() => {
     if (!solved) return;
     let cancelled = false;
@@ -107,14 +111,14 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
         locked.current = true;
         updatePerformance(completeTarget(performanceRef.current));
         setSolved(true);
-        playback.current = gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
+        playback.current = gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio, readingSegment);
         gameAudio.success();
       }
     } else {
       updatePerformance(incorrectAttempt(performanceRef.current));
       setWrongAnswer(id);
       setAttempt((count) => count + 1);
-      void gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
+      void gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio, readingSegment);
     }
   }
 
@@ -131,11 +135,12 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
       <CompletionLine board={challenge} sentence={sentence} label={solved ? challenge.word : sentence ? 'Phrase à compléter' : 'Mot à compléter'}
         render={(segmentIndex) => {
           const segment = challenge.segments[segmentIndex];
+          const readingClass = activeReadingSegmentIndex === segmentIndex ? ' active-reading-segment' : '';
           if (!challenge.slots.some((slot) => slot.segmentIndex === segmentIndex)) {
-            return <span className={sentence ? 'sentence-text' : 'word-segment'} style={sentence ? undefined : segmentStyle} key={segmentIndex}>{segment}</span>;
+            return <span className={`${sentence ? 'sentence-text' : 'word-segment'}${readingClass}`} style={sentence ? undefined : segmentStyle} key={segmentIndex}>{segment}</span>;
           }
           const filled = texts[segmentIndex];
-          const className = `word-slot ${hover === segmentIndex ? 'over' : ''} ${filled ? 'filled' : ''} ${attempt && !solved ? 'retry' : ''}`;
+          const className = `word-slot${readingClass} ${hover === segmentIndex ? 'over' : ''} ${filled ? 'filled' : ''} ${attempt && !solved ? 'retry' : ''}`;
           const innerStyle = segmentStyle ? { ...segmentStyle, width: '100%' } : undefined;
           return <div key={`${challenge.id}-${segmentIndex}`} style={segmentStyle}
             ref={(element) => { if (element) targets.current.set(segmentIndex, element); else targets.current.delete(segmentIndex); }}>
@@ -157,11 +162,12 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
       </div>
       <div className={challenge.pedagogicalReading ? 'reading-actions' : undefined}>
       <button className="listen-button" disabled={!sound} aria-label={`Réécouter ${challenge.word}`} onClick={() => {
-        playback.current = gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio);
+        playback.current = gameAudio.playTarget(challenge.audioText ?? challenge.word, challenge.audioSrc, challenge.firstSegmentAudio, readingSegment);
         setReplay((count) => count + 1);
       }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5ZM15 8q4 4 0 8M18 5q7 7 0 14" /></svg>{challenge.pedagogicalReading && <span>Mot</span>}</button>
       {challenge.pedagogicalReading && <button className="listen-button" disabled={!sound} aria-label={`${challenge.pedagogicalReading.mode === 'whole' ? 'Écouter lentement' : 'Découper'} ${challenge.word}`} onClick={() => {
-        playback.current = gameAudio.playPedagogical(challenge.pedagogicalReading!, challenge.audioSrc);
+        playback.current = gameAudio.playPedagogical(challenge.pedagogicalReading!, challenge.audioSrc,
+          spelling ? undefined : challenge.readingSegmentIndexes?.map(segmentIndex => segmentIndex === undefined ? undefined : { activityId: audioId, segmentIndex }));
         setReplay((count) => count + 1);
       }}><span aria-hidden="true">🐢</span> {challenge.pedagogicalReading.mode === 'whole' ? 'Lentement' : 'Découpe'}</button>}
       </div>
