@@ -3,7 +3,7 @@ import test from 'node:test';
 import { initialProgram } from '../src/content/program.ts';
 import type { Word } from '../src/content/model.ts';
 import { emptyParentData, effectiveProgram, saveParentUnit } from '../src/parent/model.ts';
-import { parseParentData } from '../src/services/parent-store.ts';
+import { createParentStore, parseParentData } from '../src/services/parent-store.ts';
 import { getPedagogicalReading } from '../src/content/segmented-reading.ts';
 import { validateParentUnit } from '../src/parent/content.ts';
 import { firstSegmentAudio } from '../src/game/first-segment-audio.ts';
@@ -11,6 +11,35 @@ import { createContentService } from '../src/content/service.ts';
 import { createContentRepository } from '../src/content/repository.ts';
 import { wordToChallenge } from '../src/game/complete-word-content.ts';
 import { chainParentData } from './fixtures/chain-program.ts';
+import { generateCompleteWordSession } from '../src/game/complete-word-session.ts';
+
+for (const custom of [true, false]) test(`${custom ? 'custom' : 'base'} word: Parent save/reload preserves explicit reading through session generation`, () => {
+  const source = word('word-lama');
+  const target: Word = custom ? { ...source, id: 'parent-word-reading-session', tags: ['practice'], completeWord: undefined } : source;
+  const sequence = [{ unitId: 'syllable-ma' }, { unitId: 'syllable-la' }];
+  const pronunciation = initialProgram.units.find(u => u.id === 'syllable-la')!;
+  const data = saveParentUnit(saveParentUnit(emptyParentData(), initialProgram, { ...pronunciation, audioText: 'lah' }),
+    initialProgram, { ...target, readingMode: 'segmented', readingSequence: sequence });
+  let raw: string | null = null;
+  const storage = { getItem: () => raw, setItem: (_key: string, value: string) => { raw = value; } };
+  assert.equal(createParentStore(() => storage).save(data), true);
+  const loaded = createParentStore(() => storage).load();
+  assert.equal(loaded.warning, undefined);
+  const program = effectiveProgram(initialProgram, loaded.data);
+  const effective = program.units.find((u): u is Word => u.id === target.id && u.type === 'word')!;
+  assert.equal(effective.readingMode, 'segmented');
+  assert.deepEqual(effective.readingSequence, sequence);
+  assert.deepEqual(effective.segmentations, target.segmentations);
+  assert.equal(effective.display, target.display);
+  const service = createContentService(createContentRepository({ ...program,
+    units: program.units.map(u => u.type === 'word' || u.type === 'sentence' ? { ...u, enabled: u.id === target.id } : u),
+  }), 5);
+  const challenge = generateCompleteWordSession(service, { random: () => 0, strategy: { size: 1, recentCount: 1 } }).challenges[0];
+  assert.ok(challenge);
+  assert.equal(challenge.wordId, target.id);
+  assert.deepEqual(challenge.pedagogicalReading, { mode: 'segmented', segments: ['ma', 'lah'], whole: 'lama' });
+  assert.deepEqual(challenge.readingSegmentIndexes, [1, 0]);
+});
 
 const word = (id: string) => initialProgram.units.find((u): u is Word => u.id === id && u.type === 'word')!;
 const reload = (data: ReturnType<typeof emptyParentData>) => parseParentData(JSON.stringify(data))!;
