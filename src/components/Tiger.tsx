@@ -1,7 +1,7 @@
 import { SleepingEyes } from './SleepingEyes';
-export function Tiger({ happy = false, sleeping = false, celebrating = false }: { happy?: boolean; sleeping?: boolean; celebrating?: boolean }) {
+export function Tiger({ happy = false, sleeping = false, celebrating = false, waving = false }: { happy?: boolean; sleeping?: boolean; celebrating?: boolean; waving?: boolean }) {
   happy = happy || celebrating;
-  return <svg className="tiger" data-variant={sleeping ? 'sleeping' : celebrating ? 'celebrating' : 'normal'} viewBox="0 0 340 300" aria-hidden="true">
+  return <svg className="tiger" data-variant={sleeping ? 'sleeping' : celebrating ? 'celebrating' : waving ? 'waving' : 'normal'} viewBox="0 0 340 300" aria-hidden="true">
     <ellipse cx="171" cy="270" rx="111" ry="14" fill="#304f36" opacity=".12" />
     <path d="M130 232C95 254 68 231 76 198Q81 181 92 186" fill="none" stroke="#dda477" strokeWidth="14" strokeLinecap="round" />
     <path d="m76 207 12 3m-8 19 10-7m-8-33 10-3" stroke="#8b6b56" strokeWidth="6" strokeLinecap="round" />
@@ -20,8 +20,8 @@ export function Tiger({ happy = false, sleeping = false, celebrating = false }: 
     <path d="M194 117Q204 113 214 117Q210 128 204 128Q198 127 194 117Z" fill="#8b6b56" />
     {happy ? <><path d="M185 134Q204 144 222 132Q218 153 204 153Q190 153 185 134Z" fill="#3f4643" /><path d="M195 148Q204 142 214 148Q204 156 195 148Z" fill="#d9aa98" /></>
       : <path d="M204 128v7q-9 9-18 0m18 0q9 9 18-1" fill="none" stroke="#3f4643" strokeWidth="3" strokeLinecap="round" />}
-    <path d={sleeping ? 'M146 179q-6 31 21 35M218 179q6 31-21 35' : happy ? 'M145 184q-22-6-26-28M218 184q22-5 27-27' : 'M146 179q-17 15-10 28M218 179q17 15 10 28'} fill="none" stroke="#c89065" strokeWidth="13" strokeLinecap="round" />
-    <circle cx={sleeping ? 167 : happy ? 119 : 136} cy={sleeping ? 214 : happy ? 156 : 207} r="9" fill="#f5e7cc" /><circle cx={sleeping ? 197 : happy ? 245 : 228} cy={sleeping ? 214 : happy ? 157 : 207} r="9" fill="#f5e7cc" />
+    <path d={waving ? 'M146 179q-17 15-10 28M218 179Q270 185 286 128' : sleeping ? 'M146 179q-6 31 21 35M218 179q6 31-21 35' : happy ? 'M145 184q-22-6-26-28M218 184q22-5 27-27' : 'M146 179q-17 15-10 28M218 179q17 15 10 28'} fill="none" stroke="#c89065" strokeWidth="13" strokeLinecap="round" />
+    <circle cx={sleeping ? 167 : happy ? 119 : 136} cy={sleeping ? 214 : happy ? 156 : 207} r="9" fill="#f5e7cc" /><circle cx={waving ? 286 : sleeping ? 197 : happy ? 245 : 228} cy={waving ? 128 : sleeping ? 214 : happy ? 157 : 207} r="9" fill="#f5e7cc" />
     <ellipse cx="142" cy="261" rx="25" ry="12" fill="#f5e7cc" /><ellipse cx="211" cy="261" rx="25" ry="12" fill="#f5e7cc" />
   </svg>;
 }

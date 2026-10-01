@@ -129,7 +129,7 @@ for (const id of ['lion', 'monkey', 'unicorn', 'rabbit', 'tiger'] as const) {
       expect(progress.completedSessions).toBe(5 + stage);
       const rewards = progress.eggRewards!;
       expect(Object.keys(rewards).sort()).toEqual(['completedSessionIds', 'currentEgg', 'hatches', 'pendingTransition']);
-      expect(rewards.currentEgg).toEqual({ progress: stage, sessionsToHatch: 5, pendingAnimalId: id, pendingVariantId: expect.stringMatching(/^(normal|sleeping|celebrating)$/) });
+      expect(rewards.currentEgg).toEqual({ progress: stage, sessionsToHatch: 5, pendingAnimalId: id, pendingVariantId: expect.stringMatching(/^(normal|sleeping|celebrating|waving)$/) });
       await expect(scene.locator(`svg.${id}`)).toHaveAttribute('data-variant', rewards.currentEgg.pendingVariantId!);
       expect(rewards.completedSessionIds).toHaveLength(stage + 1);
       expect(rewards.hatches).toHaveLength(stage === 5 ? 2 : 1);

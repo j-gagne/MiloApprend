@@ -6,14 +6,15 @@ import { isEggRewards, type HatchRecord } from '../src/game/egg-rewards.ts';
 
 const hatch = (variantId?: VariantId, animalId = 'tiger'): HatchRecord => ({ id: 'old', animalId, variantId, hatchedAt: '2026-10-01' });
 for (const [name, hatches, candidates] of [
-  ['none owned', [], ['normal', 'sleeping', 'celebrating']],
-  ['normal owned', [hatch('normal')], ['sleeping', 'celebrating']],
-  ['sleeping owned', [hatch('sleeping')], ['normal', 'celebrating']],
-  ['normal and sleeping owned', [hatch('normal'), hatch('sleeping')], ['celebrating']],
-  ['all owned', [hatch('normal'), hatch('sleeping'), hatch('celebrating')], ['normal', 'sleeping', 'celebrating']],
-  ['duplicate normals', [hatch('normal'), hatch('normal'), hatch('normal')], ['sleeping', 'celebrating']],
-  ['legacy normal', [hatch()], ['sleeping', 'celebrating']],
-  ['different animal', [hatch('normal', 'lion'), hatch('sleeping', 'lion')], ['normal', 'sleeping', 'celebrating']],
+  ['none owned', [], ['normal', 'sleeping', 'celebrating', 'waving']],
+  ['normal owned', [hatch('normal')], ['sleeping', 'celebrating', 'waving']],
+  ['sleeping owned', [hatch('sleeping')], ['normal', 'celebrating', 'waving']],
+  ['normal and sleeping owned', [hatch('normal'), hatch('sleeping')], ['celebrating', 'waving']],
+  ['only waving undiscovered', [hatch('normal'), hatch('sleeping'), hatch('celebrating')], ['waving']],
+  ['all owned', [hatch('normal'), hatch('sleeping'), hatch('celebrating'), hatch('waving')], ['normal', 'sleeping', 'celebrating', 'waving']],
+  ['duplicate normals', [hatch('normal'), hatch('normal'), hatch('normal')], ['sleeping', 'celebrating', 'waving']],
+  ['legacy normal', [hatch()], ['sleeping', 'celebrating', 'waving']],
+  ['different animal', [hatch('normal', 'lion'), hatch('sleeping', 'lion')], ['normal', 'sleeping', 'celebrating', 'waving']],
 ] as const) test(`variant candidates: ${name}`, () => {
   assert.deepEqual(variantCandidates('tiger', hatches), candidates);
   assert.equal(selectVariant('tiger', hatches, () => 0), candidates[0]);
@@ -23,10 +24,11 @@ for (const [name, hatches, candidates] of [
 test('all six catalogs and equal RNG intervals', () => {
   assert.equal(Object.keys(characterVariants).length, 6);
   for (const animal of Object.keys(characterVariants)) {
-    assert.deepEqual(variantCandidates(animal, []), ['normal', 'sleeping', 'celebrating']);
+    assert.deepEqual(variantCandidates(animal, []), ['normal', 'sleeping', 'celebrating', 'waving']);
     assert.equal(selectVariant(animal, [], () => .2), 'normal');
-    assert.equal(selectVariant(animal, [], () => .5), 'sleeping');
-    assert.equal(selectVariant(animal, [], () => .9), 'celebrating');
+    assert.equal(selectVariant(animal, [], () => .35), 'sleeping');
+    assert.equal(selectVariant(animal, [], () => .6), 'celebrating');
+    assert.equal(selectVariant(animal, [], () => .9), 'waving');
   }
 });
 
@@ -37,11 +39,11 @@ test('pending variant is persisted at zero, never rerolled, and completion store
   const reload = () => createProgressStore(() => storage, () => { calls++; return .9; });
   const initial = reload().ensureReward();
   assert.equal(initial.saved, true);
-  assert.deepEqual(initial.progress.eggRewards!.currentEgg, { progress: 0, sessionsToHatch: 5, pendingAnimalId: 'tiger', pendingVariantId: 'celebrating' });
+  assert.deepEqual(initial.progress.eggRewards!.currentEgg, { progress: 0, sessionsToHatch: 5, pendingAnimalId: 'tiger', pendingVariantId: 'waving' });
   assert.deepEqual(reload().ensureReward(), initial);
   for (let n = 1; n <= 5; n++) {
     const result = reload().completeSession(`s${n}`);
-    assert.equal(result.progress.eggRewards!.currentEgg.pendingVariantId, 'celebrating');
+    assert.equal(result.progress.eggRewards!.currentEgg.pendingVariantId, 'waving');
     assert.deepEqual(reload().load(), result.progress);
     assert.deepEqual(reload().completeSession(`s${n}`), result);
     if (n === 2) reload().save({ ...reload().load(), selectedCharacterId: 'lion' });
@@ -49,7 +51,7 @@ test('pending variant is persisted at zero, never rerolled, and completion store
   }
   assert.equal(calls, 1);
   const completed = reload().load().eggRewards!;
-  assert.deepEqual(completed.hatches, [{ id: 'hatch:s5', animalId: 'tiger', variantId: 'celebrating', hatchedAt: completed.hatches[0].hatchedAt }]);
+  assert.deepEqual(completed.hatches, [{ id: 'hatch:s5', animalId: 'tiger', variantId: 'waving', hatchedAt: completed.hatches[0].hatchedAt }]);
   reload().acknowledgeEgg('s5');
   assert.equal(reload().load().eggRewards!.currentEgg.pendingAnimalId, 'lion');
   assert.equal(calls, 2);

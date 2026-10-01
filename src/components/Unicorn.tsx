@@ -1,7 +1,7 @@
 import { SleepingEyes } from './SleepingEyes';
-export function Unicorn({ happy = false, sleeping = false, celebrating = false }: { happy?: boolean; sleeping?: boolean; celebrating?: boolean }) {
+export function Unicorn({ happy = false, sleeping = false, celebrating = false, waving = false }: { happy?: boolean; sleeping?: boolean; celebrating?: boolean; waving?: boolean }) {
   happy = happy || celebrating;
-  return <svg className="unicorn" data-variant={sleeping ? 'sleeping' : celebrating ? 'celebrating' : 'normal'} viewBox="0 0 340 300" aria-hidden="true">
+  return <svg className="unicorn" data-variant={sleeping ? 'sleeping' : celebrating ? 'celebrating' : waving ? 'waving' : 'normal'} viewBox="0 0 340 300" aria-hidden="true">
     <ellipse cx="171" cy="270" rx="111" ry="14" fill="#304f36" opacity=".12" />
     <path d="M131 216Q90 192 78 222Q73 242 57 242Q87 265 111 243Z" fill="#b9a6cf" />
     <path d="M112 219Q91 211 85 232Q80 245 70 247Q99 253 112 232Z" fill="#dfb9c9" />
@@ -23,7 +23,7 @@ export function Unicorn({ happy = false, sleeping = false, celebrating = false }
     <ellipse cx="252" cy="124" rx="3" ry="2.5" fill="#a99689" />
     {happy ? <><path d="M214 137Q231 146 247 135Q243 152 231 153Q219 152 214 137Z" fill="#3f4643" /><path d="M223 148Q232 144 239 149Q232 155 223 148Z" fill="#dfb9c9" /></>
       : <path d="M220 138Q231 147 243 138" fill="none" stroke="#3f4643" strokeWidth="3" strokeLinecap="round" />}
-    <path d={sleeping ? 'M146 179q-6 31 21 35M218 179q6 31-21 35' : happy ? 'M145 184q-22-6-26-28M218 184q22-5 27-27' : 'M146 179q-17 15-10 28M218 179q17 15 10 28'} fill="none" stroke="#e1d3bf" strokeWidth="13" strokeLinecap="round" />
+    <path d={waving ? 'M146 179q-17 15-10 28M218 179Q270 185 286 128' : sleeping ? 'M146 179q-6 31 21 35M218 179q6 31-21 35' : happy ? 'M145 184q-22-6-26-28M218 184q22-5 27-27' : 'M146 179q-17 15-10 28M218 179q17 15 10 28'} fill="none" stroke="#e1d3bf" strokeWidth="13" strokeLinecap="round" />
     <ellipse cx="142" cy="261" rx="25" ry="12" fill="#b9a6cf" /><ellipse cx="211" cy="261" rx="25" ry="12" fill="#b9a6cf" />
   </svg>;
 }
