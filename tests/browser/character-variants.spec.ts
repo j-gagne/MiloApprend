@@ -20,7 +20,7 @@ for (const { id } of characterCatalog) test(`${id}: all variants pass through th
   const selector = id === 'dinosaur' ? '.hatching-egg' : id === 'monkey' ? '.monkey-banana-scene' : `.${id}-reveal-scene`;
   let normalArms: string | null = null;
   let celebratingArms: string | null = null;
-  for (const variantId of ['normal', 'sleeping', 'celebrating', 'waving'] as const) {
+  for (const variantId of ['normal', 'sleeping', 'celebrating', 'waving', 'silly'] as const) {
     const progress: Progress = { completedSessions: 5, selectedCharacterId: id === 'lion' ? 'tiger' : 'lion', eggRewards: {
       currentEgg: { progress: 5, sessionsToHatch: 5, pendingAnimalId: id, pendingVariantId: variantId },
       completedSessionIds: ['complete'], pendingTransition: { sessionId: 'complete', progress: 5, sessionsToHatch: 5, animalId: id },
@@ -46,6 +46,11 @@ for (const { id } of characterCatalog) test(`${id}: all variants pass through th
       expect(arms).not.toBe(celebratingArms);
       expect(arms!.split('M')[1]).toBe(normalArms!.split('M')[1]);
       expect(arms!.split('M')[2]).not.toBe(normalArms!.split('M')[2]);
+    }
+    if (variantId === 'silly') {
+      expect(arms).not.toBe(normalArms);
+      expect(arms).not.toBe(celebratingArms);
+      expect(await artwork.locator('[transform]').count()).toBeGreaterThan(0);
     }
     await page.reload();
     expect(await stored(page)).toEqual(progress);
@@ -80,7 +85,7 @@ test('new cycle variant is saved before play, survives zero-stage navigation, an
   await page.clock.install();
   await page.getByRole('button', { name: 'JOUER', exact: true }).click();
   const initial = (await stored(page)).eggRewards!.currentEgg;
-  expect(['normal', 'sleeping', 'celebrating', 'waving']).toContain(initial.pendingVariantId);
+  expect(['normal', 'sleeping', 'celebrating', 'waving', 'silly']).toContain(initial.pendingVariantId);
   expect(initial.progress).toBe(0);
   await page.getByRole('button', { name: 'Milo apprend, accueil' }).click();
   await page.getByRole('button', { name: 'CHOISIR MON PERSONNAGE' }).click();
@@ -101,6 +106,6 @@ test('new cycle variant is saved before play, survives zero-stage navigation, an
     await page.getByRole('button', { name: 'CONTINUER', exact: true }).click();
   }
   const next = (await stored(page)).eggRewards!;
-  expect(['normal', 'sleeping', 'celebrating', 'waving'].filter(id => id !== initial.pendingVariantId)).toContain(next.currentEgg.pendingVariantId);
+  expect(['normal', 'sleeping', 'celebrating', 'waving', 'silly'].filter(id => id !== initial.pendingVariantId)).toContain(next.currentEgg.pendingVariantId);
   expect(next.hatches).toHaveLength(1);
 });

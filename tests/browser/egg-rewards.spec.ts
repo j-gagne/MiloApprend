@@ -27,7 +27,7 @@ test('initial save failure stays home and JOUER retries the exact pending reward
   expect(await page.evaluate(key => localStorage.getItem(key), key)).toBeNull();
   await finish(page);
   const initial = await page.evaluate(() => (window as unknown as { initialReward: NonNullable<Progress['eggRewards']>['currentEgg'] }).initialReward);
-  expect(initial.pendingVariantId).toBe('waving');
+  expect(initial.pendingVariantId).toBe('silly');
   const completed = await stored(page);
   expect(completed.eggRewards!.currentEgg).toEqual({ ...initial, progress: 1 });
   expect(completed.completedSessions).toBe(1);
