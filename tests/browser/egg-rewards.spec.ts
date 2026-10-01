@@ -4,6 +4,38 @@ import { chainParentData } from '../fixtures/chain-program';
 import type { Progress } from '../../src/services/progress';
 
 const key = 'milo-apprend.progress.v1';
+test('initial save failure stays home and JOUER retries the exact pending reward', async ({ page }) => {
+  await page.route('**/MiloApprend-Content/**', route => route.abort());
+  await setup(page);
+  await page.evaluate(key => {
+    const write = Storage.prototype.setItem;
+    let first = true;
+    Object.assign(window, { initialReward: undefined });
+    Storage.prototype.setItem = function (name, value) {
+      if (name === key && first) {
+        first = false;
+        Object.assign(window, { initialReward: JSON.parse(value).eggRewards.currentEgg });
+        Math.random = () => 0;
+        throw new DOMException('Storage temporarily unavailable', 'QuotaExceededError');
+      }
+      return write.call(this, name, value);
+    };
+  }, key);
+  await page.getByRole('button', { name: 'JOUER', exact: true }).click();
+  await expect(page.getByText('La sauvegarde est indisponible. La partie n’a pas commencé. Réessaie JOUER.', { exact: true })).toBeVisible();
+  await expect(page.locator('.game-screen')).toHaveCount(0);
+  expect(await page.evaluate(key => localStorage.getItem(key), key)).toBeNull();
+  await finish(page);
+  const initial = await page.evaluate(() => (window as unknown as { initialReward: NonNullable<Progress['eggRewards']>['currentEgg'] }).initialReward);
+  expect(initial.pendingVariantId).toBe('waving');
+  const completed = await stored(page);
+  expect(completed.eggRewards!.currentEgg).toEqual({ ...initial, progress: 1 });
+  expect(completed.completedSessions).toBe(1);
+  expect(completed.eggRewards!.completedSessionIds).toHaveLength(1);
+  expect(completed.eggRewards!.hatches).toEqual([]);
+  await page.reload();
+  expect(await stored(page)).toEqual(completed);
+});
 async function stored(page: Page): Promise<Progress> {
   return page.evaluate(key => JSON.parse(localStorage.getItem(key)!), key);
 }

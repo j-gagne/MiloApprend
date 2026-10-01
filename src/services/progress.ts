@@ -18,7 +18,10 @@ export interface ProgressStore {
   acknowledgeEgg(sessionId: string): { progress: Progress; saved: boolean };
 }
 const key = 'milo-apprend.progress.v1';
-export function createProgressStore(storage: () => KeyValueStorage, rng: () => number = Math.random): ProgressStore { return {
+export function createProgressStore(storage: () => KeyValueStorage, rng: () => number = Math.random): ProgressStore {
+  // Retain only an initial draw awaiting persistence; load() still reflects storage.
+  let unsavedReward: EggRewards | undefined;
+  return {
   load() {
     try {
       const value: unknown = JSON.parse(storage().getItem(key) ?? 'null');
@@ -32,7 +35,7 @@ export function createProgressStore(storage: () => KeyValueStorage, rng: () => n
     return { completedSessions: 0, selectedCharacterId: getCharacter(undefined).id };
   },
   save(progress) {
-    try { storage().setItem(key, JSON.stringify(progress)); return true; }
+    try { storage().setItem(key, JSON.stringify(progress)); unsavedReward = undefined; return true; }
     catch { return false; }
   },
   reset() {
@@ -42,12 +45,15 @@ export function createProgressStore(storage: () => KeyValueStorage, rng: () => n
   ensureReward() {
     const progress = this.load();
     if (progress.eggRewards) return { progress, saved: true };
-    const next = { ...progress, eggRewards: emptyEggRewards(getCharacter(progress.selectedCharacterId).id, rng) };
+    unsavedReward ??= emptyEggRewards(getCharacter(progress.selectedCharacterId).id, rng);
+    const next = { ...progress, eggRewards: unsavedReward };
     return { progress: next, saved: this.save(next) };
   },
   completeSession(sessionId) {
-    const progress = this.load();
-    const before = progress.eggRewards ?? emptyEggRewards(getCharacter(progress.selectedCharacterId).id, rng);
+    const initialization = this.ensureReward();
+    if (!initialization.saved) return initialization;
+    const progress = initialization.progress;
+    const before = progress.eggRewards!;
     const after = advanceEgg(before, sessionId, new Date().toISOString());
     if (after === before) return { progress, saved: before.completedSessionIds.includes(sessionId) };
     const next = { ...progress, completedSessions: progress.completedSessions + 1, eggRewards: after };

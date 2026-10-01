@@ -57,6 +57,7 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
   const returnToCharacterButton = useRef(false);
   const [sound, setSound] = useState(true);
   const [saved, setSaved] = useState(true);
+  const [startFailed, setStartFailed] = useState(false);
   const [session, setSession] = useState(() => createPlaySession(service, parent.data));
   const [result, setResult] = useState(() => createSessionProgress(0));
   const title = useRef<HTMLHeadingElement>(null);
@@ -126,7 +127,10 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
     if (stored.eggRewards?.pendingTransition) { setProgress(stored); setScreen('egg'); return; }
     const nextSession = createPlaySession(service, parent.data);
     if (!nextSession.challenges.length) return;
-    setProgress(progressStore.ensureReward().progress);
+    const initialization = progressStore.ensureReward();
+    setStartFailed(!initialization.saved);
+    if (!initialization.saved) return;
+    setProgress(initialization.progress);
     completed.current = false;
     // getRandomValues also works on local-network HTTP (unlike randomUUID).
     sessionId.current = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16).padStart(8, '0')).join('');
@@ -167,6 +171,7 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
       {canChooseCharacter && <button ref={characterButton} className="character-picker-button" onClick={() => { gameAudio.stop(); setPreviewCharacter(character.id); setScreen('characters'); }}>CHOISIR MON PERSONNAGE</button>}
       {!characterSaved && <p className="save-note" role="status">Ton prénom et ton personnage restent choisis ici. La sauvegarde est indisponible.</p>}
       <button className="primary-button play-button" onClick={start} disabled={!availableCount}><span aria-hidden="true">▶</span> JOUER</button>
+      {startFailed && <p className="save-note" role="status">La sauvegarde est indisponible. La partie n’a pas commencé. Réessaie JOUER.</p>}
       {!availableCount && <p role="status">Aucun défi disponible pour le contenu autorisé.</p>}
       <p className="adventure-note">{availableCount} petits défis avec ton ami</p>
       <button className="collection-button" onClick={() => { gameAudio.stop(); setScreen('collection'); }}>MA COLLECTION</button>

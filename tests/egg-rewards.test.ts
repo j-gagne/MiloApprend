@@ -1,7 +1,36 @@
 ﻿import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createProgressStore } from '../src/services/progress.ts';
-import { emptyEggRewards, eggVisualStage } from '../src/game/egg-rewards.ts';
+import { emptyEggRewards, eggVisualStage, isEggRewards } from '../src/game/egg-rewards.ts';
+
+test('failed initial persistence retries the same reward before completing a session', () => {
+  const original = JSON.stringify({ completedSessions: 12, selectedCharacterId: 'tiger', playerName: 'Zoé' });
+  let value = original, blocked = true, draws = 0;
+  const storage = { getItem: () => value, setItem: (_key: string, next: string) => {
+    if (blocked) throw Error('blocked'); value = next;
+  } };
+  const store = createProgressStore(() => storage, () => draws++ === 0 ? 0 : .99);
+  const initial = store.ensureReward();
+  assert.equal(initial.saved, false);
+  assert.equal(initial.progress.eggRewards!.currentEgg.pendingVariantId, 'normal');
+  assert.deepEqual(store.ensureReward(), initial);
+  assert.deepEqual(store.completeSession('first'), initial);
+  assert.equal(value, original);
+  assert.equal(draws, 1);
+  blocked = false;
+  const completed = store.completeSession('first');
+  assert.equal(completed.saved, true);
+  assert.deepEqual(completed.progress.eggRewards!.currentEgg, { ...initial.progress.eggRewards!.currentEgg, progress: 1 });
+  assert.equal(completed.progress.completedSessions, 13);
+  assert.equal(completed.progress.playerName, 'Zoé');
+  assert.deepEqual(completed.progress.eggRewards!.completedSessionIds, ['first']);
+  assert.deepEqual(completed.progress.eggRewards!.hatches, []);
+  assert.ok(isEggRewards(completed.progress.eggRewards));
+  const reload = createProgressStore(() => storage, () => { throw Error('unexpected reroll'); });
+  assert.deepEqual(reload.load(), completed.progress);
+  assert.deepEqual(reload.completeSession('first'), completed);
+  assert.equal(draws, 1);
+});
 
 function fixture() {
   let value: string | null = JSON.stringify({ completedSessions: 12, selectedCharacterId: 'rabbit', playerName: 'Zoé' });
