@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { CompleteWord } from './components/CompleteWord';
+import { Reading } from './components/Reading';
+import { readingPreviewExercises } from './content/reading-preview';
 import { Character } from './components/Character';
 import { CharacterPicker } from './components/CharacterPicker';
 import { Collection } from './components/Collection';
@@ -28,9 +30,9 @@ import { ParentSpace } from './components/parent/ParentSpace';
 import { parentDrafts } from './services/parent-drafts';
 import './components/parent/parent.css';
 
-export function App({ baseProgram = initialProgram }: { baseProgram?: LearningProgram }) {
+export function App({ baseProgram = initialProgram, readingPreview = false }: { baseProgram?: LearningProgram; readingPreview?: boolean }) {
   const [progress, setProgress] = useState(() => progressStore.load());
-  const [screen, setScreen] = useState<'home' | 'game' | 'celebration' | 'egg' | 'gate' | 'parent' | 'characters' | 'collection'>(() => progress.eggRewards?.pendingTransition ? 'egg' : parentDrafts.navigation().active ? 'parent' : 'home');
+  const [screen, setScreen] = useState<'home' | 'game' | 'reading' | 'celebration' | 'egg' | 'gate' | 'parent' | 'characters' | 'collection'>(() => progress.eggRewards?.pendingTransition ? 'egg' : readingPreview ? 'reading' : parentDrafts.navigation().active ? 'parent' : 'home');
   useEffect(() => {
     parentDrafts.navigate({ ...parentDrafts.navigation(), active: screen === 'parent' });
   }, [screen]);
@@ -64,6 +66,30 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
   const completed = useRef(false);
   const sessionId = useRef('');
   const parentDirty = useRef(false);
+  const [readingExercises] = useState(() => readingPreview ? readingPreviewExercises(service, parent.data.questionCount ?? DEFAULT_QUESTION_COUNT) : []);
+  const [readingReady, setReadingReady] = useState(false);
+  const [readingSaveFailed, setReadingSaveFailed] = useState(false);
+  const readingStarted = useRef(false);
+  const prepareReading = useCallback(() => {
+    const stored = progressStore.load();
+    if (stored.eggRewards?.pendingTransition) { setProgress(stored); setScreen('egg'); return; }
+    const initialization = progressStore.ensureReward();
+    setReadingReady(initialization.saved);
+    if (!initialization.saved) return;
+    setProgress(initialization.progress);
+    sessionId.current = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16).padStart(8, '0')).join('');
+  }, []);
+  useEffect(() => {
+    if (!readingPreview || readingStarted.current || !readingExercises.length) return;
+    readingStarted.current = true;
+    prepareReading();
+  }, [readingPreview, readingExercises, prepareReading]);
+
+  function finishReading() {
+    const completion = progressStore.completeSession(sessionId.current);
+    setSaved(completion.saved); setReadingSaveFailed(!completion.saved); setProgress(completion.progress);
+    if (completion.saved) { gameAudio.stop(); setScreen('egg'); }
+  }
 
   useEffect(() => {
     if (screen === 'home' && returnToCharacterButton.current) {
@@ -182,6 +208,7 @@ export function App({ baseProgram = initialProgram }: { baseProgram?: LearningPr
     {screen === 'collection' && <Collection hatches={progress.eggRewards?.hatches ?? []} onHome={() => setScreen('home')} />}
     {screen === 'characters' && canChooseCharacter && <CharacterPicker playerName={playerName} selected={character.id} onPreview={setPreviewCharacter} onSelect={selectCharacter} onClose={closeCharacters} />}
     {screen === 'game' && <CompleteWord audioSessionId={sessionId.current} playerName={playerName} onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}
+    {screen === 'reading' && <Reading exercises={readingExercises} ready={readingReady} saveFailed={readingSaveFailed} onRetry={prepareReading} onReward={finishReading} />}
     {screen === 'gate' && <ParentGate onOpen={() => setScreen('parent')} onCancel={() => setScreen('home')} />}
     {screen === 'parent' && <ParentSpace baseProgram={baseProgram} playerName={playerName} data={parent.data} service={service} warning={parent.warning}
       onResetProgress={resetProgress}

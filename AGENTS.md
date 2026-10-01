@@ -94,6 +94,13 @@
 - Œuf, végétation, bananes, nuages, terrier et hautes herbes sont indépendants des variantes : les révélations reçoivent le personnage/variant en attente. Ajouter une pose ne justifie pas de modifier masques, étapes ou environnement. Les previews isolées ne remplacent pas le parcours de production.
 - Vêtements/accessoires/inventaire restent du backlog ; n’introduire aucune architecture d’équipement sans demande explicite.
 
+## Je lis
+
+- Chaque segment de prononciation possède un curseur capsule indépendant ; sa poignée se déplace à l’intérieur sans dépasser, permettant de rapprocher les capsules sous les portions correspondantes d’une même unité affichée.
+- Un exercice contient des unités affichées explicites, chacune avec un ou plusieurs segments de prononciation. Les unités définissent le regroupement visuel et les retours à la ligne ; chaque segment possède un curseur et définit une exigence de complétion. Ne jamais déduire qu’un mot affiché équivaut à un seul curseur, ni inférer son découpage dans le rendu.
+- `Je lis` utilise le même écran/session réutilisable quelle que soit son entrée, avec une source d’exercices séparée. Chaque segment possède son curseur indépendant ; atteindre le seuil une fois suffit, sans validation de prononciation. Navigation et complétion sont indépendantes ; le son de réussite ne joue qu’à la première complétion d’un exercice.
+- La récompense de `Je lis` exige tous les exercices terminés et réutilise le service de progression existant : cycle sauvegardé avant interaction, identité de session unique, idempotence et reprises de sauvegarde conservées. Aucun stockage distinct pour cette activité.
+
 ## Mobile et validation
 
 - Priorité iPhone/iPad portrait, grosses cibles, Pointer Events avec alternative par appui/clavier, focus accessible et aucune dépendance au survol. Respecter `prefers-reduced-motion` ; empêcher sélection/appui long sur le jeu sans empêcher l’édition normale dans Parent.

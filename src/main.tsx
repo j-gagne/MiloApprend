@@ -24,6 +24,6 @@ else {
     for (const issue of createContentService(createContentRepository(baseProgram)).validate()) {
       console.warn(`[contenu:${issue.severity}:${issue.code}] ${issue.path} : ${issue.message}`);
     }
-    root.render(<React.StrictMode><App baseProgram={baseProgram} /></React.StrictMode>);
+    root.render(<React.StrictMode><App baseProgram={baseProgram} readingPreview={new URLSearchParams(window.location.search).get('preview') === 'reading'} /></React.StrictMode>);
   });
 }
