@@ -23,6 +23,7 @@
 - Nuance de validation : le chargeur appelle `validateProgram()` mais ses diagnostics retournés ne rejettent pas à eux seuls la base distante. `main.tsx` les journalise ; les adaptateurs écartent les activités invalides. Conserver les diagnostics structurés `severity`, `code`, `path`, `message`.
 - Une modification autorisée du catalogue partagé vise le `program.json` du dépôt de contenu. Modifier le repli `program.ts` seulement si demandé/nécessaire au périmètre ; ne jamais y réparer un comportement propre au Parent. Ne pas modifier le chargeur pour contourner des personnalisations.
 - Les activités passent par `content/service.ts` et son repository ; aucun catalogue pédagogique parallèle dans les composants. Les médias peuvent être absents sans bloquer le jeu.
+- Les exports globaux `contentService` et `contentRepository` reposent sur le seed local. Tout nouveau parcours activité/session/jeu doit recevoir le service/repository du programme effectif, après personnalisations Parent ; utiliser implicitement ces singletons contournerait le contenu distant et les overrides.
 
 ## Espace Parent et programme effectif
 
@@ -82,10 +83,11 @@
 ## Récompenses, personnages et Collection
 
 - `game/egg-rewards.ts` : un cycle de 5 sessions terminées ; `completedSessionIds` garantit l’idempotence. `pendingTransition` empêche une autre progression avant CONTINUER et permet de restaurer l’écran après rechargement.
-- `ensureReward()` enregistre le cycle dès zéro. `pendingAnimalId` et `pendingVariantId` déterminent la récompense, sans nouveau tirage pendant sa progression. Choix du personnage permis à zéro seulement ; changer d’animal à zéro crée son nouveau cycle, reconfirmer le même conserve le tirage.
+- `ensureReward()` enregistre le cycle dès zéro ; sa sauvegarde doit réussir avant de démarrer la partie ou de faire progresser le cycle. Un échec doit permettre de réessayer le même tirage. `pendingAnimalId` et `pendingVariantId` déterminent la récompense, sans nouveau tirage pendant sa progression. Choix du personnage permis à zéro seulement ; changer d’animal à zéro crée son nouveau cycle, reconfirmer le même conserve le tirage.
 - À la dernière session, le `HatchRecord` (`id`, `animalId`, `variantId`, `hatchedAt`) est ajouté avant CONTINUER. `acknowledgeEgg()` acquitte la transition et crée le prochain cycle uniquement si le précédent est terminé. Ne pas remettre à zéro sur simple montage d’un écran.
 - `game/character-variants.ts` : catalogue actuel `normal`, `sleeping`, `celebrating`, `waving` pour chaque personnage. Tirage uniforme parmi les variantes non possédées pour cet `animalId` ; toutes redeviennent candidates uniformes lorsqu’elles sont toutes possédées. Propriété = `animalId + variantId` ; variante absente des anciennes données = `normal`.
 - Ajouter une variante via le catalogue et le rendu existant, sans logique de sélection spéciale, pondération, nouveau schéma ou migration.
+- Les `variantId` persistés sont un contrat de compatibilité : ajouter les variantes de façon additive, sans renommer, supprimer ni réutiliser un ID pour un autre sens. Toute exception exige une tâche explicite de compatibilité/migration des sauvegardes, jamais un simple nettoyage SVG/catalogue, afin de préserver récompenses et Collection.
 - `Collection.tsx` rend les `hatches` dans leur ordre enregistré : chaque gain reste un individu, doublons compris, avec son `animalId + variantId`. Aucun tirage, regroupement ou recalcul du gain dans Collection.
 - `game/characters.ts` et `themes.ts` portent les données ; `CharacterArtwork.tsx` sélectionne les six SVG `Dinosaur`, `Lion`, `Monkey`, `Unicorn`, `Rabbit`, `Tiger` et leur variante. Réutiliser ce rendu partagé, préserver identités, palettes et variantes existantes, notamment `normal`.
 - `CharacterRewardReveal.tsx` résout les environnements : dinosaure → `HatchingEgg` (dans `HatchingPreview.tsx`), lion → `LionReveal`, singe → `MonkeyBananaReveal`, licorne → `UnicornReveal`, lapin → `RabbitReveal`, tigre → `TigerReveal`.
