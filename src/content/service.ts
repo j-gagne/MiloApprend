@@ -6,7 +6,9 @@ import { validateProgram } from './validation.ts';
 import type { ExerciseScope } from './model.ts';
 import { readingCatalog } from './reading-catalog.ts';
 
-export function createContentService(repository: ContentRepository, week = activeWeek, exerciseScope: ExerciseScope = { mode: 'all', selectedWeeks: [] }) {
+export function createContentService(repository: ContentRepository,
+  week = repository.getProgram().defaults?.activeWeek ?? activeWeek,
+  exerciseScope: ExerciseScope = repository.getProgram().defaults?.exerciseScope ?? { mode: 'all', selectedWeeks: [] }) {
   return {
     exerciseScope,
     activeWeek: week,

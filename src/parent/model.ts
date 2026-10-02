@@ -55,7 +55,8 @@ export function effectiveProgram(seed: LearningProgram, parent: ParentData): Lea
 }
 
 export function effectiveWeek(seed: LearningProgram, parent: ParentData, defaultWeek: number): number {
-  return effectiveProgram(seed, parent).weeks.some((week) => week.number === parent.activeWeek) ? parent.activeWeek! : defaultWeek;
+  return effectiveProgram(seed, parent).weeks.some((week) => week.number === parent.activeWeek)
+    ? parent.activeWeek! : seed.defaults?.activeWeek ?? defaultWeek;
 }
 
 export function saveActivity(data: ParentData, activity: Activity): ParentData {

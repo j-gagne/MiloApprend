@@ -124,16 +124,16 @@ export function ParentSpace({ baseProgram, playerName, data, service, warning, o
         </div><p>Le contenu du jeu est cumulatif. Aucun contenu futur ne sera proposé comme réponse.</p></section>
         <section className="parent-card"><h3>Exercices à pratiquer</h3>
           <p>Ce réglage choisit les exercices proposés pendant une partie. Le contenu appris des semaines précédentes reste disponible.</p>
-          <label className="parent-scope-choice"><input type="radio" name="exercise-scope" checked={!data.exerciseScope || data.exerciseScope.mode === 'all'}
-            onChange={() => onChange({ ...data, exerciseScope: { mode: 'all', selectedWeeks: data.exerciseScope?.selectedWeeks ?? [] } })} />Révision complète</label>
-          <label className="parent-scope-choice"><input type="radio" name="exercise-scope" checked={data.exerciseScope?.mode === 'selected-weeks'}
-            onChange={() => onChange({ ...data, exerciseScope: { mode: 'selected-weeks', selectedWeeks: data.exerciseScope?.selectedWeeks.length ? data.exerciseScope.selectedWeeks : [service.activeWeek] } })} />Semaines sélectionnées</label>
-          {data.exerciseScope?.mode === 'selected-weeks' && <div className="parent-checks">{program.weeks.map((week) => <label key={week.number}>
-            <input type="checkbox" checked={data.exerciseScope!.selectedWeeks.includes(week.number)}
+          <label className="parent-scope-choice"><input type="radio" name="exercise-scope" checked={service.exerciseScope.mode === 'all'}
+            onChange={() => onChange({ ...data, exerciseScope: { mode: 'all', selectedWeeks: service.exerciseScope.selectedWeeks } })} />Révision complète</label>
+          <label className="parent-scope-choice"><input type="radio" name="exercise-scope" checked={service.exerciseScope.mode === 'selected-weeks'}
+            onChange={() => onChange({ ...data, exerciseScope: { mode: 'selected-weeks', selectedWeeks: service.exerciseScope.selectedWeeks.length ? service.exerciseScope.selectedWeeks : [service.activeWeek] } })} />Semaines sélectionnées</label>
+          {service.exerciseScope.mode === 'selected-weeks' && <div className="parent-checks">{program.weeks.map((week) => <label key={week.number}>
+            <input type="checkbox" checked={service.exerciseScope.selectedWeeks.includes(week.number)}
               onChange={(event) => onChange({ ...data, exerciseScope: { mode: 'selected-weeks', selectedWeeks: event.target.checked
-                ? [...data.exerciseScope!.selectedWeeks, week.number] : data.exerciseScope!.selectedWeeks.filter((item) => item !== week.number) } })} />
+                ? [...service.exerciseScope.selectedWeeks, week.number] : service.exerciseScope.selectedWeeks.filter((item) => item !== week.number) } })} />
             Semaine {week.number}{week.number > service.activeWeek ? ' — contenu pas encore disponible' : ''}</label>)}</div>}
-          {data.exerciseScope?.mode === 'selected-weeks' && !data.exerciseScope.selectedWeeks.some((week) => week <= service.activeWeek && program.weeks.some((item) => item.number === week))
+          {service.exerciseScope.mode === 'selected-weeks' && !service.exerciseScope.selectedWeeks.some((week) => week <= service.activeWeek && program.weeks.some((item) => item.number === week))
             && <p role="status">Aucune semaine apprise sélectionnée : aucune partie ne sera proposée.</p>}
         </section>
         <section className="parent-card"><h3>Vitesse de lecture</h3><div className="parent-tokens">

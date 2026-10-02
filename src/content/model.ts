@@ -116,6 +116,7 @@ export interface SchoolWeek {
   readonly reviewedUnitIds?: readonly string[];
 }
 export interface LearningProgram {
+  readonly defaults?: { readonly activeWeek: number; readonly exerciseScope: ExerciseScope };
   readonly readingExercises?: readonly import('./reading-model.ts').ReadingExerciseDefinition[];
   readonly id: string;
   readonly weeks: readonly SchoolWeek[];

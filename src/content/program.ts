@@ -3373,4 +3373,5 @@ export const seedBank: readonly SeedWeek[] = [
 
 
 
-export const initialProgram = buildSeedProgram('milo-school-program', seedBank);
+export const initialProgram = { ...buildSeedProgram('milo-school-program', seedBank),
+  defaults: { activeWeek: 6, exerciseScope: { mode: 'selected-weeks' as const, selectedWeeks: [6] } } };

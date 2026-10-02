@@ -31,6 +31,7 @@
 - `saveParentUnit()` stocke les contenus Parent dans `customUnits` ; pour le contenu de base, il stocke les overrides de prononciation/lecture et les constructions. Conserver les IDs lors d’une édition ; les activités Parent remplacent celles de même ID.
 - Programme expose une construction principale facultative par mot/phrase ; les alternatives déjà stockées restent compatibles. Exercices configure les activités, leurs positions et distracteurs ; valider avant sauvegarde.
 - `activeWeek` Parent remplace le défaut de `content/settings.ts`. `exerciseScope` filtre seulement les semaines d’introduction des cibles des sessions, jamais les éditeurs ni le cumul des unités apprises.
+- Le bloc optionnel `defaults` du programme de base fournit `activeWeek` et `exerciseScope`, sous les choix Parent explicites et sans les enregistrer au démarrage. Sans ce bloc, conserver les défauts historiques (`settings.ts`, révision complète). Le repli local définit semaine active 6 et semaines pratiquées [6] ; jeux et Je lis utilisent les mêmes valeurs effectives, affichées par les contrôles Parent.
 - Les suppressions personnalisées et resets demandent confirmation. Le contenu de base peut être désactivé, pas supprimé par le Parent.
 
 ## Construction, lecture et Découpe
