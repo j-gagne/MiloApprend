@@ -4,12 +4,14 @@ import { activeWeek } from './settings.ts';
 import * as selectors from './selectors.ts';
 import { validateProgram } from './validation.ts';
 import type { ExerciseScope } from './model.ts';
+import { readingCatalog } from './reading-catalog.ts';
 
 export function createContentService(repository: ContentRepository, week = activeWeek, exerciseScope: ExerciseScope = { mode: 'all', selectedWeeks: [] }) {
   return {
     exerciseScope,
     activeWeek: week,
     getProgram: () => repository.getProgram(),
+    getReadingExercises: () => readingCatalog(repository.getProgram(), week, exerciseScope),
     getAvailableLetters: (at = week) => selectors.getAvailableLetters(repository.getProgram(), at),
     getAvailableGraphemes: (at = week) => selectors.getAvailableGraphemes(repository.getProgram(), at),
     getAvailableSounds: (at = week) => selectors.getAvailableSounds(repository.getProgram(), at),
