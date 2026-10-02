@@ -4,9 +4,9 @@ import { gameAudio } from '../services/audio';
 import { PronunciationSlider } from './PronunciationSlider';
 import './reading.css';
 
-export function Reading({ exercises, ready, saveFailed, onRetry, onReward }: {
+export function Reading({ exercises, ready, saveFailed, onRetry, onReward, onHome }: {
   exercises: readonly ReadingExercise[]; ready: boolean; saveFailed: boolean;
-  onRetry: () => void; onReward: () => void;
+  onRetry: () => void; onReward: () => void; onHome: () => void;
 }) {
   const [index, setIndex] = useState(0);
   const [state, setState] = useState(() => createReadingState(exercises));
@@ -30,7 +30,7 @@ export function Reading({ exercises, ready, saveFailed, onRetry, onReward }: {
     </ol>
     <h1 ref={heading} tabIndex={-1}>Je lis</h1>
     <p className="instruction">Dis le son en glissant.</p>
-    {!exercises.length ? <p role="status">Aucun contenu de lecture disponible.</p> : <div className="reading-layout">
+    {!exercises.length ? <><p role="status">Pas de lecture pour le moment.</p><button className="primary-button" onClick={onHome}>RETOUR À L’ACCUEIL</button></> : <div className="reading-layout">
       <section className="reading-units" aria-label={`Exercice ${index + 1}`}>
         {exercises[index].displayedUnits.map((unit, unitIndex, units) => {
           const offset = units.slice(0, unitIndex).reduce((sum, previous) => sum + previous.segments.length, 0);

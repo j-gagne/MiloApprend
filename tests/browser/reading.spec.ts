@@ -287,7 +287,7 @@ test('real Reading entry: independent sliders, skip/revisit, once-only ding, the
   expect((await stored(page)).completedSessions).toBe(1);
   await page.getByRole('button', { name: 'CONTINUER', exact: true }).click();
   await expect(page.getByRole('button', { name: 'JOUER', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'JE LIS', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'JE LIS', exact: true })).toBeVisible();
 });
 
 test('mouse and touch move the visible thumb both ways on a phone-sized screen', async ({ page, context }) => {

@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { CompleteWord } from './components/CompleteWord';
 import { Reading } from './components/Reading';
 import { readingPreviewExercises } from './content/reading-preview';
+import { createReadingSession } from './game/reading-program-session';
 import { Character } from './components/Character';
 import { CharacterPicker } from './components/CharacterPicker';
 import { Collection } from './components/Collection';
@@ -66,7 +67,7 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
   const completed = useRef(false);
   const sessionId = useRef('');
   const parentDirty = useRef(false);
-  const [readingExercises] = useState(() => readingPreview ? readingPreviewExercises(service, parent.data.questionCount ?? DEFAULT_QUESTION_COUNT) : []);
+  const [readingExercises, setReadingExercises] = useState(() => readingPreview ? readingPreviewExercises(service, parent.data.questionCount ?? DEFAULT_QUESTION_COUNT) : []);
   const [readingReady, setReadingReady] = useState(false);
   const [readingSaveFailed, setReadingSaveFailed] = useState(false);
   const readingStarted = useRef(false);
@@ -77,13 +78,24 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
     setReadingReady(initialization.saved);
     if (!initialization.saved) return;
     setProgress(initialization.progress);
-    sessionId.current = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16).padStart(8, '0')).join('');
+    sessionId.current = `reading:${Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16).padStart(8, '0')).join('')}`;
   }, []);
   useEffect(() => {
     if (!readingPreview || readingStarted.current || !readingExercises.length) return;
     readingStarted.current = true;
     prepareReading();
   }, [readingPreview, readingExercises, prepareReading]);
+
+  function startReading() {
+    const stored = progressStore.load();
+    if (stored.eggRewards?.pendingTransition) { setProgress(stored); setScreen('egg'); return; }
+    const next = createReadingSession(service, parent.data);
+    for (const issue of next.issues) console.warn(`[reading:${issue.code}] ${issue.message}`);
+    gameAudio.stop(); gameAudio.unlock();
+    setReadingExercises(next.exercises); setReadingReady(false); setReadingSaveFailed(false);
+    setScreen('reading');
+    if (next.exercises.length) prepareReading();
+  }
 
   function finishReading() {
     const completion = progressStore.completeSession(sessionId.current);
@@ -200,6 +212,7 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
       {startFailed && <p className="save-note" role="status">La sauvegarde est indisponible. La partie n’a pas commencé. Réessaie JOUER.</p>}
       {!availableCount && <p role="status">Aucun défi disponible pour le contenu autorisé.</p>}
       <p className="adventure-note">{availableCount} petits défis avec ton ami</p>
+      <button className="primary-button" onClick={startReading}>JE LIS</button>
       <button className="collection-button" onClick={() => { gameAudio.stop(); setScreen('collection'); }}>MA COLLECTION</button>
       <div className="progress-pill"><span aria-hidden="true">●</span> {progress.completedSessions === 0 ? 'Ta première aventure t’attend !' : `${progress.completedSessions} aventure${progress.completedSessions > 1 ? 's' : ''} terminée${progress.completedSessions > 1 ? 's' : ''}`}</div>
       <button className="text-button parents-link" onClick={() => { gameAudio.stop(); setScreen('gate'); }}>Parents</button>
@@ -208,7 +221,7 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
     {screen === 'collection' && <Collection hatches={progress.eggRewards?.hatches ?? []} onHome={() => setScreen('home')} />}
     {screen === 'characters' && canChooseCharacter && <CharacterPicker playerName={playerName} selected={character.id} onPreview={setPreviewCharacter} onSelect={selectCharacter} onClose={closeCharacters} />}
     {screen === 'game' && <CompleteWord audioSessionId={sessionId.current} playerName={playerName} onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}
-    {screen === 'reading' && <Reading exercises={readingExercises} ready={readingReady} saveFailed={readingSaveFailed} onRetry={prepareReading} onReward={finishReading} />}
+    {screen === 'reading' && <Reading exercises={readingExercises} ready={readingReady} saveFailed={readingSaveFailed} onRetry={prepareReading} onReward={finishReading} onHome={() => setScreen('home')} />}
     {screen === 'gate' && <ParentGate onOpen={() => setScreen('parent')} onCancel={() => setScreen('home')} />}
     {screen === 'parent' && <ParentSpace baseProgram={baseProgram} playerName={playerName} data={parent.data} service={service} warning={parent.warning}
       onResetProgress={resetProgress}
