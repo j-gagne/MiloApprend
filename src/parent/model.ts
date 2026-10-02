@@ -4,6 +4,7 @@ import { parentActivities } from './activities.ts';
 import type { ExerciseScope } from '../content/model.ts';
 import type { ReadingSpeed } from '../services/audio-settings.ts';
 import type { PlaySettings } from '../game/play-settings.ts';
+import type { ReadingExerciseDefinition } from '../content/reading-model.ts';
 
 export interface ParentWeek extends SchoolWeek { readonly id: string }
 export interface AudioOverride {
@@ -22,6 +23,7 @@ export interface ParentData extends PlaySettings {
   readonly customUnits: readonly LearningUnit[];
   readonly customWeeks: readonly ParentWeek[];
   readonly activities: readonly Activity[];
+  readonly readingExercises?: readonly ReadingExerciseDefinition[];
   readonly constructions?: Readonly<Record<string, readonly Segmentation[]>>;
   readonly audioOverrides?: Readonly<Record<string, AudioOverride>>;
 }
@@ -50,7 +52,12 @@ export function effectiveProgram(seed: LearningProgram, parent: ParentData): Lea
   for (const activity of parent.activities) activities.set(activity.id, activity);
   const weeks = [...seed.weeks, ...parent.customWeeks.filter((week) => !seed.weeks.some((item) => item.number === week.number))]
     .sort((a, b) => a.number - b.number);
-  return { ...seed, weeks, units, activityEnabled: parent.activityEnabled, activities: [...activities.values()].map((activity) => ({ ...activity,
+  return { ...seed, weeks, units,
+    ...(parent.readingExercises === undefined ? {} : { readingExercises: [
+      ...(seed.readingExercises ?? []).filter(exercise => !parent.readingExercises?.some(item => item.id === exercise.id)),
+      ...parent.readingExercises,
+    ] }),
+    activityEnabled: parent.activityEnabled, activities: [...activities.values()].map((activity) => ({ ...activity,
     enabled: parent.activityEnabled[activity.id] ?? activity.enabled })) };
 }
 

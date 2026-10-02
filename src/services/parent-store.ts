@@ -2,6 +2,7 @@ import type { Activity, LearningUnit, PedagogicalSegment, Segmentation, Word } f
 import type { AudioOverride, ParentData, ParentWeek } from '../parent/model.ts';
 import { isReadingSequence } from '../content/reading-sequence.ts';
 import { emptyParentData } from '../parent/model.ts';
+import { isReadingExerciseDefinition } from '../content/reading-catalog.ts';
 import type { ExerciseScope } from '../content/model.ts';
 import { READING_SPEEDS, type ReadingSpeed } from './audio-settings.ts';
 import type { GameMode, ChainLength } from '../game/play-settings.ts';
@@ -88,6 +89,10 @@ export function parseParentData(raw: string): ParentData | undefined {
   if (value.questionCount !== undefined && (typeof value.questionCount !== 'number'
     || !Number.isSafeInteger(value.questionCount) || value.questionCount < 1 || value.questionCount > 9)) return undefined;
   const units = value.version === 1 ? value.customWords : value.customUnits;
+  if (value.readingExercises !== undefined && (!Array.isArray(value.readingExercises)
+    || !value.readingExercises.every(isReadingExerciseDefinition)
+    || value.readingExercises.some(exercise => !exercise.id.startsWith('reading:parent-activity-'))
+    || new Set(value.readingExercises.map(exercise => exercise.id)).size !== value.readingExercises.length)) return undefined;
   if (value.readingSpeed !== undefined && (typeof value.readingSpeed !== 'string' || !Object.hasOwn(READING_SPEEDS, value.readingSpeed))) return undefined;
   if (value.exerciseScope !== undefined && (!record(value.exerciseScope)
     || !['all', 'selected-weeks'].includes(String(value.exerciseScope.mode))
@@ -112,6 +117,7 @@ export function parseParentData(raw: string): ParentData | undefined {
     ...(value.exerciseScope === undefined ? {} : { exerciseScope: value.exerciseScope as unknown as ExerciseScope }),
     ...(value.readingSpeed === undefined ? {} : { readingSpeed: value.readingSpeed as ReadingSpeed }),
     activityEnabled: value.activityEnabled, customUnits: units, customWeeks: weeks, activities: value.activities,
+    ...(value.readingExercises === undefined ? {} : { readingExercises: value.readingExercises }),
     ...(value.audioOverrides === undefined ? {} : { audioOverrides: value.audioOverrides as Record<string, AudioOverride> }),
     ...(value.constructions === undefined ? {} : { constructions: value.constructions as Record<string, Segmentation[]> }) };
 }

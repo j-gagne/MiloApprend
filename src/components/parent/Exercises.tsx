@@ -10,11 +10,13 @@ import { primaryConstruction } from '../../content/construction';
 import { activityCatalog, isAutomatic, isCompletionTarget } from '../../content/activity-catalog';
 import type { CompletionTarget } from '../../content/model';
 import { letterPositions, newSpellActivity } from '../../content/spelling';
+import { ReadingExercises } from './ReadingExercises';
 
 interface Props { baseProgram: LearningProgram; program: LearningProgram; data: ParentData; activeWeek: number; onChange: (data: ParentData) => boolean;
   onConstruct: (target: Word | Sentence) => void;
   onEdit: (activity: Activity, target: CompletionTarget) => void }
 export function Exercises({ baseProgram, program, data, activeWeek, onChange, onEdit, onConstruct }: Props) {
+  const [tab, setTab] = useState<'complete' | 'reading'>('complete');
   const [adding, setAdding] = useState(false);
   const [kind, setKind] = useState<'complete-segments' | 'spell'>('complete-segments');
   const [targetId, setTargetId] = useState('');
@@ -23,6 +25,11 @@ export function Exercises({ baseProgram, program, data, activeWeek, onChange, on
   const seedIds = new Set(parentActivities(baseProgram).map((item) => item.id));
   const target = program.units.find((unit) => unit.id === targetId);
   return <section aria-label="Exercices pédagogiques"><h2>Exercices</h2>
+    <nav className="parent-tabs" aria-label="Types d’exercices">
+      <button aria-current={tab === 'complete' ? 'page' : undefined} onClick={() => setTab('complete')}>COMPLÈTE</button>
+      <button aria-current={tab === 'reading' ? 'page' : undefined} onClick={() => setTab('reading')}>JE LIS</button>
+    </nav>
+    {tab === 'complete' ? <>
     <button className="parent-primary" onClick={() => setAdding(!adding)}>+ Nouvel exercice</button>
     {adding && <div className="parent-card">
       <label>Type de défi<select aria-label="Type de défi" value={kind} onChange={(event) => { setKind(event.target.value as typeof kind); setTargetId(''); }}>
@@ -76,5 +83,9 @@ export function Exercises({ baseProgram, program, data, activeWeek, onChange, on
       </section>;
     })}
     {activities.filter((activity) => !program.units.some((unit) => unit.id === activity.targetId)).map((activity) => <p key={activity.id} role="alert">Exercice {activity.id} : cible introuvable, exclu du jeu.</p>)}
+    </> : <>
+      <label>Rechercher un exercice<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+      <ReadingExercises program={program} data={data} activeWeek={activeWeek} search={search} onChange={onChange} onCreated={() => setSearch('')} />
+    </>}
   </section>;
 }

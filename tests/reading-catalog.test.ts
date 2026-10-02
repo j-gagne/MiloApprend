@@ -10,6 +10,10 @@ import { effectiveProgram, emptyParentData } from '../src/parent/model.ts';
 import { parseParentData } from '../src/services/parent-store.ts';
 import { loadBaseProgram } from '../src/content/remote-program.ts';
 import { createReadingState, moveReadingSlider, readingExerciseComplete } from '../src/game/reading-session.ts';
+import { parentReadingCatalog } from '../src/content/reading-catalog.ts';
+import { createReadingSession } from '../src/game/reading-program-session.ts';
+import { newSpellActivity } from '../src/content/spelling.ts';
+import { readingExerciseError } from '../src/parent/reading-exercises.ts';
 
 const wholeId = wholeWordReadingId('word-savane');
 const segmented: ReadingExerciseDefinition = { id: 'reading:savane:segmented', targetId: 'word-savane',
@@ -119,6 +123,45 @@ const combinedBase = buildSeedProgram('combined', [
   { ...bank[1], syllables: ['ma'] },
 ]);
 
+test('Parent lists one card per page across weeks, retaining disabled pages and their segments', () => {
+  const program = { ...combinedBase, readingExercises: [{ ...segmented, enabled: false }, compound] };
+  const { entries, issues } = parentReadingCatalog(program, 1);
+  assert.deepEqual(issues, []);
+  assert.equal(entries.length, 3);
+  const page = entries.filter(entry => entry.exercise.id === compound.id);
+  assert.equal(page.length, 1);
+  assert.deepEqual(page[0].exercise.displayedUnits.map(unit => unit.display), ['m', 'a', 'ma']);
+  assert.equal(page[0].available, false);
+  assert.equal(entries.find(entry => entry.exercise.id === segmented.id)?.enabled, false);
+  assert.equal(entries.find(entry => entry.exercise.id === wholeId)?.automatic, true);
+  assert.ok(parentReadingCatalog(program, 2).entries.every(entry => entry.available));
+});
+
+test('persisted page toggles survive a base update, restore new sessions and leave shared content, completion and Spell intact', () => {
+  const word = combinedBase.units.find(unit => unit.type === 'word')!;
+  assert.equal(word.type, 'word');
+  if (word.type !== 'word') throw new Error('word expected');
+  const program = { ...combinedBase, activities: [newSpellActivity(combinedBase, word, 2, 'spell-test')],
+    readingExercises: [segmented, compound] };
+  const original = effectiveProgram(program, emptyParentData());
+  const running = createReadingSession(service(original), { questionCount: 9 });
+  for (const id of [segmented.id, wholeId, compound.id]) {
+    const saved = parseParentData(JSON.stringify({ ...emptyParentData(), activityEnabled: { [id]: false } }))!;
+    const updatedBase = { ...program, id: 'remote-update' };
+    const disabled = effectiveProgram(updatedBase, saved);
+    assert.deepEqual(disabled.units, original.units);
+    assert.deepEqual(activityCatalog(disabled, 2), activityCatalog(original, 2));
+    assert.deepEqual(service(disabled).getAvailableWords(), service(original).getAvailableWords());
+    assert.deepEqual(service(disabled).getReadingExercises().exercises.map(page => page.id).sort(),
+      running.exercises.filter(page => page.id !== id).map(page => page.id).sort());
+    assert.ok(!createReadingSession(service(disabled), { questionCount: 9 }).exercises.some(page => page.id === id));
+    assert.equal(parentReadingCatalog(disabled, 2).entries.find(entry => entry.exercise.id === id)?.enabled, false);
+    const enabled = effectiveProgram(updatedBase, { ...saved, activityEnabled: { ...saved.activityEnabled, [id]: true } });
+    assert.equal(createReadingSession(service(enabled), { questionCount: 9 }).exercises.length, 3);
+    assert.equal(running.exercises.length, 3);
+  }
+});
+
 test('mixed shared targets form one page with three independent requirements; a letter can also stand alone', () => {
   const program = { ...combinedBase, readingExercises: [compound,
     { id: 'reading:m', displayedUnits: [{ unitId: 'letter-m' }] }] };
@@ -178,4 +221,48 @@ test('a phrase page references explicit portions of one shared Sentence, without
     displayedUnits: [{ unitId: sentence.id, range: [0, 999] }] }] }).getReadingExercises();
   assert.ok(invalid.issues.length);
   assert.equal(invalid.exercises.some(exercise => exercise.id === definition.id), false);
+});
+
+const sentenceSegments = ['tool-word-Il', 'letter-a', 'syllable-vu', 'syllable-le', 'syllable-li', 'syllable-la'];
+const sentenceReading: ReadingExerciseDefinition = { id: 'reading:sentence-lila', displayedUnits: [
+  { unitId: 'sentence-lila', segmentUnitIds: sentenceSegments },
+] };
+function sentenceProgram(display: string, segmentUnitIds = sentenceSegments): LearningProgram {
+  const bank = buildSeedProgram('sentence-reading', [{ number: 1, label: '1', letters: ['a'],
+    syllables: ['vu', 'le', 'li', 'la'], toolWords: [{ id: 'tool-word-Il', display: 'Il' }], words: [], sentences: [] }]);
+  return { ...bank, units: [...bank.units, { id: 'sentence-lila', type: 'sentence', display,
+    audioText: display, introducedInWeek: 1, enabled: true }], readingExercises: [{ ...sentenceReading,
+      displayedUnits: [{ unitId: 'sentence-lila', segmentUnitIds }] }] };
+}
+
+for (const ending of ['.', '!', '?', '…', '\u00a0!', '\u202f?']) {
+  test(`sentence spaces and terminal ${JSON.stringify(ending)} need no pronunciation segment`, () => {
+    const display = `Il a vu le lila${ending}`;
+    const program = sentenceProgram(display);
+    const before = JSON.stringify(program);
+    assert.equal(readingExerciseError(program, 1, sentenceReading), undefined);
+    const result = service(program, 1).getReadingExercises();
+    assert.deepEqual(result.issues, []);
+    assert.equal(result.exercises.length, 1);
+    assert.equal(result.exercises[0].displayedUnits[0].display, display);
+    assert.deepEqual(result.exercises[0].displayedUnits[0].segments.map(segment => segment.text), ['Il', 'a', 'vu', 'le', 'li', 'la']);
+    assert.equal(createReadingState(result.exercises).values[0].length, 6);
+    assert.equal(JSON.stringify(program), before);
+  });
+}
+
+test('sentence matching still rejects wrong text, order, missing pieces and omitted internal punctuation', () => {
+  for (const program of [
+    sentenceProgram('Il a vu le lilas.'),
+    sentenceProgram('Il a vu le lila.', [...sentenceSegments.slice(0, 4), 'syllable-la', 'syllable-li']),
+    sentenceProgram('Il a vu le lila.', sentenceSegments.slice(0, -1)),
+    sentenceProgram('Il a vu, le lila.'),
+    sentenceProgram('Il a vu le li-la!'),
+    sentenceProgram("Il a vu le li’la?"),
+  ]) {
+    const result = service(program, 1).getReadingExercises();
+    assert.equal(result.exercises.length, 0);
+    assert.ok(result.issues.some(issue => issue.code === 'invalid-reading-exercise'));
+    assert.ok(readingExerciseError(program, 1, program.readingExercises![0]));
+  }
 });

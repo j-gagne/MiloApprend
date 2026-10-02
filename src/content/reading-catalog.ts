@@ -7,7 +7,19 @@ const object = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 const identifier = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 
-function isDefinition(value: unknown): value is ReadingExerciseDefinition {
+function segmentsMatchDisplay(display: string, segments: readonly { text: string }[], sentence: boolean): boolean {
+  let remaining = display;
+  for (const segment of segments) {
+    // Sentence spaces may separate referenced pieces; characters inside a piece stay exact.
+    if (sentence && !remaining.startsWith(segment.text)) remaining = remaining.trimStart();
+    if (!remaining.startsWith(segment.text)) return false;
+    remaining = remaining.slice(segment.text.length);
+  }
+  // Only non-pronounced terminal punctuation may remain after the last piece.
+  return /^[.!?…]*$/u.test(sentence ? remaining.trim() : remaining);
+}
+
+export function isReadingExerciseDefinition(value: unknown): value is ReadingExerciseDefinition {
   return object(value) && identifier(value.id)
     && (value.targetId === undefined || identifier(value.targetId))
     && (identifier(value.targetId) || value.displayedUnits !== undefined)
@@ -22,8 +34,8 @@ function isDefinition(value: unknown): value is ReadingExerciseDefinition {
 }
 
 /** Pure projection of an effective program. Scope filters targets, not previously learned segments. */
-export function readingCatalog(program: LearningProgram, week: number, scope: ExerciseScope) {
-  const exercises: ProgramReadingExercise[] = [];
+function projectReadingCatalog(program: LearningProgram, week: number, scope: ExerciseScope, includeUnavailable = false) {
+  const entries: { exercise: ProgramReadingExercise; enabled: boolean; available: boolean; automatic: boolean }[] = [];
   const issues: ContentIssue[] = [];
   const units = new Map(program.units.map(unit => [unit.id, unit]));
   const definitions = new Map<string, ReadingExerciseDefinition>();
@@ -40,7 +52,7 @@ export function readingCatalog(program: LearningProgram, week: number, scope: Ex
     const id = object(value) && identifier(value.id) ? value.id : undefined;
     const duplicate = id !== undefined && reservedIds.has(id);
     if (id !== undefined) reservedIds.add(id);
-    if (!isDefinition(value) || duplicate) {
+    if (!isReadingExerciseDefinition(value) || duplicate) {
       issue(path, 'Configuration Reading invalide ou identifiant dupliqué.');
       if (id !== undefined) definitions.delete(id);
       continue;
@@ -72,10 +84,11 @@ export function readingCatalog(program: LearningProgram, week: number, scope: Ex
       issue(path, 'Une référence Reading est absente de la banque partagée.');
       continue;
     }
-    if (!(program.activityEnabled?.[definition.id] ?? definition.enabled ?? true)
-      || references.some(id => !isAvailable(program, units.get(id)!, week))
-      || (scope.mode === 'selected-weeks'
-        && targetIds.some(id => !scope.selectedWeeks.includes(units.get(id)!.introducedInWeek)))) continue;
+    const enabled = program.activityEnabled?.[definition.id] ?? definition.enabled ?? true;
+    const available = references.every(id => isAvailable(program, units.get(id)!, week))
+      && (scope.mode !== 'selected-weeks'
+        || targetIds.every(id => scope.selectedWeeks.includes(units.get(id)!.introducedInWeek)));
+    if (!includeUnavailable && (!enabled || !available)) continue;
     if (displayed.some(unit => unit.range && (units.get(unit.unitId)!.type !== 'sentence'
       || unit.range[1] > Array.from(units.get(unit.unitId)!.display).length))) {
       issue(path, 'La plage Reading doit désigner une portion valide de la phrase partagée.');
@@ -89,16 +102,26 @@ export function readingCatalog(program: LearningProgram, week: number, scope: Ex
         : [{ unitId: unit.unitId, text: display.replace(/[.!?…]+$/u, '') }] };
     });
     // Explicit references must spell the displayed units; audioText never defines slider text.
-    if (displayedUnits.some(unit => !unit.display.trim()
+    if (displayedUnits.some((unit, index) => !unit.display.trim()
       || unit.segments.some(segment => !segment.text.trim())
-      || (unit.segments.map(segment => segment.text).join('') !== unit.display
-        && unit.segments.map(segment => segment.text).join('') !== unit.display.replace(/[.!?…]+$/u, '')))
+      || !segmentsMatchDisplay(unit.display, unit.segments, units.get(displayed[index].unitId)!.type === 'sentence'))
       || (target && displayedUnits.map(unit => unit.display).join(target.type === 'sentence' ? ' ' : '') !== target.display)) {
       issue(path, 'Les segments Reading doivent correspondre au texte partagé affiché.');
       continue;
     }
-    exercises.push({ id: definition.id, ...(target ? { targetId: target.id } : {}),
-      introducedInWeek: Math.max(...targetIds.map(id => units.get(id)!.introducedInWeek)), displayedUnits });
+    entries.push({ enabled, available, automatic: !reservedIds.has(definition.id),
+      exercise: { id: definition.id, ...(target ? { targetId: target.id } : {}),
+        introducedInWeek: Math.max(...targetIds.map(id => units.get(id)!.introducedInWeek)), displayedUnits } });
   }
-  return { exercises, issues };
+  return { entries, issues };
+}
+
+export function readingCatalog(program: LearningProgram, week: number, scope: ExerciseScope) {
+  const { entries, issues } = projectReadingCatalog(program, week, scope);
+  return { exercises: entries.map(entry => entry.exercise), issues };
+}
+
+/** Parent lists all valid pages across weeks, including disabled pages, without session scope. */
+export function parentReadingCatalog(program: LearningProgram, week: number) {
+  return projectReadingCatalog(program, week, { mode: 'all', selectedWeeks: [] }, true);
 }
