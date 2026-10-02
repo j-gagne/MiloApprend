@@ -71,8 +71,8 @@ function projectReadingCatalog(program: LearningProgram, week: number, scope: Ex
   ]);
   for (const definition of definitions.values()) {
     const path = `readingExercises.${definition.id}`;
-    if (!definition.id.startsWith('reading:') || otherActivityIds.has(definition.id)) {
-      issue(path, 'Utiliser un identifiant Reading distinct avec le préfixe reading:.');
+    if ((!definition.id.startsWith('reading:') && !definition.id.startsWith('reading-')) || otherActivityIds.has(definition.id)) {
+      issue(path, 'Utiliser un identifiant Reading distinct avec le préfixe reading: ou reading-.');
       continue;
     }
     const target = definition.targetId === undefined ? undefined : units.get(definition.targetId);

@@ -2,6 +2,7 @@ import { initialProgram } from './program.ts';
 import { buildSeedProgram, type SeedWeek } from './seed-bank.ts';
 import type { LearningProgram } from './model.ts';
 import { validateProgram } from './validation.ts';
+import { isReadingExerciseDefinition } from './reading-catalog.ts';
 
 export const REMOTE_PROGRAM_URL = 'https://raw.githubusercontent.com/j-gagne/MiloApprend-Content/refs/heads/main/program.json';
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -14,11 +15,16 @@ function validDefaults(value: unknown, weeks: readonly SeedWeek[]): boolean {
     && Array.isArray(value.exerciseScope.selectedWeeks) && value.exerciseScope.selectedWeeks.every(knownWeek));
 }
 
-function validPayload(value: unknown): value is { schemaVersion: 1; programId: string; weeks: SeedWeek[]; defaults?: LearningProgram['defaults'] } {
+const validReadingExercises = (value: unknown): boolean => value === undefined
+  || (Array.isArray(value) && value.every(isReadingExerciseDefinition));
+
+function validPayload(value: unknown): value is { schemaVersion: 1; programId: string; weeks: SeedWeek[];
+  defaults?: LearningProgram['defaults']; readingExercises?: LearningProgram['readingExercises'] } {
   return object(value) && value.schemaVersion === 1 && typeof value.programId === 'string'
-    && value.programId.trim().length > 0 && Array.isArray(value.weeks) && value.weeks.length > 0
+    && value.programId.trim().length > 0 && validReadingExercises(value.readingExercises)
+    && Array.isArray(value.weeks) && value.weeks.length > 0
     && value.weeks.every(week => object(week) && typeof week.number === 'number' && Number.isFinite(week.number)
-      && typeof week.label === 'string'
+      && typeof week.label === 'string' && validReadingExercises(week.readingExercises)
       && ['letters', 'syllables', 'toolWords', 'words', 'sentences', 'graphemes'].every(key => {
         const entries = week[key];
         if (key === 'graphemes' && entries === undefined) return true;
@@ -40,7 +46,12 @@ export async function loadBaseProgram(fetcher: typeof fetch = fetch, timeoutMs =
       if (!validPayload(payload)) throw new Error('Invalid remote program');
       if (!validDefaults(payload.defaults, payload.weeks)) throw new Error('Invalid program defaults');
       const built = build(payload.programId, payload.weeks);
-      const program = payload.defaults === undefined ? built : { ...built, defaults: payload.defaults };
+      const program: LearningProgram = { ...built,
+        ...(payload.defaults === undefined ? {} : { defaults: payload.defaults }),
+        ...(payload.readingExercises === undefined ? {} : { readingExercises: [
+          ...(built.readingExercises ?? []), ...payload.readingExercises,
+        ] }),
+      };
       // Reuse existing checks inside the fallback boundary (malformed nested content may throw).
       validateProgram(program);
       return program;

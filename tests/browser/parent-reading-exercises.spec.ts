@@ -8,12 +8,12 @@ const remote = { schemaVersion: 1, programId: 'parent-reading-test', weeks: [
   { number: 1, label: '1', letters: ['m', 'a'], syllables: ['ma', 'sa', 'va', 'ne'], toolWords: [], sentences: [],
     words: [{ id: 'word-savane', display: 'savane', segmentations: [{ id: 'parts',
       segments: ['sa', 'va', 'ne'].map(text => ({ unitId: `syllable-${text}` })) }] }],
-    readingExercises: [
-      { id: 'reading:compound', displayedUnits: [{ unitId: 'letter-m' }, { unitId: 'letter-a' }, { unitId: 'syllable-ma' }] },
+  },
+], readingExercises: [
+      { id: 'reading-w3-m-a-ma', displayedUnits: [{ unitId: 'letter-m' }, { unitId: 'letter-a' }, { unitId: 'syllable-ma' }] },
       { id: 'reading:segmented', targetId: 'word-savane', displayedUnits: [
         { unitId: 'word-savane', segmentUnitIds: ['syllable-sa', 'syllable-va', 'syllable-ne'] }] },
-    ] },
-] };
+    ] };
 
 async function parents(page: Page) {
   await page.getByRole('button', { name: 'Parents', exact: true }).click();
@@ -91,7 +91,7 @@ test('Parent pages toggle independently, persist across navigation/reload and co
 test('Parent creates whole, segmented and multi-unit pages from shared content and keeps them after reload', async ({ page }) => {
   await mockSpeech(page);
   await page.route('**/MiloApprend-Content/**', route => route.fulfill({ json: { ...remote,
-    weeks: remote.weeks.map(week => ({ ...week, readingExercises: [] })) } }));
+    readingExercises: [] } }));
   await page.addInitScript(({ key, data }) => {
     if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(data));
   }, { key, data: { ...emptyParentData(), activeWeek: 1, questionCount: 9 } });
@@ -211,6 +211,8 @@ test('only custom pages can be edited in the shared creator, cancelled and delet
   const editor = page.getByRole('form', { name: 'Modifier un exercice Je lis' });
   const saved = () => page.evaluate<ParentData, string>(key => JSON.parse(localStorage.getItem(key)!), key);
   await expect(custom.getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(2);
+  await expect(section.getByRole('article').filter({ hasText: 'Programme' })).toHaveCount(2);
+  await expect(section.getByRole('article').filter({ hasText: 'Automatique' })).toHaveCount(1);
   await expect(section.getByRole('article').filter({ hasText: 'Automatique' }).getByRole('button')).toHaveCount(0);
   await expect(section.getByRole('article').filter({ hasText: 'Programme' }).getByRole('button')).toHaveCount(0);
   await multi.getByRole('button', { name: 'Modifier', exact: true }).click();

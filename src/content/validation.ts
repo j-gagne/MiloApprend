@@ -7,6 +7,7 @@ import type { Activity } from './model.ts';
 import { validateSpellActivity } from './spelling.ts';
 import { displayConstruction, blockText } from './construction.ts';
 import type { CompletionTarget } from './model.ts';
+import { parentReadingCatalog } from './reading-catalog.ts';
 
 export function isAnswerUnit(unit: LearningUnit): boolean {
   return ['letter', 'grapheme', 'syllable', 'word', 'tool-word'].includes(unit.type);
@@ -195,6 +196,7 @@ export function validateProgram(program: LearningProgram): ContentIssue[] {
     issues.push(...validateCompletionActivity(program, activity,
       activity.availableFromWeek ?? activitySegmentation(program, activity)?.availableFromWeek ?? target?.introducedInWeek ?? 0));
   }
+  issues.push(...parentReadingCatalog(program, Math.max(0, ...program.weeks.map(week => week.number))).issues);
   // Une même observation peut provenir de plusieurs validations ; ne la publier qu'une fois.
   return issues.filter((value, index, all) => all.findIndex((other) =>
     other.code === value.code && other.path === value.path && other.message === value.message) === index);
