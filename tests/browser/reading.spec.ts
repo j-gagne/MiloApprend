@@ -33,6 +33,53 @@ async function setup(page: Page, count = DEFAULT_QUESTION_COUNT, progress: Progr
 const stored = (page: Page): Promise<Progress> => page.evaluate(key => JSON.parse(localStorage.getItem(key)!), key);
 const next = (page: Page) => page.getByRole('button', { name: 'Exercice suivant' }).click();
 const previous = (page: Page) => page.getByRole('button', { name: 'Exercice précédent' }).click();
+
+test('whole long sentences wrap without clipping text or sliders and preserve navigation', async ({ page }) => {
+  const sentences = ['Il a un bonbon sur la table.', 'La fée a un bijou.', 'Le joli bijou est à moi.', 'Il a un savon.'];
+  const exercises = [
+    { id: 'sentences', displayedUnits: sentences.map((display, i) => ({ display, segments: [{ unitId: `sentence-${i}`, text: display }] })) },
+    { id: 'letter', displayedUnits: [{ display: 'a', segments: [{ unitId: 'a', text: 'a' }] }] },
+  ];
+  await page.route('**/src/content/reading-preview.ts*', route => route.fulfill({ contentType: 'application/javascript',
+    body: `export function readingPreviewExercises() { return ${JSON.stringify(exercises)}; }` }));
+  await setup(page);
+  await page.evaluate(() => document.fonts.ready);
+  for (const width of [320, 390, 768, 1024, 1280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(page.locator('.reading-text')).toHaveText(sentences);
+    const geometry = await page.locator('.reading-units').evaluate(section => {
+      const bounds = section.getBoundingClientRect();
+      const texts = [...section.querySelectorAll<HTMLElement>('.reading-text')];
+      return {
+        contained: [...section.querySelectorAll('.reading-unit, .reading-text, .pronunciation-slider')].every(node => {
+          const rect = node.getBoundingClientRect();
+          return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && node.scrollWidth <= node.clientWidth + 1;
+        }),
+        multiline: texts[0].offsetHeight > parseFloat(getComputedStyle(texts[0]).lineHeight) * 1.5,
+        fontSize: parseFloat(getComputedStyle(texts[0]).fontSize),
+        wordsIntact: texts.every(node => {
+          const text = node.firstChild!;
+          return [...node.textContent!.matchAll(/\S+/gu)].every(match => {
+            const range = document.createRange();
+            range.setStart(text, match.index); range.setEnd(text, match.index + match[0].length);
+            return range.getClientRects().length === 1;
+          });
+        }),
+      };
+    });
+    expect(geometry.contained).toBe(true);
+    expect(geometry.multiline).toBe(true);
+    expect(geometry.wordsIntact).toBe(true);
+    expect(geometry.fontSize).toBeGreaterThanOrEqual(48);
+  }
+  for (const slider of await page.getByRole('slider').all()) await slider.press('End');
+  await expect(page.locator('.reading-dot.done')).toHaveCount(1);
+  await next(page);
+  await expect(page.locator('.reading-text')).toHaveText('a');
+  await previous(page);
+  for (const slider of await page.getByRole('slider').all()) await expect(slider).toHaveAttribute('aria-valuenow', '100');
+  expect(await page.evaluate(() => window.readingDings)).toBe(1);
+});
 test('preview phrase wraps five displayed words with six required pronunciation sliders', async ({ page }) => {
   await setup(page);
   await next(page); await next(page); await next(page);
@@ -49,12 +96,12 @@ test('preview phrase wraps five displayed words with six required pronunciation 
     await expect(page.locator('.reading-units')).toHaveCSS('flex-wrap', 'wrap');
     await expect(page.locator('.reading-units > .reading-unit')).toHaveCount(5);
     for (const unit of await page.locator('.reading-unit').all()) {
-      await expect(unit.locator('.reading-text')).toHaveCSS('white-space', 'nowrap');
+      await expect(unit.locator('.reading-text')).toHaveCSS('white-space', 'pre-wrap');
       await expect(unit).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
       await expect(unit).toHaveCSS('border-top-style', 'none');
       await expect(unit).toHaveCSS('display', 'grid');
       await expect(unit.locator('.reading-unit-sliders')).toHaveCSS('display', 'flex');
-      await expect(unit.locator('.reading-unit-sliders')).toHaveCSS('flex-wrap', 'nowrap');
+      await expect(unit.locator('.reading-unit-sliders')).toHaveCSS('flex-wrap', 'wrap');
       await expect(unit.locator('.reading-text')).toBeVisible();
     }
     await expect(word.getByRole('slider').nth(0)).toBeVisible();
@@ -117,7 +164,7 @@ test('short preview reaches both phrases, with independent non-overlapping slide
     await expect(page.locator('.reading-units')).toHaveCSS('flex-wrap', 'wrap');
     await expect(page.locator('.reading-units > .reading-unit')).toHaveCount(7);
     for (const unit of await page.locator('.reading-unit').all()) {
-      await expect(unit.locator('.reading-text')).toHaveCSS('white-space', 'nowrap');
+      await expect(unit.locator('.reading-text')).toHaveCSS('white-space', 'pre-wrap');
       await expect(unit.getByRole('slider')).toHaveCount(1);
       await expect(unit.getByRole('slider')).toBeVisible();
     }
@@ -173,7 +220,7 @@ test('three unequal segments use the same single-word slider group', async ({ pa
   await expect(word.locator('.reading-segment-size')).toHaveText(['a', 'ni', 'mal']);
   for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1280, height: 800 }]) {
     await page.setViewportSize(viewport);
-    await expect(word.locator('.reading-unit-sliders')).toHaveCSS('flex-wrap', 'nowrap');
+    await expect(word.locator('.reading-unit-sliders')).toHaveCSS('flex-wrap', 'wrap');
     await expect(word.locator('.reading-unit-sliders')).toHaveCSS('direction', 'ltr');
     for (let i = 0; i < 3; i++) {
       const slider = word.getByRole('slider').nth(i);
