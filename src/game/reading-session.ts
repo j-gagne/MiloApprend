@@ -4,6 +4,8 @@ export interface PronunciationSegment {
 }
 export interface DisplayedReadingUnit {
   readonly display: string;
+  /** Presentation metadata from the shared content; absent for isolated units. */
+  readonly isSentence?: boolean;
   readonly segments: readonly PronunciationSegment[];
 }
 export interface ReadingExercise {

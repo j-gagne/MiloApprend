@@ -25,6 +25,15 @@
 .reading-navigation button:disabled{opacity:.35}
 .reading-navigation svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .reading-reward{max-width:100%;white-space:normal}
+/* Sentence text and its configured sliders stay together in normal document flow. */
+.reading-unit-sentence{width:100%;padding-inline:8px;font-size:clamp(30px,8.5vw,48px);--pronunciation-thumb-size:44px;--pronunciation-inset:4px}
+.reading-unit-sentence .reading-text{margin-bottom:8px;line-height:1.25}
+@media(max-width:600px){
+  .reading-layout:has(.reading-unit-sentence){grid-template-columns:minmax(0,1fr);gap:12px;margin-block:14px 20px}
+  .reading-layout:has(.reading-unit-sentence) .reading-units{row-gap:20px;container-type:inline-size}
+  .reading-unit-sentence{font-size:clamp(30px,9.5cqi,38px)}
+  .reading-layout:has(.reading-unit-sentence) .reading-navigation{flex-direction:row;justify-content:flex-end;gap:12px}
+}
 @media(min-width:600px){.reading-layout{gap:24px;grid-template-columns:minmax(0,1fr) 64px}.reading-navigation button{width:64px}}
 @media(max-width:360px){.reading-layout{grid-template-columns:minmax(0,1fr)}.reading-navigation{flex-direction:row;justify-content:flex-end}}
 @media(max-width:600px){.reading-layout:has(.reading-segment:nth-child(n+3)){grid-template-columns:minmax(0,1fr)}.reading-layout:has(.reading-segment:nth-child(n+3)) .reading-navigation{flex-direction:row;justify-content:flex-end}}

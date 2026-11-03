@@ -37,14 +37,14 @@ const previous = (page: Page) => page.getByRole('button', { name: 'Exercice pré
 test('whole long sentences wrap without clipping text or sliders and preserve navigation', async ({ page }) => {
   const sentences = ['Il a un bonbon sur la table.', 'La fée a un bijou.', 'Le joli bijou est à moi.', 'Il a un savon.'];
   const exercises = [
-    { id: 'sentences', displayedUnits: sentences.map((display, i) => ({ display, segments: [{ unitId: `sentence-${i}`, text: display }] })) },
+    { id: 'sentences', displayedUnits: sentences.map((display, i) => ({ display, isSentence: true, segments: [{ unitId: `sentence-${i}`, text: display }] })) },
     { id: 'letter', displayedUnits: [{ display: 'a', segments: [{ unitId: 'a', text: 'a' }] }] },
   ];
   await page.route('**/src/content/reading-preview.ts*', route => route.fulfill({ contentType: 'application/javascript',
     body: `export function readingPreviewExercises() { return ${JSON.stringify(exercises)}; }` }));
   await setup(page);
   await page.evaluate(() => document.fonts.ready);
-  for (const width of [320, 390, 768, 1024, 1280]) {
+  for (const width of [320, 375, 390, 768, 1024, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(page.locator('.reading-text')).toHaveText(sentences);
     const geometry = await page.locator('.reading-units').evaluate(section => {
@@ -68,9 +68,10 @@ test('whole long sentences wrap without clipping text or sliders and preserve na
       };
     });
     expect(geometry.contained).toBe(true);
-    expect(geometry.multiline).toBe(true);
+    if (width <= 390) expect(geometry.multiline).toBe(true);
     expect(geometry.wordsIntact).toBe(true);
-    expect(geometry.fontSize).toBeGreaterThanOrEqual(48);
+    expect(geometry.fontSize).toBeGreaterThanOrEqual(30);
+    expect(geometry.fontSize).toBeLessThanOrEqual(width <= 600 ? 38 : 48);
   }
   for (const slider of await page.getByRole('slider').all()) await slider.press('End');
   await expect(page.locator('.reading-dot.done')).toHaveCount(1);
@@ -333,7 +334,7 @@ test('real Reading entry: independent sliders, skip/revisit, once-only ding, the
   await expect(page.locator('.lion-reveal-scene')).toHaveAttribute('data-stage', '1');
   expect((await stored(page)).completedSessions).toBe(1);
   await page.getByRole('button', { name: 'CONTINUER', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'JOUER', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'COMPLÈTE', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'JE LIS', exact: true })).toBeVisible();
 });
 

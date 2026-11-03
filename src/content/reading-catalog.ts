@@ -97,7 +97,7 @@ function projectReadingCatalog(program: LearningProgram, week: number, scope: Ex
     const displayedUnits = displayed.map(unit => {
       const source = units.get(unit.unitId)!;
       const display = unit.range ? Array.from(source.display).slice(...unit.range).join('') : source.display;
-      return { display, segments: unit.segmentUnitIds
+      return { display, ...(source.type === 'sentence' && (!unit.range || /\S\s+\S/u.test(display)) ? { isSentence: true } : {}), segments: unit.segmentUnitIds
         ? unit.segmentUnitIds.map(unitId => ({ unitId, text: units.get(unitId)!.display }))
         : [{ unitId: unit.unitId, text: display.replace(/[.!?…]+$/u, '') }] };
     });

@@ -28,7 +28,7 @@ async function setup(page: Page, empty = false) {
       introducedInWeek: 2, enabled: true, segmentations: [], tags: ['practice'] }],
   } });
   await page.goto('/MiloApprend/');
-  await expect(page.getByRole('button', { name: 'JOUER', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'COMPLÈTE', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'JE LIS', exact: true }).click();
 }
 const stored = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!), key);

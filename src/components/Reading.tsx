@@ -34,7 +34,7 @@ export function Reading({ exercises, ready, saveFailed, onRetry, onReward, onHom
       <section className="reading-units" aria-label={`Exercice ${index + 1}`}>
         {exercises[index].displayedUnits.map((unit, unitIndex, units) => {
           const offset = units.slice(0, unitIndex).reduce((sum, previous) => sum + previous.segments.length, 0);
-          return <div className="reading-unit" role="group" aria-label={unit.display} key={`${exercises[index].id}:${unitIndex}`}>
+          return <div className={`reading-unit${unit.isSentence ? ' reading-unit-sentence' : ''}`} role="group" aria-label={unit.display} key={`${exercises[index].id}:${unitIndex}`}>
             <span className="reading-text">{unit.display}</span>
             <div className="reading-unit-sliders">
               {unit.segments.map((segment, i) => <div className="reading-segment" key={i}
