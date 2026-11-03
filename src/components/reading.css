@@ -30,6 +30,8 @@
 .reading-unit-sentence .reading-text{margin-bottom:8px;line-height:1.25}
 .reading-sentence-lines{position:relative;width:100%;min-width:0;display:grid;gap:16px}
 .reading-line{min-width:0;width:100%}
+/* Text width plus 8px on each side, with room for the thumb to travel even on a short line. */
+.reading-line>.pronunciation-slider{width:max(calc(var(--reading-line-width) + 16px),calc(var(--pronunciation-thumb-size)*2 + var(--pronunciation-inset)*2));max-width:100%;margin-inline:auto}
 .reading-line .reading-text{white-space:pre}
 .reading-line-word.is-read{color:var(--theme-primary)}
 .reading-line-measure-box{position:absolute;inset:0;overflow:hidden;visibility:hidden;pointer-events:none}

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { READING_THRESHOLD } from '../game/reading-session';
 import { PronunciationSlider } from './PronunciationSlider';
 
@@ -6,7 +6,7 @@ export interface SentenceProgress {
   values: number[];
   reached: boolean[];
 }
-interface Line { start: number; end: number; scale: number }
+interface Line { start: number; end: number; scale: number; width?: number }
 
 /** Visual lines only: neither the shared sentence nor its pronunciation configuration is edited. */
 export function ReadingSentence({ display, ready, progress, onProgress, onComplete }: {
@@ -42,14 +42,19 @@ export function ReadingSentence({ display, ready, progress, onProgress, onComple
       try {
         if (!(width(0, tokens.length) > 0)) return;
         const next: Line[] = [];
+        function addLine(start: number, end: number) {
+          const measured = width(start, end);
+          const scale = Math.min(1, available / measured);
+          next.push({ start, end, scale, width: measured * scale });
+        }
         let start = 0;
         for (let end = 1; end <= tokens.length; end++) {
           if (end > start + 1 && width(start, end) > available) {
-            next.push({ start, end: end - 1, scale: Math.min(1, available / width(start, end - 1)) });
+            addLine(start, end - 1);
             start = end - 1;
           }
         }
-        next.push({ start, end: tokens.length, scale: Math.min(1, available / width(start, tokens.length)) });
+        addLine(start, tokens.length);
         setLines(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
       } catch { /* Keep independent word lines if DOM measurement is unavailable. */ }
     }
@@ -81,7 +86,8 @@ export function ReadingSentence({ display, ready, progress, onProgress, onComple
     {lines.map((line, lineIndex) => {
       const value = Math.min(...state.values.slice(line.start, line.end));
       const text = words.slice(line.start, line.end).join('');
-      return <div className="reading-line" key={`${line.start}:${line.end}`}>
+      return <div className="reading-line" key={`${line.start}:${line.end}`}
+        style={{ '--reading-line-width': line.width === undefined ? '100%' : `${line.width}px` } as CSSProperties}>
         <span className="reading-text" style={{ fontSize: `${line.scale}em` }}>
           {words.slice(line.start, line.end).map((word, i) => <span key={line.start + i}
             className={`reading-line-word${value > 0 && i < (line.end - line.start) * value / 100 ? ' is-read' : ''}`}>{i === line.end - line.start - 1 ? word.trimEnd() : word}</span>)}

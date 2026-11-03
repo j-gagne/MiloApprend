@@ -2,10 +2,10 @@ import { test, expect, type Page } from '@playwright/test';
 import { mockSpeech } from './speech-mock';
 
 const long = 'Le petit chat se promène dans le jardin avec Milo.';
-async function setup(page: Page, fallback = false) {
+async function setup(page: Page, fallback = false, sentences = ['Il a lu.', long, 'La fée a un bijou.']) {
   await mockSpeech(page);
   await page.route('**/MiloApprend-Content/**', route => route.abort());
-  const exercises = ['Il a lu.', long, 'La fée a un bijou.'].map((display, i) => ({
+  const exercises = sentences.map((display, i) => ({
     id: `lines-${i}`, displayedUnits: [{ display, isSentence: true, segments: [{ unitId: `sentence-${i}`, text: display }] }],
   }));
   await page.route('**/src/content/reading-preview.ts*', route => route.fulfill({ contentType: 'application/javascript',
@@ -85,4 +85,51 @@ test('unavailable text measurement falls back to independently readable words', 
   await expect(page.locator('.reading-line')).toHaveCount(3);
   for (const slider of await page.getByRole('slider').all()) await slider.press('End');
   await expect(page.locator('.reading-dot.done')).toHaveCount(1);
+});
+
+test('line rails follow text width, stay centered and support short and long touch gestures after resize', async ({ page, context }) => {
+  await page.setViewportSize({ width: 375, height: 844 });
+  await setup(page, false, ['Le bébé a vu la', 'lune.', 'a', long]);
+  const cdp = await context.newCDPSession(page);
+  for (const width of [375, 390, 768]) {
+    await page.setViewportSize({ width, height: 1024 });
+    const widths: number[] = [];
+    for (let exercise = 0; exercise < 4; exercise++) {
+      const lines = page.locator('.reading-line');
+      await expect.poll(async () => lines.evaluateAll(nodes => nodes.every(node => {
+        const text = node.querySelector('.reading-text')!;
+        const range = document.createRange(); range.selectNodeContents(text);
+        const textBox = range.getBoundingClientRect();
+        const slider = node.querySelector('[role="slider"]')!;
+        const rail = slider.getBoundingClientRect();
+        const available = node.getBoundingClientRect();
+        const style = getComputedStyle(slider);
+        const thumb = node.querySelector('.pronunciation-thumb')!.getBoundingClientRect();
+        const minimum = thumb.width * 2 + parseFloat(style.paddingLeft) * 2;
+        const expected = Math.min(available.width, Math.max(minimum, textBox.width + 16));
+        return Math.abs(rail.width - expected) < 2
+          && Math.abs((rail.left + rail.right - textBox.left - textBox.right) / 2) < 2
+          && rail.left >= available.left - 1 && rail.right <= available.right + 1;
+      }))).toBe(true);
+      widths.push((await lines.first().getByRole('slider').boundingBox())!.width);
+      for (const slider of await lines.getByRole('slider').all()) {
+        await slider.press('Home');
+        await slider.scrollIntoViewIfNeeded();
+        const rail = (await slider.boundingBox())!;
+        const thumb = (await slider.locator('.pronunciation-thumb').boundingBox())!;
+        expect(thumb.width).toBeGreaterThanOrEqual(44);
+        const point = { x: thumb.x + thumb.width / 2, y: thumb.y + thumb.height / 2 };
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...point, x: rail.x + rail.width - thumb.width / 2 }] });
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await expect(slider).toHaveAttribute('aria-valuenow', '100');
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      if (exercise < 3) await page.getByRole('button', { name: 'Exercice suivant' }).click();
+    }
+    expect(widths[1]).toBeLessThan(widths[0] * 0.65);
+    expect(widths[2]).toBeGreaterThanOrEqual(96);
+    for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Exercice précédent' }).click();
+  }
+  await cdp.detach();
 });
