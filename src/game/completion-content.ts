@@ -27,7 +27,9 @@ export function toCompletionBoard(service: ContentService, segmentation: Segment
     return { text, kind: unit?.type === 'letter' ? 'letter' : unit?.type === 'grapheme' ? 'grapheme' : unit?.type === 'syllable' ? 'syllable' : 'word' };
   });
   choices.splice(config.answerPosition ?? 0, 0, ...answers);
-  return { segments, choices, ...(segmentation.gaps ? { gaps: segmentation.gaps } : {}), slots: indexes.map((segmentIndex) => ({ segmentIndex, expected: segments[segmentIndex] })) };
+  const silentSegmentIndexes = segmentation.segments.flatMap((segment, i) => segment.silent ? [i] : []);
+  return { segments, choices, ...(silentSegmentIndexes.length ? { silentSegmentIndexes } : {}),
+    ...(segmentation.gaps ? { gaps: segmentation.gaps } : {}), slots: indexes.map((segmentIndex) => ({ segmentIndex, expected: segments[segmentIndex] })) };
 }
 
 export interface CompletionExercise extends CompletionBoard {

@@ -2,7 +2,7 @@
 import { missingIndexes } from './model.ts';
 import type { CompletionActivity } from './model.ts';
 import { activitySegmentation } from './activity-segmentation.ts';
-import { primaryConstruction } from './construction.ts';
+import { primaryConstruction, silentDistractorTexts } from './construction.ts';
 import { comparableText } from './text.ts';
 import { isAvailable } from './selectors.ts';
 import { isAnswerUnit, validateCompletionActivity } from './validation.ts';
@@ -34,14 +34,16 @@ export function automaticActivities(program: LearningProgram, week: number): Com
     if (!['word', 'sentence', 'syllable'].includes(target.type)) continue;
     const construction = target.type === 'syllable' ? { id: 'self', segments: [{ unitId: target.id }] } : primaryConstruction(target);
     if (!construction) continue;
-    const indexes = construction.segments.flatMap((block, i) => 'unitId' in block ? [i] : []);
+    const indexes = construction.segments.flatMap((block, i) => 'unitId' in block && !block.silent ? [i] : []);
+    const silentTexts = silentDistractorTexts(program, construction);
     const variants = indexes.map((index) => [index]);
     if (indexes.length > 1) variants.push(indexes);
     for (const missing of variants) {
       const answers = missing.map((i) => construction.segments[i]).flatMap((block) => 'unitId' in block
         ? program.units.filter((unit) => unit.id === block.unitId) : []);
       const seen = new Set(answers.map((unit) => comparableText(unit.display)));
-      const distractors = program.units.filter((unit) => isAnswerUnit(unit) && isAvailable(program, unit, week))
+      const distractors = program.units.filter((unit) => isAnswerUnit(unit) && isAvailable(program, unit, week)
+        && !silentTexts.has(comparableText(unit.display)))
         .sort((a, b) => Number(answers.some((unit) => unit.type === b.type)) - Number(answers.some((unit) => unit.type === a.type)));
       const ids: string[] = [];
       for (const unit of distractors) {

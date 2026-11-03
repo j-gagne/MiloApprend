@@ -12,7 +12,7 @@ export function ReadingEditor({ program, word, week, onChange }: {
   const sequence = word.readingSequence ?? [];
   const previewProgram = { ...program, units: [...program.units.filter((u) => u.id !== word.id), word] };
   const reading = getPedagogicalReading(previewProgram, { ...word,
-    readingSequence: word.readingSequence?.map((step) => 'text' in step ? { text: step.text.trim() } : step) }, primaryConstruction(word), week);
+    readingSequence: word.readingSequence?.map((step) => 'text' in step ? { ...step, text: step.text.trim() } : step) }, primaryConstruction(word), week);
   const { muted } = useSyncExternalStore(gameAudio.subscribe, gameAudio.getDiagnostics);
   useEffect(() => () => gameAudio.stop(), []);
   function change(value: ReadingConfig) { gameAudio.stop(); onChange(value); }
@@ -26,12 +26,12 @@ export function ReadingEditor({ program, word, week, onChange }: {
       <p>Ajoutez les morceaux à entendre. Le mot complet est lu automatiquement à la fin. Ces morceaux audio ne changent pas les exercices.</p>
       {sequence.map((step, index) => <div className="parent-card" key={index}>
         <label>Type du morceau {index + 1}<select value={'unitId' in step ? 'unit' : 'text'} onChange={(event) => {
-          steps(sequence.map((item, i) => i === index ? event.target.value === 'unit' ? { unitId: '' } : { text: '' } : item));
+          steps(sequence.map((item, i) => i === index ? { ...(event.target.value === 'unit' ? { unitId: '' } : { text: '' }), ...(item.silent ? { silent: true as const } : {}) } : item));
         }}><option value="text">Texte à prononcer</option><option value="unit">Contenu existant</option></select></label>
-        {'unitId' in step ? <label>Contenu du morceau {index + 1}<select value={step.unitId} onChange={(event) => steps(sequence.map((item, i) => i === index ? { unitId: event.target.value } : item))}>
+        {'unitId' in step ? <label>Contenu du morceau {index + 1}<select value={step.unitId} onChange={(event) => steps(sequence.map((item, i) => i === index ? { ...step, unitId: event.target.value } : item))}>
           <option value="">Choisir un contenu</option>{program.units.map((unit) => <option key={unit.id} value={unit.id}>{unit.display} · {unit.type} · semaine {unit.introducedInWeek}</option>)}
         </select></label> : <label>Texte du morceau {index + 1}<input value={step.text} maxLength={500}
-          onChange={(event) => steps(sequence.map((item, i) => i === index ? { text: event.target.value } : item))} /></label>}
+          onChange={(event) => steps(sequence.map((item, i) => i === index ? { ...step, text: event.target.value } : item))} /></label>}
         <div className="parent-actions">
           <button type="button" aria-label={`Monter le morceau ${index + 1}`} disabled={index === 0} onClick={() => {
             const next = [...sequence]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; steps(next);

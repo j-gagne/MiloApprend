@@ -54,7 +54,8 @@ export function ConstructionEditor({ program, target, construction, onChange }: 
         </select></label>
       </> : <label>Texte visible<input value={literal} maxLength={500} onChange={(event) => setLiteral(event.target.value)} /></label>}
       <button type="button" disabled={type === 'learned' ? !allowed.some((unit) => unit.id === unitId) : !literal.trim()} onClick={() => {
-        const block: PedagogicalSegment = type === 'learned' ? { unitId } : { literal, note: 'Texte visible — non appris' };
+        const block: PedagogicalSegment = { ...(type === 'learned' ? { unitId } : { literal, note: 'Texte visible — non appris' }),
+          ...(blocks[editing]?.silent ? { silent: true } : {}) };
         update(editing === blocks.length ? [...blocks, block] : blocks.map((item, i) => i === editing ? block : item)); setEditing(undefined);
       }}>{editing === blocks.length ? 'Ajouter ce bloc' : 'Appliquer au bloc'}</button>
       <button type="button" onClick={() => setEditing(undefined)}>Annuler le bloc</button>

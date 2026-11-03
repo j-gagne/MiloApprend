@@ -1,4 +1,5 @@
 export interface PronunciationSegment {
+  readonly silent?: true;
   readonly unitId: string;
   readonly text: string;
 }
@@ -19,7 +20,7 @@ export interface ReadingState {
 export const READING_THRESHOLD = 95;
 export function createReadingState(exercises: readonly ReadingExercise[]): ReadingState {
   return { values: exercises.map(exercise => exercise.displayedUnits.flatMap(unit => unit.segments.map(() => 0))),
-    reached: exercises.map(exercise => exercise.displayedUnits.flatMap(unit => unit.segments.map(() => false))) };
+    reached: exercises.map(exercise => exercise.displayedUnits.flatMap(unit => unit.segments.map(segment => segment.silent === true))) };
 }
 export function readingExerciseComplete(state: ReadingState, index: number): boolean {
   const segments = state.reached[index];

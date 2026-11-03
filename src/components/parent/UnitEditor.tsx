@@ -22,7 +22,7 @@ export function UnitEditor({ program, unit, activeWeek, constructionOnly = false
   const base = { ...unit, display: unit.type === 'sentence' ? text : text.trim(), audioText: audio.trim() || text.trim(), introducedInWeek: week };
   const formatted = construction && unit.type === 'sentence' ? sentenceConstruction(program, base.display, construction) : construction;
   const draft: LearningUnit = base.type === 'word' ? replacePrimary({ ...base, ...reading,
-    readingSequence: reading.readingSequence?.map((step) => 'text' in step ? { text: step.text.trim() } : step), text: text.trim(),
+    readingSequence: reading.readingSequence?.map((step) => 'text' in step ? { ...step, text: step.text.trim() } : step), text: text.trim(),
     imageAsset: media }, formatted)
     : base.type === 'sentence' ? replacePrimary({ ...base, imageAsset: media }, formatted) : base.type === 'letter' ? { ...base, grapheme: text.trim() } : base;
   const errors = validateParentUnit(program, draft).filter((issue) => issue.severity === 'error');

@@ -19,6 +19,7 @@ const booleans = (value: unknown): value is Record<string, boolean> => record(va
 const optionalNumber = (value: unknown) => value === undefined || (typeof value === 'number' && Number.isSafeInteger(value));
 function segment(value: unknown): value is PedagogicalSegment {
   if (!record(value)) return false;
+  if (value.silent !== undefined && value.silent !== true) return false;
   if ([value.unitId, value.separator, value.literal].filter((item) => item !== undefined).length !== 1) return false;
   return typeof value.unitId === 'string' || typeof value.separator === 'string'
     || (typeof value.literal === 'string' && typeof value.note === 'string');

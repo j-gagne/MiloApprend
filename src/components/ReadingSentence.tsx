@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { READING_THRESHOLD } from '../game/reading-session';
 import { PronunciationSlider } from './PronunciationSlider';
+import type { PronunciationSegment } from '../game/reading-session';
+import { SilentText, silentRanges } from './SilentText';
 
 export interface SentenceProgress {
   values: number[];
@@ -9,11 +11,12 @@ export interface SentenceProgress {
 interface Line { start: number; end: number; scale: number; width?: number }
 
 /** Visual lines only: neither the shared sentence nor its pronunciation configuration is edited. */
-export function ReadingSentence({ display, ready, progress, onProgress, onComplete }: {
-  display: string; ready: boolean; progress?: SentenceProgress;
+export function ReadingSentence({ display, segments, ready, progress, onProgress, onComplete }: {
+  display: string; segments: readonly PronunciationSegment[]; ready: boolean; progress?: SentenceProgress;
   onProgress: (progress: SentenceProgress) => void; onComplete: () => void;
 }) {
   const words = display.match(/\s*\S+\s*/gu) ?? [display];
+  const ranges = silentRanges(display, segments, true);
   // A word per line is a usable fallback when layout measurement is unavailable.
   const [lines, setLines] = useState<Line[]>(() => words.map((_, i) => ({ start: i, end: i + 1, scale: 1 })));
   const [state, setState] = useState<SentenceProgress>(() => progress ?? {
@@ -90,7 +93,9 @@ export function ReadingSentence({ display, ready, progress, onProgress, onComple
         style={{ '--reading-line-width': line.width === undefined ? '100%' : `${line.width}px` } as CSSProperties}>
         <span className="reading-text" style={{ fontSize: `${line.scale}em` }}>
           {words.slice(line.start, line.end).map((word, i) => <span key={line.start + i}
-            className={`reading-line-word${value > 0 && i < (line.end - line.start) * value / 100 ? ' is-read' : ''}`}>{i === line.end - line.start - 1 ? word.trimEnd() : word}</span>)}
+            className={`reading-line-word${value > 0 && i < (line.end - line.start) * value / 100 ? ' is-read' : ''}`}><SilentText
+              text={i === line.end - line.start - 1 ? word.trimEnd() : word} ranges={ranges}
+              offset={words.slice(0, line.start + i).join('').length} /></span>)}
         </span>
         <PronunciationSlider label={`Prononcer ${text.trim()}, ligne ${lineIndex + 1}`}
           value={value} disabled={!ready} onChange={value => move(line, value)} />

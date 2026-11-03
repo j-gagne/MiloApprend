@@ -3,6 +3,7 @@ import { createReadingState, moveReadingSlider, readingExerciseComplete, reading
 import { gameAudio } from '../services/audio';
 import { PronunciationSlider } from './PronunciationSlider';
 import { ReadingSentence, type SentenceProgress } from './ReadingSentence';
+import { SilentText, silentRanges } from './SilentText';
 import './reading.css';
 
 export function Reading({ exercises, ready, saveFailed, onRetry, onReward, onHome }: {
@@ -38,17 +39,17 @@ export function Reading({ exercises, ready, saveFailed, onRetry, onReward, onHom
           const offset = units.slice(0, unitIndex).reduce((sum, previous) => sum + previous.segments.length, 0);
           const sentenceKey = `${exercises[index].id}:${unitIndex}`;
           return <div className={`reading-unit${unit.isSentence ? ' reading-unit-sentence' : ''}`} role="group" aria-label={unit.display} key={`${exercises[index].id}:${unitIndex}`}>
-            {unit.isSentence ? <ReadingSentence display={unit.display} ready={ready}
+            {unit.isSentence ? <ReadingSentence display={unit.display} segments={unit.segments} ready={ready}
               progress={sentenceProgress.current.get(sentenceKey)}
               onProgress={progress => sentenceProgress.current.set(sentenceKey, progress)}
               onComplete={() => unit.segments.forEach((_, i) => move(offset + i, 100))} /> : <>
-            <span className="reading-text">{unit.display}</span>
+            <span className="reading-text"><SilentText text={unit.display} ranges={silentRanges(unit.display, unit.segments)} /></span>
             <div className="reading-unit-sliders">
-              {unit.segments.map((segment, i) => <div className="reading-segment" key={i}
+              {unit.segments.map((segment, i) => <div className={`reading-segment${segment.silent ? ' reading-segment-silent' : ''}`} key={i}
                 style={{ '--reading-gesture-length': Array.from(segment.text).length } as CSSProperties}>
                 <span className="reading-segment-size" aria-hidden="true">{segment.text}</span>
-                <PronunciationSlider label={`Prononcer ${segment.text}, morceau ${offset + i + 1}`} value={state.values[index][offset + i]} disabled={!ready}
-                  onChange={value => move(offset + i, value)} />
+                {!segment.silent && <PronunciationSlider label={`Prononcer ${segment.text}, morceau ${offset + i + 1}`} value={state.values[index][offset + i]} disabled={!ready}
+                  onChange={value => move(offset + i, value)} />}
               </div>)}
             </div>
             </>}

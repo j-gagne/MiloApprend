@@ -7,7 +7,7 @@ export function firstSegmentAudio(program: LearningProgram, target: LearningUnit
   if (target.type !== 'word' || !construction || missing.length !== 1 || !isAvailable(program, target, week)
     || validateSegmentation(program, target, construction, week).some((issue) => issue.severity === 'error')) return undefined;
   const block = construction.segments[missing[0]];
-  if (!block || !('unitId' in block)) return undefined; // A literal cannot be an exercise answer.
+  if (!block || block.silent || !('unitId' in block)) return undefined; // A silent or literal block cannot be an exercise answer.
   const unit = program.units.find((item) => item.id === block.unitId);
   return unit && isAvailable(program, unit, week) && unit.audioText?.trim() ? unit.audioText : undefined;
 }

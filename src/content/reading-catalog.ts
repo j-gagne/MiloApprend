@@ -1,6 +1,6 @@
 import type { ContentIssue, ExerciseScope, LearningProgram } from './model.ts';
 import type { ProgramReadingExercise, ReadingExerciseDefinition } from './reading-model.ts';
-import { wholeWordReadingId } from './reading-model.ts';
+import { wholeWordReadingId, readingSegmentId, isSilentReadingSegment } from './reading-model.ts';
 import { isAvailable } from './selectors.ts';
 
 const object = (value: unknown): value is Record<string, unknown> =>
@@ -30,7 +30,8 @@ export function isReadingExerciseDefinition(value: unknown): value is ReadingExe
         && (unit.range === undefined || (Array.isArray(unit.range) && unit.range.length === 2
           && unit.range.every(Number.isSafeInteger) && unit.range[0] >= 0 && unit.range[1] > unit.range[0]))
         && (unit.segmentUnitIds === undefined || (Array.isArray(unit.segmentUnitIds)
-          && unit.segmentUnitIds.length > 0 && unit.segmentUnitIds.every(identifier))))));
+          && unit.segmentUnitIds.length > 0 && unit.segmentUnitIds.every(segment => identifier(segment)
+            || (object(segment) && identifier(segment.unitId) && (segment.silent === undefined || segment.silent === true))))))));
 }
 
 /** Pure projection of an effective program. Scope filters targets, not previously learned segments. */
@@ -79,7 +80,7 @@ function projectReadingCatalog(program: LearningProgram, week: number, scope: Ex
     const displayed = definition.displayedUnits ?? [{ unitId: definition.targetId! }];
     const targetIds = definition.targetId === undefined
       ? displayed.map(unit => unit.unitId) : [definition.targetId];
-    const references = [...targetIds, ...displayed.flatMap(unit => [unit.unitId, ...(unit.segmentUnitIds ?? [])])];
+    const references = [...targetIds, ...displayed.flatMap(unit => [unit.unitId, ...(unit.segmentUnitIds ?? []).map(readingSegmentId)])];
     if (references.some(id => !units.has(id))) {
       issue(path, 'Une référence Reading est absente de la banque partagée.');
       continue;
@@ -98,12 +99,14 @@ function projectReadingCatalog(program: LearningProgram, week: number, scope: Ex
       const source = units.get(unit.unitId)!;
       const display = unit.range ? Array.from(source.display).slice(...unit.range).join('') : source.display;
       return { display, ...(source.type === 'sentence' && (!unit.range || /\S\s+\S/u.test(display)) ? { isSentence: true } : {}), segments: unit.segmentUnitIds
-        ? unit.segmentUnitIds.map(unitId => ({ unitId, text: units.get(unitId)!.display }))
+        ? unit.segmentUnitIds.map(segment => ({ unitId: readingSegmentId(segment), text: units.get(readingSegmentId(segment))!.display,
+          ...(isSilentReadingSegment(segment) ? { silent: true as const } : {}) }))
         : [{ unitId: unit.unitId, text: display.replace(/[.!?…]+$/u, '') }] };
     });
     // Explicit references must spell the displayed units; audioText never defines slider text.
     if (displayedUnits.some((unit, index) => !unit.display.trim()
       || unit.segments.some(segment => !segment.text.trim())
+      || unit.segments.every(segment => 'silent' in segment && segment.silent === true)
       || !segmentsMatchDisplay(unit.display, unit.segments, units.get(displayed[index].unitId)!.type === 'sentence'))
       || (target && displayedUnits.map(unit => unit.display).join(target.type === 'sentence' ? ' ' : '') !== target.display)) {
       issue(path, 'Les segments Reading doivent correspondre au texte partagé affiché.');

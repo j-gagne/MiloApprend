@@ -28,12 +28,12 @@ export interface Sentence extends UnitBase {
   readonly unitIds?: readonly string[];
 }
 
-export type PedagogicalSegment =
+export type PedagogicalSegment = (
   | { readonly unitId: string }
   // Espaces et ponctuation, visibles et jamais utilisables comme réponses.
   | { readonly separator: string }
   // Un segment scolaire non confirmé reste visible, mais jamais proposé comme réponse.
-  | { readonly literal: string; readonly note: string };
+  | { readonly literal: string; readonly note: string }) & { readonly silent?: true };
 
 export interface Segmentation {
   readonly id: string;
@@ -99,7 +99,7 @@ export interface Word extends UnitBase {
   readonly type: 'word';
   readonly readingMode?: 'segmented' | 'whole';
   // Audio instructions only: these texts never become exercise blocks or units.
-  readonly readingSequence?: readonly ({ readonly text: string } | { readonly unitId: string })[];
+  readonly readingSequence?: readonly (({ readonly text: string } | { readonly unitId: string }) & { readonly silent?: true })[];
   readonly text: string;
   readonly segmentations: readonly Segmentation[];
   readonly imageAsset?: ImageAsset | null;

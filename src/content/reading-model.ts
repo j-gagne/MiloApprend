@@ -1,5 +1,9 @@
 import type { ReadingExercise } from '../game/reading-session.ts';
 
+export type ReadingSegmentReference = string | { readonly unitId: string; readonly silent?: true };
+export const readingSegmentId = (segment: ReadingSegmentReference): string => typeof segment === 'string' ? segment : segment.unitId;
+export const isSilentReadingSegment = (segment: ReadingSegmentReference): boolean => typeof segment !== 'string' && segment.silent === true;
+
 /** Reading configuration references the shared bank, never a completion construction. */
 export interface ReadingExerciseDefinition {
   readonly id: string;
@@ -12,7 +16,7 @@ export interface ReadingExerciseDefinition {
     /** Explicit Unicode character offsets [start, end) into a shared Sentence.display. */
     readonly range?: readonly [number, number];
     /** Omitted: one segment for the referenced display (excluding terminal punctuation). */
-    readonly segmentUnitIds?: readonly string[];
+    readonly segmentUnitIds?: readonly ReadingSegmentReference[];
   }[];
 }
 

@@ -3,6 +3,7 @@ export type AnswerKind = 'letter' | 'grapheme' | 'syllable' | 'word';
 export interface Answer { text: string; kind: AnswerKind }
 export interface CompletionSlot { readonly segmentIndex: number; readonly expected: string }
 export interface CompletionBoard {
+  readonly silentSegmentIndexes?: readonly number[];
   readonly tileOrder?: readonly string[];
   readonly gaps?: readonly string[];
   readonly segments: readonly string[];
@@ -28,6 +29,7 @@ export function placeAnswer(board: CompletionBoard, placements: Placements, slot
   return { accepted, placements: next, complete: isComplete(board, next) };
 }
 export interface Challenge {
+  readonly silentSegmentIndexes?: readonly number[];
   activityType?: 'complete-segments' | 'spell';
   targetType?: 'word' | 'sentence' | 'syllable';
   gaps?: readonly string[];

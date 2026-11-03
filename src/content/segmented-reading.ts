@@ -1,13 +1,14 @@
 import type { LearningProgram, LearningUnit, Segmentation } from './model.ts';
 import { isAvailable } from './selectors.ts';
 import { validateSegmentation } from './validation.ts';
+import { isReadingSequence } from './reading-sequence.ts';
 
 export interface SegmentedReading { readonly segments: readonly string[]; readonly whole: string }
 export type PedagogicalReading = { readonly mode: 'whole'; readonly whole: string }
   | ({ readonly mode: 'segmented' } & SegmentedReading);
 
 // Audio text is not a segment identity. Keep construction indexes, including gaps.
-export function getReadingSegmentIndexes(target: LearningUnit, construction: Segmentation | undefined): readonly (number | undefined)[] | undefined {
+function sequenceIndexes(target: LearningUnit, construction: Segmentation | undefined): readonly (number | undefined)[] | undefined {
   if (target.type !== 'word' || !construction) return undefined;
   const blocks = construction.segments.flatMap((block, index) => 'unitId' in block ? [{ unitId: block.unitId, index }] : []);
   if (!target.readingSequence) return blocks.map(block => block.index);
@@ -21,6 +22,18 @@ export function getReadingSegmentIndexes(target: LearningUnit, construction: Seg
     return matches.length === 1 && sequence.filter(other => 'unitId' in other && other.unitId === step.unitId).length === 1
       ? matches[0].index : undefined;
   });
+}
+
+function audibleSequence(target: Extract<LearningUnit, { type: 'word' }>, construction: Segmentation | undefined) {
+  const indexes = sequenceIndexes(target, construction);
+  return (target.readingSequence ?? []).map((step, i) => ({ step, index: indexes?.[i] }))
+    .filter(({ step, index }) => !step.silent && (index === undefined || !construction?.segments[index].silent));
+}
+
+export function getReadingSegmentIndexes(target: LearningUnit, construction: Segmentation | undefined): readonly (number | undefined)[] | undefined {
+  if (target.type !== 'word' || !construction) return undefined;
+  if (target.readingSequence) return isReadingSequence(target.readingSequence) ? audibleSequence(target, construction).map(item => item.index) : undefined;
+  return construction.segments.flatMap((block, i) => 'unitId' in block && !block.silent ? [i] : []);
 }
 
 // The word's explicit audio policy is independent of its exercise construction.
@@ -40,8 +53,10 @@ export function getSegmentedReading(program: LearningProgram, target: LearningUn
   week: number): SegmentedReading | null {
   if (target.type !== 'word' || !isAvailable(program, target, week)) return null;
   if (target.readingSequence !== undefined) {
+    if (!isReadingSequence(target.readingSequence)) return null;
+    if (target.readingSequence.some(step => 'unitId' in step && !program.units.some(unit => unit.id === step.unitId && isAvailable(program, unit, week)))) return null;
     const segments: string[] = [];
-    for (const step of target.readingSequence) {
+    for (const { step } of audibleSequence(target, construction)) {
       let text: string;
       if ('unitId' in step) {
         const unit = program.units.find((item) => item.id === step.unitId);
@@ -57,6 +72,7 @@ export function getSegmentedReading(program: LearningProgram, target: LearningUn
   if (!construction || validateSegmentation(program, target, construction, week).some((issue) => issue.severity === 'error')) return null;
   const segments: string[] = [];
   for (const block of construction.segments) {
+    if (block.silent === true) continue;
     if ('unitId' in block) {
       const unit = program.units.find((item) => item.id === block.unitId);
       if (!unit) return null;

@@ -5,6 +5,10 @@ export function blockText(program: LearningProgram, block: PedagogicalSegment): 
   return 'unitId' in block ? program.units.find((unit) => unit.id === block.unitId)?.display ?? 'Unité absente'
     : 'literal' in block ? block.literal : block.separator;
 }
+/** Silence belongs to an occurrence in this construction, never to a global letter. */
+export function silentDistractorTexts(program: LearningProgram, construction: Segmentation): ReadonlySet<string> {
+  return new Set(construction.segments.filter(block => block.silent === true).map(block => comparableText(blockText(program, block))));
+}
 export function primaryConstruction(unit: LearningUnit): Segmentation | undefined {
   const value = unit.type === 'word' || unit.type === 'sentence' ? unit.segmentations?.[0] : undefined;
   return value?.segments.length ? value : undefined;

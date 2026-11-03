@@ -5,7 +5,8 @@ import { comparableText } from './text.ts';
 import { activitySegmentation } from './activity-segmentation.ts';
 import type { Activity } from './model.ts';
 import { validateSpellActivity } from './spelling.ts';
-import { displayConstruction, blockText } from './construction.ts';
+import { displayConstruction, blockText, silentDistractorTexts } from './construction.ts';
+import { isReadingSequence } from './reading-sequence.ts';
 import type { CompletionTarget } from './model.ts';
 import { parentReadingCatalog } from './reading-catalog.ts';
 
@@ -38,6 +39,7 @@ export function validateSegmentation(program: LearningProgram, word: CompletionT
   if (!segmentation.segments.length) issues.push(issue('empty-segmentation', path, 'Segmentation vide.'));
   for (const [index, segment] of segmentation.segments.entries()) {
     const segmentPath = `${path}.segments[${index}]`;
+    if (segment.silent !== undefined && segment.silent !== true) issues.push(issue('invalid-silent', segmentPath, 'silent doit être true ou absent.'));
     if ('unitId' in segment) {
       issues.push(...referenceIssues(program, segment.unitId, week, segmentPath));
       const unit = program.units.find((item) => item.id === segment.unitId);
@@ -103,11 +105,18 @@ function validateCompletion(program: LearningProgram, word: CompletionTarget, se
     const missing = segmentation.segments[index];
     if (!Number.isInteger(index) || index < 0 || !missing) {
       issues.push(issue('invalid-missing-index', path, 'Position du segment manquant invalide.'));
+    } else if (missing.silent === true) {
+      issues.push(issue('silent-answer', path, 'Un segment muet ne peut pas être manquant.'));
     } else if (!('unitId' in missing)) {
       issues.push(issue('unconfirmed-answer', path, 'Seule une unité référencée peut devenir une réponse.'));
     } else answers.push(missing.unitId);
   }
   if (variant.distractorUnitIds.length === 0) issues.push(issue('missing-distractors', path, 'Au moins un distracteur autorisé est nécessaire.'));
+  const silentTexts = silentDistractorTexts(program, segmentation);
+  for (const id of variant.distractorUnitIds) {
+    const unit = program.units.find(item => item.id === id);
+    if (unit && silentTexts.has(comparableText(unit.display))) issues.push(issue('silent-distractor', path, 'Un segment muet de cette construction ne peut pas servir de distracteur.'));
+  }
   // Plusieurs cases peuvent attendre la même unité ; le choix reste réutilisable.
   const choiceIds = [...variant.distractorUnitIds, ...new Set(answers)];
   const displays = new Set<string>();
@@ -171,6 +180,7 @@ export function validateProgram(program: LearningProgram): ContentIssue[] {
       }
     }
     if (unit.type !== 'word') continue;
+    if (unit.readingSequence !== undefined && !isReadingSequence(unit.readingSequence)) issues.push(issue('invalid-reading-sequence', unit.id, 'Séquence audio invalide.'));
     if (!unit.enabled) issues.push(issue('disabled-word', unit.id, `Le mot « ${unit.text} » est désactivé et ne sera pas proposé.`, 'warning'));
     if (unit.text !== unit.display) issues.push(issue('word-display-mismatch', unit.id, 'text et display doivent représenter le même mot.'));
     if (!unit.segmentations.length) issues.push(issue('unconfirmed-word', unit.id,

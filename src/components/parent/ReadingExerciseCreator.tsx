@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { LearningProgram, LearningUnitType } from '../../content/model';
 import type { ReadingExerciseDefinition } from '../../content/reading-model';
+import { readingSegmentId, isSilentReadingSegment } from '../../content/reading-model';
 import { isAvailable } from '../../content/selectors';
 import { newParentId } from '../../parent/model';
 import { readingExerciseError } from '../../parent/reading-exercises';
@@ -66,9 +67,9 @@ export function ReadingExerciseCreator({ program, activeWeek, initialExercise, o
       </select></label>
       {unit.segmentUnitIds !== undefined && <>
         {unit.segmentUnitIds.map((segmentId, segmentIndex) => <div key={segmentIndex}>
-          <label>Morceau {segmentIndex + 1}<select aria-label={`Morceau ${segmentIndex + 1} du contenu ${index + 1}`} value={segmentId}
+          <label>Morceau {segmentIndex + 1}{isSilentReadingSegment(segmentId) ? ' (muet)' : ''}<select aria-label={`Morceau ${segmentIndex + 1} du contenu ${index + 1}`} value={readingSegmentId(segmentId)}
             onChange={event => update(index, { ...unit, segmentUnitIds: unit.segmentUnitIds!.map((value, i) =>
-              i === segmentIndex ? event.target.value : value) })}>{options(segmentId)}</select></label>
+              i === segmentIndex ? (typeof value === 'string' ? event.target.value : { ...value, unitId: event.target.value }) : value) })}>{options(readingSegmentId(segmentId))}</select></label>
           <div className="parent-actions">
             <button type="button" aria-label={`Monter le morceau ${segmentIndex + 1} du contenu ${index + 1}`} disabled={segmentIndex === 0}
               onClick={() => update(index, { ...unit, segmentUnitIds: move(unit.segmentUnitIds!, segmentIndex, -1) })}>Monter</button>

@@ -12,7 +12,7 @@ import { segmentText, withActivity } from '../../parent/activities';
 import { ActivityPreview } from './ActivityPreview';
 import { useEffect } from 'react';
 import { letterForPosition, letterPositions, newSpellActivity } from '../../content/spelling';
-import { primaryConstruction } from '../../content/construction';
+import { primaryConstruction, silentDistractorTexts } from '../../content/construction';
 import { reconcileSpellOrder, spellTileText } from '../../content/spell-tile-order';
 
 interface Props { program: LearningProgram; activity: Activity; target: CompletionTarget;
@@ -35,6 +35,7 @@ export function ActivityEditor({ program, activity, target, onSave, onCancel, on
   const result = activityToExercise(createContentService(createContentRepository(previewProgram), week), previewActivity);
   const errors = result.issues.filter((issue) => issue.severity === 'error').map((issue) => issue.message);
   const allowed = program.units.filter((unit) => isAvailable(program, unit, week) && (spelling ? unit.type === 'letter' : isAnswerUnit(unit)));
+  const silentTexts = !spelling && segmentation ? silentDistractorTexts(program, segmentation) : new Set<string>();
   const expected = spelling ? indexes.flatMap((index) => positions[index] === undefined ? [] : [positions[index]]) : indexes.map((index) => segments[index]).filter((segment) => segment && 'unitId' in segment)
     .map((segment) => segmentText(program, segment));
   const isCorrect = (text: string) => expected.some((value) => comparableText(value) === comparableText(text));
@@ -75,7 +76,7 @@ export function ActivityEditor({ program, activity, target, onSave, onCancel, on
       <h3>{spelling ? 'Positions des lettres' : target.type === 'word' ? 'Construction du mot' : target.type === 'sentence' ? 'Construction de la phrase' : 'Syllabe à retrouver'}</h3><div className="parent-tokens">{positions.map((text, index) => <span key={index}>{text}</span>)}</div>
       <fieldset><legend>Parties à trouver</legend><div className="parent-checks">{positions.map((text, index) => {
         const segment = segments[index];
-        const eligible = spelling ? !!letterForPosition(program, text, week) : 'unitId' in segment && allowed.some((unit) => unit.id === segment.unitId);
+        const eligible = spelling ? !!letterForPosition(program, text, week) : !segment.silent && 'unitId' in segment && allowed.some((unit) => unit.id === segment.unitId);
         return <label key={index}><input type="checkbox" checked={indexes.includes(index)} disabled={!eligible && !(spelling && indexes.includes(index))}
           aria-label={`Trouver ${text} (${spelling ? 'lettre' : 'bloc'} ${index + 1})`} onChange={(event) => hide(index, event.target.checked)} />
           {text}{spelling ? !eligible ? ' — Texte fourni — réponse non autorisée' : ''
@@ -84,13 +85,13 @@ export function ActivityEditor({ program, activity, target, onSave, onCancel, on
       <p><strong>Bonnes réponses :</strong> {expected.join(' · ') || 'Sélectionnez au moins une partie.'}</p>
       <fieldset><legend>Distracteurs</legend>
         <label>Filtrer les distracteurs<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
-        <div className="parent-checks choice-scroll">{allowed.filter((unit) => !isCorrect(unit.display) && comparableText(unit.display).includes(comparableText(search)))
+        <div className="parent-checks choice-scroll">{allowed.filter((unit) => !isCorrect(unit.display) && !silentTexts.has(comparableText(unit.display)) && comparableText(unit.display).includes(comparableText(search)))
           .map((unit) => <label key={unit.id}><input type="checkbox" aria-label={`Distracteur ${unit.display} (${unit.type})`}
             checked={draft.distractorUnitIds.includes(unit.id)} onChange={(event) => {
               const ids = event.target.checked ? [...draft.distractorUnitIds, unit.id] : draft.distractorUnitIds.filter((id) => id !== unit.id);
               change({ ...draft, distractorUnitIds: ids, answerPosition: Math.min(draft.answerPosition ?? 0, ids.length) });
             }} />{unit.display} <small>{unit.type}</small></label>)}</div>
-        {draft.distractorUnitIds.filter((id) => !allowed.some((unit) => unit.id === id) || isCorrect(program.units.find((unit) => unit.id === id)?.display ?? '')).map((id) => <p key={id}>
+        {draft.distractorUnitIds.filter((id) => !allowed.some((unit) => unit.id === id) || silentTexts.has(comparableText(program.units.find(unit => unit.id === id)?.display ?? '')) || isCorrect(program.units.find((unit) => unit.id === id)?.display ?? '')).map((id) => <p key={id}>
           Distracteur indisponible : {program.units.find((unit) => unit.id === id)?.display ?? id}. <button type="button" onClick={() => {
             const ids = draft.distractorUnitIds.filter((item) => item !== id);
             change({ ...draft, distractorUnitIds: ids, answerPosition: Math.min(draft.answerPosition ?? 0, ids.length) });

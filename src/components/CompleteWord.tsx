@@ -137,7 +137,7 @@ export function CompleteWord({ onComplete, sound, challenges, chains, characterI
           const segment = challenge.segments[segmentIndex];
           const readingClass = activeReadingSegmentIndex === segmentIndex ? ' active-reading-segment' : '';
           if (!challenge.slots.some((slot) => slot.segmentIndex === segmentIndex)) {
-            return <span className={`${sentence ? 'sentence-text' : 'word-segment'}${readingClass}`} style={sentence ? undefined : segmentStyle} key={segmentIndex}>{segment}</span>;
+            return <span className={`${sentence ? 'sentence-text' : 'word-segment'}${readingClass}${challenge.silentSegmentIndexes?.includes(segmentIndex) ? ' silent-segment' : ''}`} style={sentence ? undefined : segmentStyle} key={segmentIndex}>{segment}</span>;
           }
           const filled = texts[segmentIndex];
           const className = `word-slot${readingClass} ${hover === segmentIndex ? 'over' : ''} ${filled ? 'filled' : ''} ${attempt && !solved ? 'retry' : ''}`;
