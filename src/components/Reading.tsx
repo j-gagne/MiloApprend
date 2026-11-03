@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createReadingState, moveReadingSlider, readingExerciseComplete, readingSessionComplete, type ReadingExercise } from '../game/reading-session';
 import { gameAudio } from '../services/audio';
 import { PronunciationSlider } from './PronunciationSlider';
+import { ReadingSentence, type SentenceProgress } from './ReadingSentence';
 import './reading.css';
 
 export function Reading({ exercises, ready, saveFailed, onRetry, onReward, onHome }: {
@@ -11,6 +12,7 @@ export function Reading({ exercises, ready, saveFailed, onRetry, onReward, onHom
   const [index, setIndex] = useState(0);
   const [state, setState] = useState(() => createReadingState(exercises));
   const current = useRef(state);
+  const sentenceProgress = useRef(new Map<string, SentenceProgress>());
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [index]);
   useEffect(() => () => gameAudio.stop(), []);
@@ -34,7 +36,12 @@ export function Reading({ exercises, ready, saveFailed, onRetry, onReward, onHom
       <section className="reading-units" aria-label={`Exercice ${index + 1}`}>
         {exercises[index].displayedUnits.map((unit, unitIndex, units) => {
           const offset = units.slice(0, unitIndex).reduce((sum, previous) => sum + previous.segments.length, 0);
+          const sentenceKey = `${exercises[index].id}:${unitIndex}`;
           return <div className={`reading-unit${unit.isSentence ? ' reading-unit-sentence' : ''}`} role="group" aria-label={unit.display} key={`${exercises[index].id}:${unitIndex}`}>
+            {unit.isSentence ? <ReadingSentence display={unit.display} ready={ready}
+              progress={sentenceProgress.current.get(sentenceKey)}
+              onProgress={progress => sentenceProgress.current.set(sentenceKey, progress)}
+              onComplete={() => unit.segments.forEach((_, i) => move(offset + i, 100))} /> : <>
             <span className="reading-text">{unit.display}</span>
             <div className="reading-unit-sliders">
               {unit.segments.map((segment, i) => <div className="reading-segment" key={i}
@@ -44,6 +51,7 @@ export function Reading({ exercises, ready, saveFailed, onRetry, onReward, onHom
                   onChange={value => move(offset + i, value)} />
               </div>)}
             </div>
+            </>}
           </div>;
         })}
       </section>

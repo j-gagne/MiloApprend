@@ -25,24 +25,24 @@ test('375px: production sentences stay compact, contained and touch-readable', a
   const cdp = await context.newCDPSession(page);
   for (let i = 0; i < 7; i++) {
     const unit = page.locator('.reading-unit');
-    const display = await unit.locator('.reading-text').innerText();
+    const display = (await unit.getAttribute('aria-label'))!;
     seen.push(display);
     const isSentence = sentences.includes(display);
     const geometry = await unit.evaluate(node => {
-      const text = node.querySelector('.reading-text')!;
+      const text = node.querySelector('.reading-line .reading-text') ?? node.querySelector('.reading-text')!;
       const slider = node.querySelector('[role="slider"]')!;
       const textBox = text.getBoundingClientRect();
       const sliderBox = slider.getBoundingClientRect();
-      const box = node.getBoundingClientRect();
+      const box = (node.querySelector('.reading-line') ?? node).getBoundingClientRect();
       return { fontSize: parseFloat(getComputedStyle(text).fontSize), gap: sliderBox.top - textBox.bottom,
         height: box.height, sliderHeight: sliderBox.height,
         contained: [text, slider].every(element => {
           const rect = element.getBoundingClientRect();
           return rect.left >= 20 && rect.right <= innerWidth - 20 && element.scrollWidth <= element.clientWidth + 1;
         }),
-        wordsIntact: [...text.textContent!.matchAll(/\S+/gu)].every(match => {
+        wordsIntact: [...text.querySelectorAll('.reading-line-word')].every(word => {
           const range = document.createRange();
-          range.setStart(text.firstChild!, match.index); range.setEnd(text.firstChild!, match.index + match[0].length);
+          range.selectNodeContents(word);
           return range.getClientRects().length === 1;
         }),
       };
@@ -61,7 +61,7 @@ test('375px: production sentences stay compact, contained and touch-readable', a
       expect(geometry.sliderHeight).toBe(68);
     }
     await expect(page.getByRole('navigation', { name: 'Exercices de lecture' })).toBeInViewport();
-    const slider = page.getByRole('slider');
+    for (const slider of await page.getByRole('slider').all()) {
     const thumb = (await slider.locator('.pronunciation-thumb').boundingBox())!;
     const rail = (await slider.boundingBox())!;
     expect(thumb.width).toBeGreaterThanOrEqual(44);
@@ -70,6 +70,7 @@ test('375px: production sentences stay compact, contained and touch-readable', a
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...point, x: rail.x + rail.width - thumb.width / 2 }] });
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await expect(slider).toHaveAttribute('aria-valuenow', '100');
+    }
     await expect(page.locator('.reading-dot.done')).toHaveCount(i + 1);
     if (i < 6) await page.getByRole('button', { name: 'Exercice suivant' }).click();
   }

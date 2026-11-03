@@ -28,6 +28,12 @@
 /* Sentence text and its configured sliders stay together in normal document flow. */
 .reading-unit-sentence{width:100%;padding-inline:8px;font-size:clamp(30px,8.5vw,48px);--pronunciation-thumb-size:44px;--pronunciation-inset:4px}
 .reading-unit-sentence .reading-text{margin-bottom:8px;line-height:1.25}
+.reading-sentence-lines{position:relative;width:100%;min-width:0;display:grid;gap:16px}
+.reading-line{min-width:0;width:100%}
+.reading-line .reading-text{white-space:pre}
+.reading-line-word.is-read{color:var(--theme-primary)}
+.reading-line-measure-box{position:absolute;inset:0;overflow:hidden;visibility:hidden;pointer-events:none}
+.reading-unit-sentence .reading-line-measure{position:absolute;visibility:hidden;white-space:pre;max-width:none;width:max-content;pointer-events:none;margin:0}
 @media(max-width:600px){
   .reading-layout:has(.reading-unit-sentence){grid-template-columns:minmax(0,1fr);gap:12px;margin-block:14px 20px}
   .reading-layout:has(.reading-unit-sentence) .reading-units{row-gap:20px;container-type:inline-size}

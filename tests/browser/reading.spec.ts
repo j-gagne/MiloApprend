@@ -46,22 +46,21 @@ test('whole long sentences wrap without clipping text or sliders and preserve na
   await page.evaluate(() => document.fonts.ready);
   for (const width of [320, 375, 390, 768, 1024, 1280]) {
     await page.setViewportSize({ width, height: 844 });
-    await expect(page.locator('.reading-text')).toHaveText(sentences);
+    expect(await page.locator('.reading-unit').evaluateAll(units => units.map(unit => unit.getAttribute('aria-label')))).toEqual(sentences);
     const geometry = await page.locator('.reading-units').evaluate(section => {
       const bounds = section.getBoundingClientRect();
-      const texts = [...section.querySelectorAll<HTMLElement>('.reading-text')];
+      const texts = [...section.querySelectorAll<HTMLElement>('.reading-line .reading-text')];
       return {
-        contained: [...section.querySelectorAll('.reading-unit, .reading-text, .pronunciation-slider')].every(node => {
+        contained: [...section.querySelectorAll('.reading-unit, .reading-line .reading-text, .pronunciation-slider')].every(node => {
           const rect = node.getBoundingClientRect();
           return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1 && node.scrollWidth <= node.clientWidth + 1;
         }),
-        multiline: texts[0].offsetHeight > parseFloat(getComputedStyle(texts[0]).lineHeight) * 1.5,
+        multiline: section.querySelector('.reading-unit')!.querySelectorAll('.reading-line').length > 1,
         fontSize: parseFloat(getComputedStyle(texts[0]).fontSize),
         wordsIntact: texts.every(node => {
-          const text = node.firstChild!;
-          return [...node.textContent!.matchAll(/\S+/gu)].every(match => {
+          return [...node.querySelectorAll('.reading-line-word')].every(word => {
             const range = document.createRange();
-            range.setStart(text, match.index); range.setEnd(text, match.index + match[0].length);
+            range.selectNodeContents(word);
             return range.getClientRects().length === 1;
           });
         }),
