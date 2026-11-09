@@ -1,1 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="25" fill="#e3ecca"/><path d="M20 74V52q0-22 24-22h6V19h24q16 0 16 17v17H65v21H51V60H38v14Z" fill="#56865b"/><circle cx="75" cy="31" r="4" fill="#233f39"/><path d="M75 44h10" stroke="#233f39" stroke-width="3" stroke-linecap="round"/></svg>
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Milo, un petit dinosaure souriant vu de face</title>
+  <rect width="512" height="512" rx="112" fill="#f8f6eb"/>
+  <circle cx="256" cy="261" r="202" fill="#e3ecca"/>
+  <ellipse cx="256" cy="421" rx="127" ry="17" fill="#52794f" opacity=".12"/>
+  <!-- Petites plaques dorées, dans la palette du compagnon de Milo. -->
+  <path d="M180 142Q153 103 171 91Q194 82 218 123M228 115Q230 62 256 60Q282 62 284 115M294 123Q318 82 341 91Q359 103 332 142" fill="#e9bc67" stroke="#cf9f4f" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Tête symétrique et joues rondes : le regard est bien de face. -->
+  <path d="M111 253C88 226 90 185 111 167C125 155 141 160 153 171C174 129 209 111 256 111C303 111 338 129 359 171C371 160 387 155 401 167C422 185 424 226 401 253L398 318C395 384 338 424 256 424C174 424 117 384 114 318Z" fill="#80ad7b" stroke="#52794f" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M221 137Q256 121 291 137" fill="none" stroke="#a6c58b" stroke-width="10" stroke-linecap="round"/>
+  <ellipse cx="188" cy="231" rx="33" ry="43" fill="#fffdf3"/>
+  <ellipse cx="324" cy="231" rx="33" ry="43" fill="#fffdf3"/>
+  <ellipse cx="195" cy="237" rx="17" ry="25" fill="#263f37"/>
+  <ellipse cx="317" cy="237" rx="17" ry="25" fill="#263f37"/>
+  <circle cx="201" cy="227" r="7" fill="#fff"/>
+  <circle cx="311" cy="227" r="7" fill="#fff"/>
+  <path d="M163 182Q180 170 199 176M313 176Q332 170 349 182" fill="none" stroke="#52794f" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="143" cy="282" rx="23" ry="14" fill="#e6a28c"/>
+  <ellipse cx="369" cy="282" rx="23" ry="14" fill="#e6a28c"/>
+  <!-- Large museau doux, narines et sourire accueillant. -->
+  <path d="M137 323C137 282 183 263 256 263C329 263 375 282 375 323C375 371 324 401 256 401C188 401 137 371 137 323Z" fill="#c6d99c"/>
+  <ellipse cx="211" cy="299" rx="8" ry="6" fill="#52794f" transform="rotate(-15 211 299)"/>
+  <ellipse cx="301" cy="299" rx="8" ry="6" fill="#52794f" transform="rotate(15 301 299)"/>
+  <path d="M196 335Q256 361 316 335C307 369 285 382 256 382C227 382 205 369 196 335Z" fill="#263f37"/>
+  <path d="M219 344L222 359Q228 365 234 359L240 349M272 349L278 359Q284 365 290 359L293 344" fill="#fffdf3"/>
+  <path d="M231 377Q256 357 281 377Q256 388 231 377Z" fill="#e6a28c"/>
+  <path d="M191 334Q256 363 321 334" fill="none" stroke="#263f37" stroke-width="6" stroke-linecap="round"/>
+</svg>
