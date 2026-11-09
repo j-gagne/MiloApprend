@@ -109,7 +109,11 @@ Si le silence persiste, relever les résultats des deux boutons, la voix sélect
 
 ### Périmètre
 
-Le manifeste, l'icône et les couleurs préparent une future PWA. Il n'y a pas encore de service worker, de mode hors ligne garanti ou de jeu complet d'icônes iOS/installation. Leur validation, HTTPS et Capacitor viendront dans une autre étape. Un espace Parent local est disponible. Pas de backend, compte, synchronisation ou autre mini-jeu. Les illustrations des mots sont des emoji système, dont le rendu varie selon l'appareil.
+L'installation sur l'écran d'accueil utilise `/MiloApprend/` comme identité, URL de lancement et périmètre du manifeste, en accord avec la base Vite et le déploiement GitHub Pages de `dist`. Les liens HTML utilisent `%BASE_URL%` ; les icônes du manifeste sont relatives à celui-ci. Les PNG 180 (Apple), 192 et 512 pixels reprennent `public/icon.svg` sur fond opaque.
+
+Après déploiement, ouvrir `https://j-gagne.github.io/MiloApprend/` dans Safari et l'ajouter à l'écran d'accueil, puis vérifier que l'icône ouvre bien cette adresse. Une ancienne icône peut conserver l'ancienne URL : ajouter une nouvelle icône depuis l'adresse corrigée pour vérifier. Ne pas effacer les données Safari : progression et préférences Parent restent dans leur stockage local existant.
+
+Il n'y a pas encore de service worker ni de mode hors ligne garanti ; le repli de contenu embarqué reste disponible si le contenu distant échoue une fois l'application chargée. Un espace Parent local est disponible. Pas de backend, compte, synchronisation ou autre mini-jeu. Les illustrations des mots sont des emoji système, dont le rendu varie selon l'appareil.
 
 ## Architecture des activités
 
