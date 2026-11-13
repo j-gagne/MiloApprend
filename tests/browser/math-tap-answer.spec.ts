@@ -38,7 +38,6 @@ for (const type of ['MISSING_NUMBER', 'HEAR_NUMBER'] as const) {
       expect(await count()).toBe(index + 1);
       await expect(page.locator('.math-slot button')).toHaveText(String(number));
     }
-    await page.getByRole('button', { name: 'CONTINUER', exact: true }).click();
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('milo-apprend.progress.v1')!).completedSessions)).toBe(1);
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('milo-apprend.progress.v1')!).completedSessions)).toBe(1);
   });
 }

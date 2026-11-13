@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createDiagnosticReporter } from '../src/services/content-diagnostics.ts';
+import { createDiagnosticReporter, reportStartupDiagnostics } from '../src/services/content-diagnostics.ts';
+import { expectedPedagogicalDiagnostics } from '../src/content/expected-pedagogical-diagnostics.ts';
 import { initialProgram } from '../src/content/program.ts';
 import { buildSeedProgram, type SeedWeek } from '../src/content/seed-bank.ts';
 import { validateProgram, validateCompleteWordVariant } from '../src/content/validation.ts';
@@ -8,6 +9,23 @@ import { createContentRepository } from '../src/content/repository.ts';
 import { createContentService } from '../src/content/service.ts';
 import { getCompleteWordChallenges, wordToChallenge } from '../src/game/complete-word-content.ts';
 import { effectiveProgram, emptyParentData } from '../src/parent/model.ts';
+
+test('startup summarizes only the 27 exact audited warnings, preserving diagnostics and unexpected messages', () => {
+  const known = structuredClone(expectedPedagogicalDiagnostics);
+  assert.equal(known.filter(issue => issue.code === 'unconfirmed-segment').length, 26);
+  assert.equal(known.filter(issue => issue.code === 'unconfirmed-word').length, 1);
+  const unexpected = [{ ...known[0], path: 'new-word.segment' }, { ...known[0], message: 'Changed warning' },
+    { ...known[0], severity: 'error' as const }, { ...known[0], code: 'new-warning' }];
+  const issues = [...known, ...unexpected];
+  const snapshot = structuredClone(issues);
+  const logged: typeof issues = [], summaries: (readonly typeof issues[number][])[] = [];
+  reportStartupDiagnostics(issues, false, (_, issue) => logged.push(issue), (_, details) => summaries.push(details));
+  assert.deepEqual(logged, unexpected);
+  assert.equal(summaries.length, 0);
+  reportStartupDiagnostics(known, true, () => assert.fail('Known warning printed individually'), (_, details) => summaries.push(details));
+  assert.deepEqual(summaries, [known]);
+  assert.deepEqual(issues, snapshot);
+});
 
 test('identical diagnostics log once; distinct paths/messages and errors remain visible', () => {
   const warnings: string[] = [], errors: string[] = [];

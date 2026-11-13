@@ -25,6 +25,8 @@
 - Les activités passent par `content/service.ts` et son repository ; aucun catalogue pédagogique parallèle dans les composants. Les médias peuvent être absents sans bloquer le jeu.
 - Les exports globaux `contentService` et `contentRepository` reposent sur le seed local. Tout nouveau parcours activité/session/jeu doit recevoir le service/repository du programme effectif, après personnalisations Parent ; utiliser implicitement ces singletons contournerait le contenu distant et les overrides.
 
+- Au d?marrage, seuls les diagnostics p?dagogiques audit?s dans `expected-pedagogical-diagnostics.ts` (s?v?rit?, code, chemin et message exacts) sont regroup?s en r?sum? de d?veloppement. `service.validate()` conserve tous les diagnostics ; toute diff?rence et toute erreur restent rapport?es normalement. Ne pas ?largir cette liste sans audit du contenu.
+
 ## Espace Parent et programme effectif
 
 - `parent/model.ts` fusionne base + semaines/unités personnalisées + activations + constructions + `audioOverrides` + activités. Les overrides s’appliquent par ID à la base chargée, distante ou locale ; l’interface ne modifie jamais cette base.
@@ -58,6 +60,7 @@
 
 - Entrée provisoire de production `?activity=math`, sans changement de Home ou du Parent. Le bouton JOUER AUX NOMBRES génère depuis le service effectif et le nombre de questions Parent ; aucun contenu de démonstration. Un catalogue vide ne démarre ni partie ni cycle de récompense.
 - `Mathematics.tsx` partage le même écran pour Je range, Nombre manquant et J’écoute. `math-board.ts` gère les placements, échanges et validation complète ; une erreur reste corrigeable. `AnswerTile` assure Pointer Events, capture, annulation, appui et clavier. Les cases acceptent un nombre sélectionné ; les tuiles placées restent déplaçables. Les longues séquences passent sur plusieurs lignes sans réduire les cibles tactiles.
+- Nombre manquant utilise une grille sur une seule ligne : cellules proportionnelles à la largeur, banque de réponses tactile conservée. Seul Je range répartit ses longues séquences sur plusieurs lignes. Nombre manquant et J'écoute avancent automatiquement après 900 ms de réussite ; Je range conserve CONTINUER. Le timer est annulé au changement d'exercice/session ou au démontage ; les écrans de récompense restent manuels.
 - Écoute via `gameAudio.playWord()` uniquement, depuis le démarrage/CONTINUER ou le bouton de réécoute. Premier montage avant lecture via `flushSync` pour préserver le geste iOS et StrictMode ; arrêt à la sortie, respect du muet. Pas de prononciation d'une mauvaise réponse. Retour doux et délai après réussite.
 - Le cycle existant doit être sauvegardé par `ensureReward()` avant le jeu ; ID `math:` unique, `SessionProgress` partagé, puis `completeSession()` et écran de célébration/révélation existants. Les reprises d'enregistrement réutilisent le même ID ; aucune clé de progression, Collection ou récompense propre aux mathématiques.
 

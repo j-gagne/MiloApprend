@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { GeneratedMathExercise } from '../content/math-model';
 import type { CharacterId } from '../game/characters';
 import { completeTarget, createSessionProgress, incorrectAttempt, nextTarget, type SessionProgress as Progress } from '../game/session-progress';
@@ -8,9 +8,18 @@ import { AnswerTile } from './AnswerTile';
 import { SessionProgress } from './SessionProgress';
 import './mathematics.css';
 
-export function Mathematics({ exercises, characterId, onComplete }: {
+type MathematicsProps = {
   exercises: readonly GeneratedMathExercise[]; characterId: CharacterId; onComplete: (progress: Progress) => void;
-}) {
+};
+
+export function Mathematics(props: MathematicsProps) {
+  // A replacement session may reuse exercise IDs; remount to cancel timers and gestures.
+  const [session, setSession] = useState({ exercises: props.exercises, revision: 0 });
+  if (session.exercises !== props.exercises) setSession({ exercises: props.exercises, revision: session.revision + 1 });
+  return <MathematicsSession key={session.revision} {...props} />;
+}
+
+function MathematicsSession({ exercises, characterId, onComplete }: MathematicsProps) {
   const [index, setIndex] = useState(0);
   const exercise = exercises[index];
   const [board, setBoard] = useState(() => emptyMathBoard(exercise));
@@ -22,17 +31,31 @@ export function Mathematics({ exercises, characterId, onComplete }: {
   const [message, setMessage] = useState('');
   const [canContinue, setCanContinue] = useState(false);
   const locked = useRef(false);
+  const advanced = useRef(false);
   const targets = useRef(new Map<number, HTMLDivElement>());
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [index]);
   useEffect(() => () => gameAudio.stop(), []);
   const solved = progress.currentTargetCompleted;
+  const advance = useCallback(() => {
+    if (!locked.current || advanced.current) return;
+    advanced.current = true;
+    gameAudio.stop();
+    if (index === exercises.length - 1) { onComplete(performance.current); return; }
+    const next = exercises[index + 1];
+    current.current = emptyMathBoard(next); setBoard(current.current); setSelected(undefined); setHover(undefined); setMessage('');
+    performance.current = nextTarget(performance.current); setProgress(performance.current);
+    locked.current = false; advanced.current = false; setIndex(index + 1);
+    if (next.type === 'HEAR_NUMBER') { gameAudio.unlock(); void gameAudio.playWord(next.prompt.text); }
+  }, [index, exercises, onComplete]);
   useEffect(() => {
     setCanContinue(false);
     if (!solved) return;
-    const timer = window.setTimeout(() => setCanContinue(true), 900);
+    const timer = window.setTimeout(() => {
+      if (exercise.type === 'ORDER_NUMBERS') setCanContinue(true); else advance();
+    }, 900);
     return () => window.clearTimeout(timer);
-  }, [solved, index]);
+  }, [solved, exercise, advance]);
   function place(value: number, destination: number) {
     if (locked.current) return;
     const next = placeMathTile(exercise, current.current, value, destination);
@@ -75,20 +98,15 @@ export function Mathematics({ exercises, characterId, onComplete }: {
       {exercise.type === 'HEAR_NUMBER' && <button className="listen-button" aria-label="ÉCOUTER ENCORE" onClick={() => { gameAudio.unlock(); void gameAudio.playWord(exercise.prompt.text); }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5ZM15 8q4 4 0 8M18 5q7 7 0 14" /></svg>
       </button>}
-      <div className="math-row">{exercise.type === 'MISSING_NUMBER'
+      <div className={`math-row${exercise.type === 'MISSING_NUMBER' ? ' math-sequence' : ''}`}
+        style={exercise.type === 'MISSING_NUMBER' ? { '--sequence-count': exercise.sequence.length,
+          '--number-digits': Math.max(...exercise.sequence.map(value => String(value ?? exercise.answer).length)) } as CSSProperties : undefined}>{exercise.type === 'MISSING_NUMBER'
         ? exercise.sequence.map((value, i) => value === null ? slot(0) : <span className="math-fixed" key={i}>{value}</span>)
         : board.map((_, i) => slot(i))}</div>
       <div className="math-row math-bank" aria-label="Nombres à choisir">{mathTiles(exercise).filter(value => !board.includes(value)).map(value => tile(value))}</div>
     </section>
     <p className="math-message" role="status">{message || 'Glisse un nombre, ou touche un nombre puis sa case.'}</p>
     {exercise.type === 'HEAR_NUMBER' && !solved && <small>Pas de son ? Touche 🔊 ou active le son en haut.</small>}
-    {solved && <button className="primary-button continue-button" disabled={!canContinue} onClick={() => {
-      gameAudio.stop();
-      if (index === exercises.length - 1) { onComplete(performance.current); return; }
-      const next = exercises[index + 1];
-      current.current = emptyMathBoard(next); setBoard(current.current); setSelected(undefined); setMessage('');
-      performance.current = nextTarget(performance.current); setProgress(performance.current); locked.current = false; setIndex(index + 1);
-      if (next.type === 'HEAR_NUMBER') { gameAudio.unlock(); void gameAudio.playWord(next.prompt.text); }
-    }}>CONTINUER</button>}
+    {solved && exercise.type === 'ORDER_NUMBERS' && <button className="primary-button continue-button" disabled={!canContinue} onClick={advance}>CONTINUER</button>}
   </main>;
 }

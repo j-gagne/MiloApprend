@@ -48,7 +48,8 @@ test('touch-sized math: drag, swap, retry, endpoints, audio and exactly one rewa
     const wrong = answer === 11 ? 12 : 11;
     await tap(page, wrong); await expect(page.getByRole('status')).toContainText('Essaie encore');
     await tap(page, answer);
-    await page.getByRole('button', { name: 'CONTINUER', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('Bravo');
+    await expect(page.getByRole('status')).not.toContainText('Bravo');
   }
   await expect(page.getByRole('heading', { name: 'J’écoute' })).toBeVisible();
   const before = await page.evaluate(() => window.speechProbe.calls.length);
@@ -56,7 +57,6 @@ test('touch-sized math: drag, swap, retry, endpoints, audio and exactly one rewa
   expect(await page.evaluate(() => window.speechProbe.calls.length)).toBe(before + 1);
   expect(await page.evaluate(() => window.speechProbe.calls.at(-1)?.text)).toBe('11');
   await tap(page, 15); await tap(page, 11);
-  await page.getByRole('button', { name: 'CONTINUER', exact: true }).click();
   await expect(page.getByRole('heading', { name: /Bravo/ })).toBeVisible();
   const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem('milo-apprend.progress.v1')!));
   expect((await stored()).completedSessions).toBe(1);

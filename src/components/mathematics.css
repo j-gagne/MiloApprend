@@ -1,6 +1,6 @@
 .math-screen { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; gap: 12px; }
 .math-screen h1 { margin: 8px 0; }
-.math-card { width: 100%; max-width: 720px; padding: 20px 12px; min-height: 0; }
+.math-card { width: 100%; max-width: 720px; padding: 20px 12px; min-height: 0; container-type: inline-size; }
 .math-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; min-width: 0; }
 .math-bank { margin-top: 24px; }
 .math-tile, .math-slot, .math-fixed { min-width: 54px; min-height: 60px; width: auto; font-size: 28px; flex: 0 0 auto; }
@@ -16,3 +16,22 @@
 .math-screen button:focus-visible { outline: 4px solid var(--theme-primary); outline-offset: 3px; }
 @media (max-width: 420px) { .math-screen { padding: 12px; } .math-row { gap: 8px; } }
 @media (max-width: 420px) { .math-slot > .math-tile { min-width: 86px; height: 76px; } }
+
+/* Only the missing-number sequence scales; the answer bank keeps its touch targets. */
+.math-sequence {
+  display: grid;
+  grid-template-columns: repeat(var(--sequence-count), minmax(0, 1fr));
+  gap: clamp(2px, 1cqw, 8px);
+  max-width: calc(var(--sequence-count) * 76px);
+  margin-inline: auto;
+  --sequence-height: clamp(32px, calc(100cqw / var(--sequence-count)), 76px);
+  --sequence-font: clamp(10px, calc(85cqw / var(--sequence-count) / (var(--number-digits) + 0.5)), 28px);
+}
+.math-sequence > .math-fixed, .math-sequence > .math-slot,
+.math-sequence .math-slot > button {
+  width: 100%; min-width: 0; max-width: 100%;
+  height: var(--sequence-height); min-height: 0;
+  padding: 0; font-size: var(--sequence-font); letter-spacing: 0;
+  white-space: nowrap; overflow-wrap: normal;
+}
+.math-sequence .math-slot > button { border-radius: clamp(8px, 2cqw, 19px); }
