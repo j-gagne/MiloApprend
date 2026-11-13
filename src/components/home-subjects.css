@@ -1,5 +1,8 @@
 .home-subjects { display:flex; gap:4px; padding:4px; border-radius:18px; border:2px solid var(--theme-border); background:var(--theme-surface); margin:8px 0 16px; }
-.home-subjects button { min-height:44px; padding:8px 24px; border-radius:12px; background:transparent; font-weight:800; }
+.home-subjects button { position:relative; min-height:44px; padding:8px 24px; border-radius:12px; background:transparent; font-weight:800; }
+.home-subjects .subject-emoji { position:absolute; top:50%; transform:translateY(-50%); width:16px; font-size:14px; line-height:1; text-align:center; pointer-events:none; }
+.home-subjects .subject-emoji-left { left:4px; }
+.home-subjects .subject-emoji-right { right:4px; }
 .home-subjects button[aria-pressed=true] { background:var(--theme-primary); color:white; }
 .home-subjects button:focus-visible { outline:3px solid var(--theme-primary); outline-offset:3px; }
 .home-math-actions { display:flex; flex-direction:column; gap:12px; width:min(100%,360px); margin-bottom:18px; }

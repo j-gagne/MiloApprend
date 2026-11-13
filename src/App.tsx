@@ -236,7 +236,7 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
       <div className="hero-scene"><span className="hello-bubble">Salut {playerName} ! <span aria-hidden="true">✦</span></span><Character id={character.id} /><span className="scene-stone stone-one" /><span className="scene-stone stone-two" /></div>
       {canChooseCharacter && <button ref={characterButton} className="character-picker-button" onClick={() => { gameAudio.stop(); setPreviewCharacter(character.id); setScreen('characters'); }}>CHOISIR MON PERSONNAGE</button>}
       {!characterSaved && <p className="save-note" role="status">Ton prénom et ton personnage restent choisis ici. La sauvegarde est indisponible.</p>}
-      <nav className="home-subjects" aria-label="Matières"><button aria-pressed={subject === 'reading'} onClick={() => chooseSubject('reading')}>LECTURE</button><button aria-pressed={subject === 'math'} onClick={() => chooseSubject('math')}>MATHS</button></nav>
+      <nav className="home-subjects" aria-label="Matières"><button aria-pressed={subject === 'reading'} onClick={() => chooseSubject('reading')}><span className="subject-emoji subject-emoji-left" aria-hidden="true">📖</span>LECTURE</button><button aria-pressed={subject === 'math'} onClick={() => chooseSubject('math')}>MATHS<span className="subject-emoji subject-emoji-right" aria-hidden="true">🧮</span></button></nav>
       {subject === 'reading' ? <>
       <button className="primary-button play-button" onClick={start} disabled={!availableCount}><span aria-hidden="true">▶</span> COMPLÈTE</button>
       {startFailed && <p className="save-note" role="status">La sauvegarde est indisponible. La partie n’a pas commencé. Réessaie JOUER.</p>}
