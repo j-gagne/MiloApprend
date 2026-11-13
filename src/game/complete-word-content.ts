@@ -57,6 +57,7 @@ export function getCompleteWordChallenges(service: ContentService = contentServi
   const snapshot = createContentService(createContentRepository({ ...program, activities }), week);
   const challenges: ContentChallenge[] = [];
   for (const activity of activities) {
+    if (activity.enabled === false) continue;
     const target = program.units.find((unit) => unit.id === activity.targetId);
     if (!target || !isCompletionTarget(target)) continue;
     const legacy = target.type === 'word' && !(program.activities ?? []).some((item) => item.id === activity.id)

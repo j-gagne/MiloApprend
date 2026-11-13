@@ -1,0 +1,234 @@
+[
+  {
+    "op": "test",
+    "path": "/programId",
+    "value": "milo-school-program"
+  },
+  {
+    "op": "test",
+    "path": "/schemaVersion",
+    "value": 1
+  },
+  {
+    "op": "test",
+    "path": "/weeks/5/toolWords/0",
+    "value": "il"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/5/toolWords/0"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/5/reviewedUnitIds",
+    "value": [
+      "letter-n"
+    ]
+  },
+  {
+    "op": "add",
+    "path": "/weeks/5/reviewedUnitIds",
+    "value": [
+      "letter-n",
+      "tool-word-il"
+    ]
+  },
+  {
+    "op": "test",
+    "path": "/weeks/6/syllables/27",
+    "value": "ach"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/6/syllables/27"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/6/syllables/26",
+    "value": "iv"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/6/syllables/26"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/6/toolWords/3",
+    "value": "est"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/6/toolWords/3"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/6/toolWords/1",
+    "value": "elle"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/6/toolWords/1"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/6/toolWords/0",
+    "value": "il"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/6/toolWords/0"
+  },
+  {
+    "op": "add",
+    "path": "/weeks/6/reviewedUnitIds",
+    "value": [
+      "syllable-iv",
+      "syllable-ach",
+      "tool-word-il",
+      "tool-word-elle",
+      "tool-word-est"
+    ]
+  },
+  {
+    "op": "test",
+    "path": "/weeks/6/words/7/segmentations/0/segments/2/literal",
+    "value": "letter-t"
+  },
+  {
+    "op": "replace",
+    "path": "/weeks/6/words/7/segmentations/0/segments/2/literal",
+    "value": "t"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/7/toolWords/3",
+    "value": "et"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/7/toolWords/3"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/7/toolWords/2",
+    "value": "est"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/7/toolWords/2"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/7/toolWords/1",
+    "value": "elle"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/7/toolWords/1"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/7/toolWords/0",
+    "value": "il"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/7/toolWords/0"
+  },
+  {
+    "op": "add",
+    "path": "/weeks/7/reviewedUnitIds",
+    "value": [
+      "tool-word-il",
+      "tool-word-elle",
+      "tool-word-est",
+      "tool-word-et"
+    ]
+  },
+  {
+    "op": "test",
+    "path": "/weeks/7/words/2/completeWord/0/answerPosition",
+    "value": 2
+  },
+  {
+    "op": "replace",
+    "path": "/weeks/7/words/2/completeWord/0/answerPosition",
+    "value": 1
+  },
+  {
+    "op": "test",
+    "path": "/weeks/9/toolWords/7",
+    "value": "elle"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/9/toolWords/7"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/9/toolWords/6",
+    "value": "il"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/9/toolWords/6"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/9/toolWords/5",
+    "value": "et"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/9/toolWords/5"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/9/toolWords/4",
+    "value": "j’ai"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/9/toolWords/4"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/9/toolWords/2",
+    "value": "est"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/9/toolWords/2"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/9/toolWords/1",
+    "value": "une"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/9/toolWords/1"
+  },
+  {
+    "op": "test",
+    "path": "/weeks/9/toolWords/0",
+    "value": "un"
+  },
+  {
+    "op": "remove",
+    "path": "/weeks/9/toolWords/0"
+  },
+  {
+    "op": "add",
+    "path": "/weeks/9/reviewedUnitIds",
+    "value": [
+      "tool-word-un",
+      "tool-word-une",
+      "tool-word-est",
+      "tool-word-j’ai",
+      "tool-word-et",
+      "tool-word-il",
+      "tool-word-elle"
+    ]
+  }
+]

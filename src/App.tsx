@@ -1,3 +1,4 @@
+import { reportContentDiagnostic } from './services/content-diagnostics';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { CompleteWord } from './components/CompleteWord';
@@ -102,7 +103,7 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
     const stored = progressStore.load();
     if (stored.eggRewards?.pendingTransition) { setProgress(stored); setScreen('egg'); return; }
     const next = createReadingSession(service, parent.data);
-    for (const issue of next.issues) console.warn(`[reading:${issue.code}] ${issue.message}`);
+    for (const issue of next.issues) reportContentDiagnostic('reading', issue);
     gameAudio.stop(); gameAudio.unlock();
     setReadingExercises(next.exercises); setReadingReady(false); setReadingSaveFailed(false);
     setScreen('reading');
@@ -197,7 +198,7 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
     const stored = progressStore.load();
     if (stored.eggRewards?.pendingTransition) { setProgress(stored); setScreen('egg'); return; }
     const next = generateMathExercises(service, { count: parent.data.questionCount ?? DEFAULT_QUESTION_COUNT }, Math.random, type);
-    for (const issue of next.issues) console.warn(`[math:${issue.code}] ${issue.message}`);
+    for (const issue of next.issues) reportContentDiagnostic('math', issue);
     if (!next.exercises.length) { setMathNotice('Pas de nombres disponibles pour ces semaines.'); return; }
     const initialization = progressStore.ensureReward();
     if (!initialization.saved) { setMathNotice('Sauvegarde indisponible. Réessaie pour commencer.'); return; }

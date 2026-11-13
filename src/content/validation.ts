@@ -213,6 +213,7 @@ export function validateProgram(program: LearningProgram): ContentIssue[] {
   }
   issues.push(...parentReadingCatalog(program, Math.max(0, ...program.weeks.map(week => week.number))).issues);
   // Une même observation peut provenir de plusieurs validations ; ne la publier qu'une fois.
-  return issues.filter((value, index, all) => all.findIndex((other) =>
+  // Désactivation = filtre attendu, mais conserver les autres erreurs de ces exercices.
+  return issues.filter((value, index, all) => value.code !== 'disabled-exercise' && all.findIndex((other) =>
     other.code === value.code && other.path === value.path && other.message === value.message) === index);
 }

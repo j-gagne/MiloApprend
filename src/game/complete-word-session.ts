@@ -3,6 +3,7 @@ import type { ContentService } from '../content/service.ts';
 import { contentService } from '../content/service.ts';
 import { getCompleteWordChallenges } from './complete-word-content.ts';
 import type { ContentChallenge } from './complete-word-content.ts';
+import { reportContentDiagnostic } from '../services/content-diagnostics.ts';
 
 export type RandomSource = () => number; // Valeur comprise dans [0, 1).
 export interface SessionStrategy { readonly size: number; readonly recentCount: number }
@@ -72,7 +73,7 @@ export function createCompleteWordSession(service: ContentService = contentServi
   for (const issue of result.issues) {
     // Les avertissements de segmentation sont déjà rapportés par le service de contenu.
     if (issue.path === 'complete-word.session' || issue.severity === 'error') {
-      console.warn(`[session:${issue.code}] ${issue.message}`);
+      reportContentDiagnostic('session', issue);
     }
   }
   return result.challenges;

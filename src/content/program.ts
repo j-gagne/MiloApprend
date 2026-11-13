@@ -2836,7 +2836,7 @@ export const seedBank: readonly SeedWeek[] = [
 
             distractorUnitIds: [ 'grapheme-ou' ],
 
-            answerPosition: 2,
+            answerPosition: 1,
 
             order: 39
 

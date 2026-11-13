@@ -9,6 +9,7 @@ import './styles.css';
 import { loadBaseProgram } from './content/remote-program';
 import { createContentService } from './content/service';
 import { createContentRepository } from './content/repository';
+import { reportContentDiagnostic } from './services/content-diagnostics';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 const hatchingPreview = new URLSearchParams(window.location.search).get('preview') === 'hatching';
@@ -22,7 +23,7 @@ else {
   root.render(<main className="home-screen"><p role="status">Un petit instant…</p></main>);
   void loadBaseProgram().then(baseProgram => {
     for (const issue of createContentService(createContentRepository(baseProgram)).validate()) {
-      console.warn(`[contenu:${issue.severity}:${issue.code}] ${issue.path} : ${issue.message}`);
+      reportContentDiagnostic('contenu', issue);
     }
     root.render(<React.StrictMode><App baseProgram={baseProgram} readingPreview={new URLSearchParams(window.location.search).get('preview') === 'reading'} /></React.StrictMode>);
   });
