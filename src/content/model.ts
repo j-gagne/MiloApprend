@@ -110,11 +110,13 @@ export type LearningUnit = Letter | Grapheme | Sound | Syllable | Word | ToolWor
 export type CompletionTarget = Word | Sentence | Syllable;
 export interface ExerciseScope { readonly mode: 'all' | 'selected-weeks'; readonly selectedWeeks: readonly number[] }
 export interface SchoolWeek {
+  readonly mathematics?: WeeklyMathematics;
   readonly number: number;
   readonly label: string;
   // Observations répétées, sans recopier les unités déjà introduites.
   readonly reviewedUnitIds?: readonly string[];
 }
+export interface WeeklyMathematics { readonly numbers: readonly number[] }
 export interface LearningProgram {
   readonly defaults?: { readonly activeWeek: number; readonly exerciseScope: ExerciseScope };
   readonly readingExercises?: readonly import('./reading-model.ts').ReadingExerciseDefinition[];

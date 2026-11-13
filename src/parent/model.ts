@@ -1,5 +1,7 @@
 import type { Activity, LearningProgram, LearningUnit, SchoolWeek, Segmentation, Word } from '../content/model.ts';
 import { missingIndexes } from '../content/model.ts';
+import type { WeeklyMathematics } from '../content/model.ts';
+import { validateMathematics } from '../content/mathematics.ts';
 import { parentActivities } from './activities.ts';
 import type { ExerciseScope } from '../content/model.ts';
 import type { ReadingSpeed } from '../services/audio-settings.ts';
@@ -14,6 +16,7 @@ export interface AudioOverride {
 }
 
 export interface ParentData extends PlaySettings {
+  readonly mathematicsOverrides?: Readonly<Record<number, WeeklyMathematics>>;
   readonly version: 2;
   readonly activeWeek?: number;
   readonly exerciseScope?: ExerciseScope;
@@ -51,7 +54,9 @@ export function effectiveProgram(seed: LearningProgram, parent: ParentData): Lea
   const activities = new Map((seed.activities ?? []).map((activity) => [activity.id, activity]));
   for (const activity of parent.activities) activities.set(activity.id, activity);
   const weeks = [...seed.weeks, ...parent.customWeeks.filter((week) => !seed.weeks.some((item) => item.number === week.number))]
-    .sort((a, b) => a.number - b.number);
+    .sort((a, b) => a.number - b.number)
+    .map(week => parent.mathematicsOverrides?.[week.number] === undefined ? week
+      : { ...week, mathematics: parent.mathematicsOverrides[week.number] });
   return { ...seed, weeks, units,
     ...(parent.readingExercises === undefined ? {} : { readingExercises: [
       ...(seed.readingExercises ?? []).filter(exercise => !parent.readingExercises?.some(item => item.id === exercise.id)),
@@ -94,12 +99,21 @@ export function weekError(program: LearningProgram, week: ParentWeek): string | 
 
 export function removeCustomWeek(data: ParentData, program: LearningProgram, id: string): ParentData {
   const week = data.customWeeks.find((item) => item.id === id);
+  if (week && program.weeks.find(item => item.number === week.number)?.mathematics?.numbers.length) return data;
   if (!week || program.units.some((unit) => unit.introducedInWeek === week.number
     || ((unit.type === 'word' || unit.type === 'sentence') && unit.segmentations?.some((item) => item.availableFromWeek === week.number)))
     || parentActivities(program).some((activity) => activity.availableFromWeek === week.number
       || (activity.type === 'complete-segments' && activity.segmentation?.availableFromWeek === week.number))) return data;
   return { ...data, customWeeks: data.customWeeks.filter((item) => item.id !== id),
+    mathematicsOverrides: Object.fromEntries(Object.entries(data.mathematicsOverrides ?? {}).filter(([key]) => Number(key) !== week.number)),
     activeWeek: data.activeWeek === week.number ? undefined : data.activeWeek };
+}
+
+export function saveWeekMathematics(data: ParentData, program: LearningProgram, week: number, mathematics: WeeklyMathematics): ParentData {
+  if (!program.weeks.some(item => item.number === week)) throw new Error('Semaine inconnue.');
+  const issues = validateMathematics(program.weeks.map(item => item.number === week ? { ...item, mathematics } : item));
+  if (issues.length) throw new Error(issues.map(issue => issue.message).join(' '));
+  return { ...data, mathematicsOverrides: { ...data.mathematicsOverrides, [week]: { numbers: [...mathematics.numbers] } } };
 }
 
 export function saveParentUnit(data: ParentData, program: LearningProgram, unit: LearningUnit): ParentData {

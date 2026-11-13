@@ -2,6 +2,8 @@ import type { Activity, LearningUnit, PedagogicalSegment, Segmentation, Word } f
 import type { AudioOverride, ParentData, ParentWeek } from '../parent/model.ts';
 import { isReadingSequence } from '../content/reading-sequence.ts';
 import { emptyParentData } from '../parent/model.ts';
+import { isWeeklyMathematics, validateMathematics } from '../content/mathematics.ts';
+import type { WeeklyMathematics } from '../content/model.ts';
 import { isReadingExerciseDefinition } from '../content/reading-catalog.ts';
 import type { ExerciseScope } from '../content/model.ts';
 import { READING_SPEEDS, type ReadingSpeed } from './audio-settings.ts';
@@ -77,6 +79,7 @@ function unit(value: unknown): value is LearningUnit {
 }
 function week(value: unknown): value is ParentWeek {
   return record(value) && typeof value.id === 'string' && value.id.startsWith('parent-week-')
+    && (value.mathematics === undefined || isWeeklyMathematics(value.mathematics))
     && typeof value.number === 'number' && Number.isSafeInteger(value.number) && value.number > 0
     && typeof value.label === 'string' && !!value.label.trim();
 }
@@ -100,7 +103,16 @@ export function parseParentData(raw: string): ParentData | undefined {
     || !Array.isArray(value.exerciseScope.selectedWeeks)
     || !value.exerciseScope.selectedWeeks.every((week) => typeof week === 'number' && Number.isSafeInteger(week) && week > 0))) return undefined;
   const weeks = value.version === 1 ? [] : value.customWeeks;
+  if (value.mathematicsOverrides !== undefined && (!record(value.mathematicsOverrides)
+    || !Object.entries(value.mathematicsOverrides).every(([key, math]) => /^[1-9]\d*$/.test(key)
+      && Number.isSafeInteger(Number(key)) && isWeeklyMathematics(math)))) return undefined;
   if (!Array.isArray(units) || !units.every(unit) || !Array.isArray(weeks) || !weeks.every(week)) return undefined;
+  const mathematicsOverrides = value.mathematicsOverrides as Record<number, WeeklyMathematics> | undefined;
+  const mathWeeks = new Map(weeks.map(item => [item.number, item]));
+  for (const [key, mathematics] of Object.entries(mathematicsOverrides ?? {})) {
+    mathWeeks.set(Number(key), { id: `parent-week-${key}`, number: Number(key), label: key, mathematics });
+  }
+  if (validateMathematics([...mathWeeks.values()]).length) return undefined;
   if (new Set(units.map((item) => item.id)).size !== units.length
     || new Set(weeks.map((item) => item.id)).size !== weeks.length
     || new Set(weeks.map((item) => item.number)).size !== weeks.length
@@ -112,6 +124,7 @@ export function parseParentData(raw: string): ParentData | undefined {
     && (audio.readingMode === undefined || audio.readingMode === 'whole' || audio.readingMode === 'segmented')
     && (audio.readingSequence == null || isReadingSequence(audio.readingSequence))))) return undefined;
   return { version: 2, activeWeek: value.activeWeek as number | undefined, unitEnabled: value.unitEnabled,
+    ...(mathematicsOverrides === undefined ? {} : { mathematicsOverrides }),
     ...(value.gameMode === undefined ? {} : { gameMode: value.gameMode as GameMode }),
     ...(value.chainLength === undefined ? {} : { chainLength: value.chainLength as ChainLength }),
     ...(value.questionCount === undefined ? {} : { questionCount: value.questionCount as number }),

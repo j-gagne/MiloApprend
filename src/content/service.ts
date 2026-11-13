@@ -5,6 +5,7 @@ import * as selectors from './selectors.ts';
 import { validateProgram } from './validation.ts';
 import type { ExerciseScope } from './model.ts';
 import { readingCatalog } from './reading-catalog.ts';
+import { getEligibleMathNumbers } from './mathematics.ts';
 
 export function createContentService(repository: ContentRepository,
   week = repository.getProgram().defaults?.activeWeek ?? activeWeek,
@@ -13,6 +14,7 @@ export function createContentService(repository: ContentRepository,
     exerciseScope,
     activeWeek: week,
     getProgram: () => repository.getProgram(),
+    getEligibleMathNumbers: () => getEligibleMathNumbers(repository.getProgram(), week, exerciseScope),
     getReadingExercises: () => readingCatalog(repository.getProgram(), week, exerciseScope),
     getAvailableLetters: (at = week) => selectors.getAvailableLetters(repository.getProgram(), at),
     getAvailableGraphemes: (at = week) => selectors.getAvailableGraphemes(repository.getProgram(), at),

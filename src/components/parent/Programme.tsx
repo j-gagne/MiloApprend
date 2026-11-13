@@ -5,6 +5,7 @@ import type { ParentData } from '../../parent/model';
 import { newParentId, removeCustomWeek, removeCustomWord } from '../../parent/model';
 import { ParentDraft } from './ParentDraft';
 import { WeekDraftForm } from './WeekDraftForm';
+import { MathematicsEditor } from './MathematicsEditor';
 import { parentDrafts } from '../../services/parent-drafts';
 const weekDraftKey = 'programme:week:new';
 
@@ -36,6 +37,7 @@ export function Programme({ program, data, onChange, onEdit, onDirtyChange }: Pr
           <h3>Semaine {week.number} — {week.label}</h3><p>{custom ? 'Parent / personnalisé' : 'Programme initial'}</p>
           <p>{types.map(([type, title]) => `${program.units.filter((unit) => unit.introducedInWeek === week.number && unit.type === type).length} ${title.toLocaleLowerCase('fr')}`).join(' · ')}</p>
           <button onClick={() => { setOpened(week.number); onDirtyChange(false); setMessage(''); }}>Ouvrir la semaine {week.number}</button>
+          <p>Mathématiques : {week.mathematics?.numbers.join(', ') || 'Aucun nombre'}</p>
           {custom && <button onClick={() => {
             const next = removeCustomWeek(data, program, custom.id);
             if (next === data) { setMessage('Cette semaine contient du contenu ou des exercices. Déplacez ou supprimez ces éléments avant de supprimer la semaine.'); return; }
@@ -47,6 +49,13 @@ export function Programme({ program, data, onChange, onEdit, onDirtyChange }: Pr
       <button onClick={() => { setOpened(undefined); setMessage(''); }}>Toutes les semaines</button>
       <h3>Semaine {opened} — {program.weeks.find((week) => week.number === opened)?.label}</h3>
       <p>Uniquement les nouveautés introduites cette semaine.</p>
+      <ParentDraft key={opened} id={`programme:mathematics:${opened}`} onDirty={() => onDirtyChange(true)}>
+        <MathematicsEditor program={program} data={data} week={opened} onSave={next => {
+          if (!onChange(next)) return false;
+          parentDrafts.remove(`programme:mathematics:${opened}`); onDirtyChange(false); return true;
+        }} />
+      </ParentDraft>
+      <h3>Lecture</h3>
       {types.map(([type, title, singular]) => <section className="parent-group" key={type}><h3>{title}</h3>
         <button onClick={() => create(type)}>+ Ajouter {singular}</button>
         {units.filter((unit) => unit.type === type).map((unit) => <article className="parent-row" key={unit.id} aria-label={`Contenu ${unit.display}`}>

@@ -57,6 +57,7 @@ export function buildSeedProgram(id: string, bank: readonly SeedWeek[]): Learnin
   ordered.sort((a, b) => a.order - b.order);
   return { id, ...(bank.some(week => week.readingExercises !== undefined)
     ? { readingExercises: bank.flatMap(week => week.readingExercises ?? []) } : {}),
-    weeks: bank.map(({ number, label, reviewedUnitIds }) => ({ number, label,
+    weeks: bank.map(({ number, label, reviewedUnitIds, mathematics }) => ({ number, label,
+    ...(mathematics === undefined ? {} : { mathematics }),
     ...(reviewedUnitIds === undefined ? {} : { reviewedUnitIds }) })), units: ordered.map(({ unit }) => unit) };
 }

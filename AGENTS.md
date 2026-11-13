@@ -34,6 +34,15 @@
 - Le bloc optionnel `defaults` du programme de base fournit `activeWeek` et `exerciseScope`, sous les choix Parent explicites et sans les enregistrer au démarrage. Sans ce bloc, conserver les défauts historiques (`settings.ts`, révision complète). Le repli local définit semaine active 6 et semaines pratiquées [6] ; jeux et Je lis utilisent les mêmes valeurs effectives, affichées par les contrôles Parent.
 - Les suppressions personnalisées et resets demandent confirmation. Le contenu de base peut être désactivé, pas supprimé par le Parent.
 
+## Mathématiques — phase 1
+
+- `SchoolWeek.mathematics` et `SeedWeek.mathematics` sont optionnels : `{ numbers: readonly number[] }`. JSON schemaVersion 1 inchangé ; les tableaux de lecture existants restent requis (vides permis). Aucune semaine n'est peuplée automatiquement.
+- Un nombre est un entier sûr non négatif, introduit dans une seule semaine du programme. Doublons internes, définitions malformées et conflits entre semaines sont rejetés ; `validateMathematics()` fournit les diagnostics structurés. Le chargeur distant se replie si les mathématiques sont invalides, sans changer la validation Lecture.
+- Parent → Programme sépare Lecture et Mathématiques. `ParentData.mathematicsOverrides`, indexé par numéro de semaine, remplace la liste entière, y compris par `[]`. Stockage Parent v2 et brouillons existants ; pas de source indépendante, de migration ou de modification de la base.
+- Parcours : base distante/repli → `effectiveProgram()` → repository → `service.getEligibleMathNumbers()`. Les nombres portent `value` et `introducedInWeek`. En cas de conflit après mise à jour de la base, le service ne retourne aucun nombre et la validation expose le conflit ; aucune propriété implicite.
+- Même `activeWeek` et `exerciseScope` que Lecture : semaines connues ≤ semaine active, intersectées avec `selectedWeeks` en mode sélectionné. Toutes ces semaines sont admissibles en mode `all`. Jamais de nombres intermédiaires inférés ni de nombres issus d'une semaine exclue, pour les futures cibles, distracteurs, séquences, réponses manquantes ou questions orales.
+- Préférence future de tirage : 70 % semaine courante, 30 % révision admissible, sans obligation ni élargissement du périmètre. Aucun tirage, jeu, audio ou changement de Home dans cette phase.
+
 ## Construction, lecture et Découpe
 
 - **Construction d’exercice et séquence de lecture sont indépendantes.** `segmentations` décrit les blocs du plateau ; `readingSequence` décrit les morceaux audio. Ne pas convertir l’une en l’autre ni réécrire l’orthographe affichée.

@@ -1,5 +1,6 @@
 ﻿import type { CompletionParameters, CompleteWordVariant, ContentIssue, LearningProgram, LearningUnit, Segmentation, Word } from './model.ts';
 import { missingIndexes } from './model.ts';
+import { validateMathematics } from './mathematics.ts';
 import { isValidWeek } from './selectors.ts';
 import { comparableText } from './text.ts';
 import { activitySegmentation } from './activity-segmentation.ts';
@@ -154,7 +155,7 @@ export function validateCompletionActivity(program: LearningProgram, activity: A
 }
 
 export function validateProgram(program: LearningProgram): ContentIssue[] {
-  const issues: ContentIssue[] = [];
+  const issues: ContentIssue[] = validateMathematics(program.weeks);
   const ids = new Set<string>();
   const weeks = new Set<number>();
   for (const week of program.weeks) {
