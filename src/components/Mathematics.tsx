@@ -60,7 +60,7 @@ export function Mathematics({ exercises, characterId, onComplete }: {
   function slot(position: number) {
     return <div key={`slot-${position}`} className={`math-slot${hover === position ? ' math-hover' : ''}`}
       ref={element => { if (element) targets.current.set(position, element); else targets.current.delete(position); }}>
-      {board[position] === null ? <button disabled={solved} aria-label={`Case ${position + 1}`} onClick={() => { if (selected !== undefined) place(selected, position); }}>?</button> : tile(board[position]!, position)}
+      {board[position] === null ? <button className="word-slot" disabled={solved} aria-label={`Case ${position + 1}`} onClick={() => { if (selected !== undefined) place(selected, position); }}>?</button> : tile(board[position]!, position)}
     </div>;
   }
   return <main className="game-screen math-screen" aria-label="Mathématiques" onContextMenu={event => event.preventDefault()}
@@ -68,8 +68,10 @@ export function Mathematics({ exercises, characterId, onComplete }: {
     <SessionProgress progress={progress} characterId={characterId} />
     <h1 ref={heading} tabIndex={-1}>{exercise.type === 'ORDER_NUMBERS' ? 'Je range' : exercise.type === 'MISSING_NUMBER' ? 'Nombre manquant' : "J’écoute"}</h1>
     <p className="instruction">{exercise.type === 'ORDER_NUMBERS' ? 'Du plus petit au plus grand.' : 'Trouve le bon nombre.'}</p>
-    {exercise.type === 'HEAR_NUMBER' && <button className="primary-button" onClick={() => { gameAudio.unlock(); void gameAudio.playWord(exercise.prompt.text); }}>🔊 ÉCOUTER ENCORE</button>}
-    <section className="challenge-card math-card" aria-label={`Exercice ${index + 1}`}>
+    <section className={`challenge-card math-card${exercise.type === 'HEAR_NUMBER' ? ' math-card-audio' : ''}`} aria-label={`Exercice ${index + 1}`}>
+      {exercise.type === 'HEAR_NUMBER' && <button className="listen-button" aria-label="ÉCOUTER ENCORE" onClick={() => { gameAudio.unlock(); void gameAudio.playWord(exercise.prompt.text); }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5ZM15 8q4 4 0 8M18 5q7 7 0 14" /></svg>
+      </button>}
       <div className="math-row">{exercise.type === 'MISSING_NUMBER'
         ? exercise.sequence.map((value, i) => value === null ? slot(0) : <span className="math-fixed" key={i}>{value}</span>)
         : board.map((_, i) => slot(i))}</div>
@@ -77,7 +79,7 @@ export function Mathematics({ exercises, characterId, onComplete }: {
     </section>
     <p className="math-message" role="status">{message || 'Glisse un nombre, ou touche un nombre puis sa case.'}</p>
     {exercise.type === 'HEAR_NUMBER' && !solved && <small>Pas de son ? Touche 🔊 ou active le son en haut.</small>}
-    {solved && <button className="primary-button" disabled={!canContinue} onClick={() => {
+    {solved && <button className="primary-button continue-button" disabled={!canContinue} onClick={() => {
       gameAudio.stop();
       if (index === exercises.length - 1) { onComplete(performance.current); return; }
       const next = exercises[index + 1];

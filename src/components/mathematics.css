@@ -5,10 +5,14 @@
 .math-bank { margin-top: 24px; }
 .math-tile, .math-slot, .math-fixed { min-width: 54px; min-height: 60px; width: auto; font-size: 28px; flex: 0 0 auto; }
 .math-tile { touch-action: none; padding: 8px 12px; max-width: 100%; overflow-wrap: anywhere; }
-.math-slot { border: 2px dashed var(--theme-primary); border-radius: 14px; max-width: 100%; }
-.math-slot > button { min-height: 60px; min-width: 54px; margin: 0; font-size: 28px; }
+.math-slot { max-width: 100%; }
+.math-slot > button { margin: 0; }
+.math-slot > .math-tile { min-width: 94px; height: 87px; border-radius: 19px; }
+.math-card-audio { padding-top: 80px; }
 .math-fixed { display: grid; place-items: center; overflow-wrap: anywhere; max-width: 100%; }
 .math-selected, .math-hover { outline: 4px solid var(--theme-primary); outline-offset: 2px; }
-.math-message { min-height: 48px; margin: 0; text-align: center; }
+.math-message { min-height: 48px; margin: 16px 0 0; text-align: center; }
+.math-message + small { display: block; margin-top: 8px; }
 .math-screen button:focus-visible { outline: 4px solid var(--theme-primary); outline-offset: 3px; }
 @media (max-width: 420px) { .math-screen { padding: 12px; } .math-row { gap: 8px; } }
+@media (max-width: 420px) { .math-slot > .math-tile { min-width: 86px; height: 76px; } }

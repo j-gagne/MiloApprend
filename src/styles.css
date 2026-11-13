@@ -60,3 +60,4 @@ html,body{overscroll-behavior-y:none}
 @media(min-width:1000px){.collection-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .game-screen .active-reading-segment{border:5px solid var(--theme-primary)}
 .game-screen .silent-segment{color:#C44B45}
+.continue-button{margin-inline:auto}

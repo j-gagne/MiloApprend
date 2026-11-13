@@ -33,7 +33,7 @@ export function CharacterRewardScreen({ animalId, variantId, stage, progress = s
       <h1 aria-live="polite">{titles[stage - 1]}</h1>
       <CharacterRewardReveal characterId={animalId} variantId={variantId} stage={stage} />
       <p className="lion-reveal-count" aria-label={`Découverte : ${progress} sur ${total}`}>{progress}<span> / {total}</span></p>
-      <button className="primary-button" onClick={onContinue}>CONTINUER <span aria-hidden="true">→</span></button>
+      <button className="primary-button continue-button" onClick={onContinue}>CONTINUER <span aria-hidden="true">→</span></button>
       {notice}
     </main>
   </div>;

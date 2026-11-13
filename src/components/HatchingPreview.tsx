@@ -73,7 +73,7 @@ export function HatchingScreen({ stage, progress = stage, total = 5, onContinue,
       <h1 aria-live="polite">{titles[stage - 1]}</h1>
       <HatchingEgg stage={stage} animalId={animalId} variantId={variantId} />
       <div className="hatch-progress" aria-label={`Éclosion : ${progress} sur ${total}`}>{[1, 2, 3, 4, 5].map(n => <span key={n} className={n <= stage ? 'reached' : ''} aria-hidden="true">{n === 5 && stage === 5 ? '★' : ''}</span>)}<strong>{progress}/{total}</strong></div>
-      <button className="primary-button" type="button" onClick={onContinue} aria-disabled={!onContinue || undefined} aria-describedby={!onContinue ? 'hatch-note' : undefined}>CONTINUER <span aria-hidden="true">→</span></button>
+      <button className="primary-button continue-button" type="button" onClick={onContinue} aria-disabled={!onContinue || undefined} aria-describedby={!onContinue ? 'hatch-note' : undefined}>CONTINUER <span aria-hidden="true">→</span></button>
       {!onContinue && <p id="hatch-note" className="hatch-note">Bouton de démonstration, sans action.</p>}
       {notice}
       {children}
