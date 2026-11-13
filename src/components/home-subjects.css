@@ -5,8 +5,8 @@
 .home-subjects .subject-emoji-right { right:4px; }
 .home-subjects button[aria-pressed=true] { background:var(--theme-primary); color:white; }
 .home-subjects button:focus-visible { outline:3px solid var(--theme-primary); outline-offset:3px; }
-.home-math-actions { display:flex; flex-direction:column; gap:12px; width:min(100%,360px); margin-bottom:18px; }
-.home-math-actions .primary-button { min-width:0; width:100%; min-height:56px; padding:12px 16px; font-size:18px; gap:10px; }
+.home-activity-actions { display:flex; flex-direction:column; gap:16px; width:min(100%,360px); margin-bottom:20px; }
+.home-activity-actions .primary-button { min-width:0; width:100%; min-height:70px; padding-inline:12px; font-size:clamp(18px,5.9vw,23px); gap:10px; white-space:nowrap; }
 @media(max-width:600px) {
  .home-screen { padding-top:8px; padding-bottom:12px; }
  .home-screen h1 { margin:8px 0; }
@@ -15,5 +15,4 @@
  .home-screen .home-subtitle { margin:4px 0; }
  .home-screen .collection-button { margin-bottom:8px; }
  .home-screen .progress-pill { padding:6px 12px; }
- .home-screen .adventure-note { margin:10px 0; }
 }

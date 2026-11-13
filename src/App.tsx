@@ -237,16 +237,17 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
       {canChooseCharacter && <button ref={characterButton} className="character-picker-button" onClick={() => { gameAudio.stop(); setPreviewCharacter(character.id); setScreen('characters'); }}>CHOISIR MON PERSONNAGE</button>}
       {!characterSaved && <p className="save-note" role="status">Ton prénom et ton personnage restent choisis ici. La sauvegarde est indisponible.</p>}
       <nav className="home-subjects" aria-label="Matières"><button aria-pressed={subject === 'reading'} onClick={() => chooseSubject('reading')}><span className="subject-emoji subject-emoji-left" aria-hidden="true">📖</span>LECTURE</button><button aria-pressed={subject === 'math'} onClick={() => chooseSubject('math')}>MATHS<span className="subject-emoji subject-emoji-right" aria-hidden="true">🧮</span></button></nav>
+      <div className="home-activity-actions">
       {subject === 'reading' ? <>
       <button className="primary-button play-button" onClick={start} disabled={!availableCount}><span aria-hidden="true">▶</span> COMPLÈTE</button>
       {startFailed && <p className="save-note" role="status">La sauvegarde est indisponible. La partie n’a pas commencé. Réessaie JOUER.</p>}
       {!availableCount && <p role="status">Aucun défi disponible pour le contenu autorisé.</p>}
-      <p className="adventure-note">{availableCount} petits défis avec ton ami</p>
       <button className="primary-button" onClick={startReading}><span aria-hidden="true">▶</span> JE LIS</button>
-      </> : <div className="home-math-actions">
+      </> : <>
         {([['ORDER_NUMBERS', 'JE RANGE'], ['MISSING_NUMBER', 'NOMBRE MANQUANT'], ['HEAR_NUMBER', "J'ÉCOUTE"]] as const).map(([type, label]) => <button key={type} className="primary-button" onClick={() => startMath(type)}><span aria-hidden="true">▶</span>{label}</button>)}
         {mathNotice && <p role="status">{mathNotice}</p>}
-      </div>}
+      </>}
+      </div>
       <button className="collection-button" onClick={() => { gameAudio.stop(); setScreen('collection'); }}>MA COLLECTION</button>
       <div className="progress-pill"><span aria-hidden="true">●</span> {progress.completedSessions === 0 ? 'Ta première aventure t’attend !' : `${progress.completedSessions} aventure${progress.completedSessions > 1 ? 's' : ''} terminée${progress.completedSessions > 1 ? 's' : ''}`}</div>
       <button className="text-button parents-link" onClick={() => { gameAudio.stop(); setScreen('gate'); }}>Parents</button>
