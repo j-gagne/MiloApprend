@@ -54,6 +54,19 @@
 - Sortie générée : tri (`tiles`, `answer`), manquant (`sequence` avec un `null`, `missingIndex`, `answer`, `choices`), écoute (`answer`, `choices`, `prompt: { text: String(answer) }`). Le futur écran utilisera `gameAudio.playWord(prompt.text)` : la voix française existante prononce le texte numérique, sans convertisseur lexical ni moteur audio parallèle.
 - Phase 2 ne crée ni écran enfant, ni session persistée, ni ID de récompense, ni éditeur Parent d'exercices mathématiques. La phase 3 devra réutiliser l'identité de session, la progression et les récompenses existantes ; le générateur reste pur et sans stockage.
 
+### Mathématiques — jeu (phase 3)
+
+- Entrée provisoire de production `?activity=math`, sans changement de Home ou du Parent. Le bouton JOUER AUX NOMBRES génère depuis le service effectif et le nombre de questions Parent ; aucun contenu de démonstration. Un catalogue vide ne démarre ni partie ni cycle de récompense.
+- `Mathematics.tsx` partage le même écran pour Je range, Nombre manquant et J’écoute. `math-board.ts` gère les placements, échanges et validation complète ; une erreur reste corrigeable. `AnswerTile` assure Pointer Events, capture, annulation, appui et clavier. Les cases acceptent un nombre sélectionné ; les tuiles placées restent déplaçables. Les longues séquences passent sur plusieurs lignes sans réduire les cibles tactiles.
+- Écoute via `gameAudio.playWord()` uniquement, depuis le démarrage/CONTINUER ou le bouton de réécoute. Premier montage avant lecture via `flushSync` pour préserver le geste iOS et StrictMode ; arrêt à la sortie, respect du muet. Pas de prononciation d'une mauvaise réponse. Retour doux et délai après réussite.
+- Le cycle existant doit être sauvegardé par `ensureReward()` avant le jeu ; ID `math:` unique, `SessionProgress` partagé, puis `completeSession()` et écran de célébration/révélation existants. Les reprises d'enregistrement réutilisent le même ID ; aucune clé de progression, Collection ou récompense propre aux mathématiques.
+
+### Mathématiques — Parent Exercices (phase 4)
+
+- Exercices sépare LECTURE (COMPLÈTE, JE LIS) et MATHÉMATIQUES (JE RANGE, NOMBRE MANQUANT, J'ÉCOUTE) avec les onglets Parent existants. `MathExercises.tsx` distingue Programme, Automatique et Personnalisé ; les définitions explicites indisponibles restent visibles avec leurs diagnostics.
+- `parent/math-exercises.ts` valide chaque nombre contre le programme effectif, la semaine active et le périmètre effectif avant sauvegarde. IDs personnalisés `math:parent-activity-…`, édition conservant ID/activation ; suppression confirmée limitée aux personnalisations. Programme et Automatique sont uniquement activables/désactivables via `activityEnabled`.
+- Persistance existante `ParentData.mathExercises`, sans migration ni nouvelle clé locale ; les sessions déjà sélectionnées ne sont pas modifiées.
+
 ## Construction, lecture et Découpe
 
 - **Construction d’exercice et séquence de lecture sont indépendantes.** `segmentations` décrit les blocs du plateau ; `readingSequence` décrit les morceaux audio. Ne pas convertir l’une en l’autre ni réécrire l’orthographe affichée.
@@ -129,6 +142,8 @@
 - La récompense de `Je lis` exige tous les exercices terminés et réutilise le service de progression existant : cycle sauvegardé avant interaction, identité de session unique, idempotence et reprises de sauvegarde conservées. Aucun stockage distinct pour cette activité.
 
 ## Mobile et validation
+
+- Home propose LECTURE | MATHS sous le personnage, avec seulement les activités de la matière sélectionnée. `Progress.homeSubject` est une préférence optionnelle (`reading`/`math`) du stockage existant ; absence = Lecture. Les boutons Maths filtrent par type avant le tirage dans `generateMathExercises`, toujours via le service effectif et le même périmètre. Collection et récompenses restent communes.
 
 - Priorité iPhone/iPad portrait, grosses cibles, Pointer Events avec alternative par appui/clavier, focus accessible et aucune dépendance au survol. Respecter `prefers-reduced-motion` ; empêcher sélection/appui long sur le jeu sans empêcher l’édition normale dans Parent.
 - Tests ciblés du sous-système et régressions pertinentes : `node --experimental-strip-types --test tests/<fichier>.test.ts`. Playwright (`npm run test:e2e -- tests/browser/<fichier>.spec.ts`) pour interactions et cycles audio ; configuration Chrome à 390 × 844. Isoler le contenu distant dans les fixtures qui exigent le seed local.

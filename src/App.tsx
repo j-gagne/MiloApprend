@@ -2,6 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { flushSync } from 'react-dom';
 import { CompleteWord } from './components/CompleteWord';
 import { Reading } from './components/Reading';
+import { Mathematics } from './components/Mathematics';
+import { generateMathExercises } from './content/math-generation';
+import type { GeneratedMathExercise, MathExerciseType } from './content/math-model';
 import { readingPreviewExercises } from './content/reading-preview';
 import { createReadingSession } from './game/reading-program-session';
 import { Character } from './components/Character';
@@ -30,10 +33,17 @@ import { ParentGate } from './components/parent/ParentGate';
 import { ParentSpace } from './components/parent/ParentSpace';
 import { parentDrafts } from './services/parent-drafts';
 import './components/parent/parent.css';
+import './components/home-subjects.css';
 
 export function App({ baseProgram = initialProgram, readingPreview = false }: { baseProgram?: LearningProgram; readingPreview?: boolean }) {
   const [progress, setProgress] = useState(() => progressStore.load());
-  const [screen, setScreen] = useState<'home' | 'game' | 'reading' | 'celebration' | 'egg' | 'gate' | 'parent' | 'characters' | 'collection'>(() => progress.eggRewards?.pendingTransition ? 'egg' : readingPreview ? 'reading' : parentDrafts.navigation().active ? 'parent' : 'home');
+  const [subject, setSubject] = useState<'reading' | 'math'>(() => progress.homeSubject ?? 'reading');
+  function chooseSubject(value: 'reading' | 'math') {
+    setSubject(value); setMathNotice('');
+    const next = { ...progressStore.load(), homeSubject: value };
+    progressStore.save(next); setProgress(next);
+  }
+  const [screen, setScreen] = useState<'home' | 'game' | 'reading' | 'math-start' | 'math' | 'celebration' | 'egg' | 'gate' | 'parent' | 'characters' | 'collection'>(() => progress.eggRewards?.pendingTransition ? 'egg' : new URLSearchParams(window.location.search).get('activity') === 'math' ? 'math-start' : readingPreview ? 'reading' : parentDrafts.navigation().active ? 'parent' : 'home');
   useEffect(() => {
     parentDrafts.navigate({ ...parentDrafts.navigation(), active: screen === 'parent' });
   }, [screen]);
@@ -69,6 +79,8 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
   const parentDirty = useRef(false);
   const [readingExercises, setReadingExercises] = useState(() => readingPreview ? readingPreviewExercises(service, parent.data.questionCount ?? DEFAULT_QUESTION_COUNT) : []);
   const [readingReady, setReadingReady] = useState(false);
+  const [mathExercises, setMathExercises] = useState<readonly GeneratedMathExercise[]>([]);
+  const [mathNotice, setMathNotice] = useState('');
   const [readingSaveFailed, setReadingSaveFailed] = useState(false);
   const readingStarted = useRef(false);
   const prepareReading = useCallback(() => {
@@ -181,6 +193,22 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
       first.activityType !== 'spell' && first.targetType === 'word' && first.slots.length === 1 ? first.slots[0].segmentIndex : undefined);
   }
 
+  function startMath(type?: MathExerciseType) {
+    const stored = progressStore.load();
+    if (stored.eggRewards?.pendingTransition) { setProgress(stored); setScreen('egg'); return; }
+    const next = generateMathExercises(service, { count: parent.data.questionCount ?? DEFAULT_QUESTION_COUNT }, Math.random, type);
+    for (const issue of next.issues) console.warn(`[math:${issue.code}] ${issue.message}`);
+    if (!next.exercises.length) { setMathNotice('Pas de nombres disponibles pour ces semaines.'); return; }
+    const initialization = progressStore.ensureReward();
+    if (!initialization.saved) { setMathNotice('Sauvegarde indisponible. Réessaie pour commencer.'); return; }
+    setProgress(initialization.progress); completed.current = false;
+    sessionId.current = `math:${Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16).padStart(8, '0')).join('')}`;
+    gameAudio.stop(); gameAudio.unlock();
+    flushSync(() => { setMathExercises(next.exercises); setScreen('math'); });
+    const first = next.exercises[0];
+    if (first.type === 'HEAR_NUMBER') void gameAudio.playWord(first.prompt.text);
+  }
+
   const pending = progress.eggRewards?.pendingTransition;
   if (screen === 'egg' && pending) return <CharacterRewardScreen
     stage={eggVisualStage(pending.progress, pending.sessionsToHatch)} progress={pending.progress} total={pending.sessionsToHatch}
@@ -208,16 +236,28 @@ export function App({ baseProgram = initialProgram, readingPreview = false }: { 
       <div className="hero-scene"><span className="hello-bubble">Salut {playerName} ! <span aria-hidden="true">✦</span></span><Character id={character.id} /><span className="scene-stone stone-one" /><span className="scene-stone stone-two" /></div>
       {canChooseCharacter && <button ref={characterButton} className="character-picker-button" onClick={() => { gameAudio.stop(); setPreviewCharacter(character.id); setScreen('characters'); }}>CHOISIR MON PERSONNAGE</button>}
       {!characterSaved && <p className="save-note" role="status">Ton prénom et ton personnage restent choisis ici. La sauvegarde est indisponible.</p>}
+      <nav className="home-subjects" aria-label="Matières"><button aria-pressed={subject === 'reading'} onClick={() => chooseSubject('reading')}>LECTURE</button><button aria-pressed={subject === 'math'} onClick={() => chooseSubject('math')}>MATHS</button></nav>
+      {subject === 'reading' ? <>
       <button className="primary-button play-button" onClick={start} disabled={!availableCount}><span aria-hidden="true">▶</span> COMPLÈTE</button>
       {startFailed && <p className="save-note" role="status">La sauvegarde est indisponible. La partie n’a pas commencé. Réessaie JOUER.</p>}
       {!availableCount && <p role="status">Aucun défi disponible pour le contenu autorisé.</p>}
       <p className="adventure-note">{availableCount} petits défis avec ton ami</p>
       <button className="primary-button" onClick={startReading}><span aria-hidden="true">▶</span> JE LIS</button>
+      </> : <div className="home-math-actions">
+        {([['ORDER_NUMBERS', 'JE RANGE'], ['MISSING_NUMBER', 'NOMBRE MANQUANT'], ['HEAR_NUMBER', "J'ÉCOUTE"]] as const).map(([type, label]) => <button key={type} className="primary-button" onClick={() => startMath(type)}><span aria-hidden="true">▶</span>{label}</button>)}
+        {mathNotice && <p role="status">{mathNotice}</p>}
+      </div>}
       <button className="collection-button" onClick={() => { gameAudio.stop(); setScreen('collection'); }}>MA COLLECTION</button>
       <div className="progress-pill"><span aria-hidden="true">●</span> {progress.completedSessions === 0 ? 'Ta première aventure t’attend !' : `${progress.completedSessions} aventure${progress.completedSessions > 1 ? 's' : ''} terminée${progress.completedSessions > 1 ? 's' : ''}`}</div>
       <button className="text-button parents-link" onClick={() => { gameAudio.stop(); setScreen('gate'); }}>Parents</button>
     </main>}
 
+    {screen === 'math-start' && <main className="home-screen"><h1>Mathématiques</h1>
+      <p>Je range · Nombre manquant · J’écoute</p>
+      <button className="primary-button" onClick={() => startMath()}>JOUER AUX NOMBRES</button>
+      {mathNotice && <p role="status">{mathNotice}</p>}
+    </main>}
+    {screen === 'math' && <Mathematics exercises={mathExercises} characterId={character.id} onComplete={finish} />}
     {screen === 'collection' && <Collection hatches={progress.eggRewards?.hatches ?? []} onHome={() => setScreen('home')} />}
     {screen === 'characters' && canChooseCharacter && <CharacterPicker playerName={playerName} selected={character.id} onPreview={setPreviewCharacter} onSelect={selectCharacter} onClose={closeCharacters} />}
     {screen === 'game' && <CompleteWord audioSessionId={sessionId.current} playerName={playerName} onComplete={finish} sound={sound} challenges={session.challenges} chains={session.chains} characterId={character.id} />}

@@ -11,12 +11,14 @@ import { activityCatalog, isAutomatic, isCompletionTarget } from '../../content/
 import type { CompletionTarget } from '../../content/model';
 import { letterPositions, newSpellActivity } from '../../content/spelling';
 import { ReadingExercises } from './ReadingExercises';
+import { MathExercises } from './MathExercises';
 
 interface Props { baseProgram: LearningProgram; program: LearningProgram; data: ParentData; activeWeek: number; onChange: (data: ParentData) => boolean;
   onConstruct: (target: Word | Sentence) => void;
   onEdit: (activity: Activity, target: CompletionTarget) => void }
 export function Exercises({ baseProgram, program, data, activeWeek, onChange, onEdit, onConstruct }: Props) {
   const [tab, setTab] = useState<'complete' | 'reading'>('complete');
+  const [subject, setSubject] = useState<'reading' | 'math'>('reading');
   const [adding, setAdding] = useState(false);
   const [kind, setKind] = useState<'complete-segments' | 'spell'>('complete-segments');
   const [targetId, setTargetId] = useState('');
@@ -25,6 +27,8 @@ export function Exercises({ baseProgram, program, data, activeWeek, onChange, on
   const seedIds = new Set(parentActivities(baseProgram).map((item) => item.id));
   const target = program.units.find((unit) => unit.id === targetId);
   return <section aria-label="Exercices pédagogiques"><h2>Exercices</h2>
+    <nav className="parent-tabs" aria-label="Matières"><button aria-current={subject === 'reading' ? 'page' : undefined} onClick={() => setSubject('reading')}>LECTURE</button><button aria-current={subject === 'math' ? 'page' : undefined} onClick={() => setSubject('math')}>MATHÉMATIQUES</button></nav>
+    {subject === 'math' ? <MathExercises program={program} data={data} activeWeek={activeWeek} onChange={onChange} /> : <>
     <nav className="parent-tabs" aria-label="Types d’exercices">
       <button aria-current={tab === 'complete' ? 'page' : undefined} onClick={() => setTab('complete')}>COMPLÈTE</button>
       <button aria-current={tab === 'reading' ? 'page' : undefined} onClick={() => setTab('reading')}>JE LIS</button>
@@ -86,6 +90,7 @@ export function Exercises({ baseProgram, program, data, activeWeek, onChange, on
     </> : <>
       <label>Rechercher un exercice<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
       <ReadingExercises program={program} data={data} activeWeek={activeWeek} search={search} onChange={onChange} onCreated={() => setSearch('')} />
+    </>}
     </>}
   </section>;
 }

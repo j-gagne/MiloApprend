@@ -8,7 +8,8 @@ export function normalizePlayerName(value: unknown): string | undefined {
   const name = value.trim();
   return name && Array.from(name).length <= MAX_PLAYER_NAME_LENGTH ? name : undefined;
 }
-export interface Progress { completedSessions: number; selectedCharacterId?: CharacterId; playerName?: string; eggRewards?: EggRewards }
+export interface Progress {
+  readonly homeSubject?: 'reading' | 'math'; completedSessions: number; selectedCharacterId?: CharacterId; playerName?: string; eggRewards?: EggRewards }
 export interface ProgressStore {
   load(): Progress;
   save(progress: Progress): boolean;
@@ -28,6 +29,7 @@ export function createProgressStore(storage: () => KeyValueStorage, rng: () => n
       if (value && typeof value === 'object' && 'completedSessions' in value
         && typeof value.completedSessions === 'number' && Number.isSafeInteger(value.completedSessions)
         && value.completedSessions >= 0) return { completedSessions: value.completedSessions,
+          ...('homeSubject' in value && (value.homeSubject === 'reading' || value.homeSubject === 'math') ? { homeSubject: value.homeSubject } : {}),
           selectedCharacterId: getCharacter('selectedCharacterId' in value ? value.selectedCharacterId : undefined).id,
           ...('eggRewards' in value && isEggRewards(value.eggRewards) ? { eggRewards: value.eggRewards } : {}),
           ...('playerName' in value && normalizePlayerName(value.playerName) ? { playerName: normalizePlayerName(value.playerName) } : {}) };

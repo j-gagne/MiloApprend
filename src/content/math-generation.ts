@@ -1,12 +1,13 @@
 import type { ContentService } from './service.ts';
 import type { ContentIssue } from './model.ts';
-import type { GeneratedMathExercise, MathGenerationPolicy } from './math-model.ts';
+import type { GeneratedMathExercise, MathGenerationPolicy, MathExerciseType } from './math-model.ts';
 import { resolveMathPolicy } from './math-catalog.ts';
 
 /** Pure selection/materialization. No session identity, storage, audio playback or rewards. */
-export function generateMathExercises(service: ContentService, options: Partial<MathGenerationPolicy> = {}, random: () => number = Math.random) {
+export function generateMathExercises(service: ContentService, options: Partial<MathGenerationPolicy> = {}, random: () => number = Math.random, type?: MathExerciseType) {
   const policy = resolveMathPolicy(options);
-  const catalog = service.getMathExercises(policy);
+  const source = service.getMathExercises(policy);
+  const catalog = { ...source, exercises: source.exercises.filter(item => !type || item.definition.type === type) };
   const issues: ContentIssue[] = [...catalog.issues];
   const shuffle = <T>(items: readonly T[]): T[] => {
     const result = [...items];

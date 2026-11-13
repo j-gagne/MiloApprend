@@ -1,0 +1,25 @@
+import { test, expect } from '@playwright/test';
+test('math subjects, custom CRUD and persistence', async ({ page }) => {
+  await page.route('**/MiloApprend-Content/**', route => route.fulfill({ json: { schemaVersion: 1, programId: 'math', defaults: { activeWeek: 10, exerciseScope: { mode: 'all', selectedWeeks: [] } }, weeks: [{ number: 10, label: '10', letters: [], syllables: [], toolWords: [], words: [], sentences: [], mathematics: { numbers: [11,12,13,14,15] } }] } }));
+  await page.goto('/'); await page.getByRole('button', { name: 'Parents', exact: true }).click();
+  const names = ['un','deux','trois','quatre','cinq','six','sept','huit','neuf'];
+  for (const [i, name] of (await page.getByTestId('gate-prompt').innerText()).split(' — ').entries()) await page.getByLabel(`Chiffre ${i+1}`, { exact: true }).fill(String(names.indexOf(name)+1));
+  await page.getByRole('button', { name: 'Valider', exact: true }).click();
+  await page.getByRole('button', { name: 'Exercices', exact: true }).click();
+  await page.getByRole('button', { name: 'MATHÉMATIQUES', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'COMPLÈTE', exact: true })).toHaveCount(0);
+  await expect(page.getByText(/Automatique · Semaines/).first()).toBeVisible();
+  await page.getByRole('button', { name: '+ Ajouter un exercice mathématique' }).click();
+  await page.getByLabel('Séquence croissante').fill('11,12,13');
+  await page.getByRole('button', { name: 'Enregistrer l’exercice mathématique' }).click();
+  const custom = page.getByRole('article').filter({ hasText: 'Personnalisé' });
+  await custom.getByRole('checkbox').uncheck();
+  await custom.getByRole('button', { name: 'Modifier', exact: true }).click();
+  await page.getByLabel('Séquence croissante').fill('12,13,14');
+  await page.getByRole('button', { name: 'Enregistrer l’exercice mathématique' }).click();
+  await page.reload(); await page.getByRole('button', { name: 'MATHÉMATIQUES', exact: true }).click();
+  await expect(custom.getByRole('checkbox')).not.toBeChecked();
+  await expect(custom).toContainText('12, 13, 14');
+  page.once('dialog', dialog => dialog.accept()); await custom.getByRole('button', { name: 'Supprimer', exact: true }).click();
+  await expect(custom).toHaveCount(0);
+});

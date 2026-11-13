@@ -1,0 +1,20 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { saveMathExercise, removeMathExercise } from '../src/parent/math-exercises.ts';
+import { emptyParentData, effectiveProgram } from '../src/parent/model.ts';
+import { parseParentData } from '../src/services/parent-store.ts';
+import type { LearningProgram } from '../src/content/model.ts';
+const program: LearningProgram = { id: 'test', units: [], weeks: [{ number: 10, label: '10', mathematics: { numbers: [11,12,13] } }, { number: 11, label: '11' }] };
+test('custom math CRUD preserves ID and activation through persistence, rejects excluded weeks and base IDs', () => {
+  const exercise = { id: 'math:parent-activity-test', type: 'HEAR_NUMBER' as const, target: 11, distractors: [12,13] };
+  const scope = { mode: 'selected-weeks' as const, selectedWeeks: [10] };
+  let data = saveMathExercise(emptyParentData(), program, 11, scope, exercise);
+  data = { ...data, activityEnabled: { [exercise.id]: false } };
+  data = saveMathExercise(data, effectiveProgram(program, data), 11, scope, { ...exercise, target: 12, distractors: [11,13] });
+  const loaded = parseParentData(JSON.stringify(data))!;
+  assert.equal(loaded.mathExercises?.[0].id, exercise.id); assert.equal(loaded.activityEnabled[exercise.id], false);
+  assert.throws(() => saveMathExercise(data, program, 11, { ...scope, selectedWeeks: [11] }, exercise));
+  assert.throws(() => saveMathExercise(data, program, 11, scope, { ...exercise, id: 'math:base' }));
+  assert.equal(removeMathExercise(data, 'math:base'), data);
+  assert.deepEqual(removeMathExercise(data, exercise.id).mathExercises, []);
+});

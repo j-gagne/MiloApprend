@@ -1,0 +1,16 @@
+.home-subjects { display:flex; gap:4px; padding:4px; border-radius:18px; border:2px solid var(--theme-border); background:var(--theme-surface); margin:8px 0 16px; }
+.home-subjects button { min-height:44px; padding:8px 24px; border-radius:12px; background:transparent; font-weight:800; }
+.home-subjects button[aria-pressed=true] { background:var(--theme-primary); color:white; }
+.home-subjects button:focus-visible { outline:3px solid var(--theme-primary); outline-offset:3px; }
+.home-math-actions { display:flex; flex-direction:column; gap:12px; width:min(100%,360px); margin-bottom:18px; }
+.home-math-actions .primary-button { min-width:0; width:100%; min-height:56px; padding:12px 16px; font-size:18px; gap:10px; }
+@media(max-width:600px) {
+ .home-screen { padding-top:8px; padding-bottom:12px; }
+ .home-screen h1 { margin:8px 0; }
+ .home-screen .hero-scene { height:230px; margin:8px 0 0; }
+ .home-screen .character-picker-button { margin-bottom:4px; }
+ .home-screen .home-subtitle { margin:4px 0; }
+ .home-screen .collection-button { margin-bottom:8px; }
+ .home-screen .progress-pill { padding:6px 12px; }
+ .home-screen .adventure-note { margin:10px 0; }
+}
