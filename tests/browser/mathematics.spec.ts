@@ -26,7 +26,7 @@ async function setup(page: Page, empty = false, hearOnly = false) {
 }
 async function tap(page: Page, value: number, slot = 0) {
   await page.getByRole('button', { name: `Choisir ${value}`, exact: true }).click();
-  await page.locator('.math-slot button').nth(slot).click();
+  if (await page.getByRole('heading', { name: 'Je range', exact: true }).isVisible()) await page.locator('.math-slot button').nth(slot).click();
 }
 test('touch-sized math: drag, swap, retry, endpoints, audio and exactly one reward after reload', async ({ page }) => {
   await setup(page);

@@ -55,7 +55,10 @@ export function Mathematics({ exercises, characterId, onComplete }: {
       className={`answer-tile math-tile${selected === value ? ' math-selected' : ''}`}
       label={slot === undefined ? `Choisir ${value}` : `Case ${slot + 1}, ${value}`}
       findTarget={findTarget} onHover={setHover} onAnswer={(_, destination) => { if (destination !== undefined) place(value, destination); }}
-      onTap={() => { if (slot !== undefined && selected !== undefined) place(selected, slot); else setSelected(value); }} />;
+      onTap={() => {
+        if (slot === undefined && exercise.type !== 'ORDER_NUMBERS') { place(value, 0); return; }
+        if (slot !== undefined && selected !== undefined) place(selected, slot); else setSelected(value);
+      }} />;
   }
   function slot(position: number) {
     return <div key={`slot-${position}`} className={`math-slot${hover === position ? ' math-hover' : ''}`}
