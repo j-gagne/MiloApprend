@@ -7,6 +7,7 @@ import type { ExerciseScope } from '../content/model.ts';
 import type { ReadingSpeed } from '../services/audio-settings.ts';
 import type { PlaySettings } from '../game/play-settings.ts';
 import type { ReadingExerciseDefinition } from '../content/reading-model.ts';
+import type { MathExerciseDefinition } from '../content/math-model.ts';
 
 export interface ParentWeek extends SchoolWeek { readonly id: string }
 export interface AudioOverride {
@@ -16,6 +17,7 @@ export interface AudioOverride {
 }
 
 export interface ParentData extends PlaySettings {
+  readonly mathExercises?: readonly MathExerciseDefinition[];
   readonly mathematicsOverrides?: Readonly<Record<number, WeeklyMathematics>>;
   readonly version: 2;
   readonly activeWeek?: number;
@@ -58,6 +60,10 @@ export function effectiveProgram(seed: LearningProgram, parent: ParentData): Lea
     .map(week => parent.mathematicsOverrides?.[week.number] === undefined ? week
       : { ...week, mathematics: parent.mathematicsOverrides[week.number] });
   return { ...seed, weeks, units,
+    ...(parent.mathExercises === undefined ? {} : { mathExercises: [
+      ...(seed.mathExercises ?? []).filter(exercise => !parent.mathExercises?.some(item => item.id === exercise.id)),
+      ...parent.mathExercises,
+    ] }),
     ...(parent.readingExercises === undefined ? {} : { readingExercises: [
       ...(seed.readingExercises ?? []).filter(exercise => !parent.readingExercises?.some(item => item.id === exercise.id)),
       ...parent.readingExercises,

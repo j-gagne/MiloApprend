@@ -3,6 +3,7 @@ import type { AudioOverride, ParentData, ParentWeek } from '../parent/model.ts';
 import { isReadingSequence } from '../content/reading-sequence.ts';
 import { emptyParentData } from '../parent/model.ts';
 import { isWeeklyMathematics, validateMathematics } from '../content/mathematics.ts';
+import { isMathExerciseDefinition } from '../content/math-validation.ts';
 import type { WeeklyMathematics } from '../content/model.ts';
 import { isReadingExerciseDefinition } from '../content/reading-catalog.ts';
 import type { ExerciseScope } from '../content/model.ts';
@@ -93,6 +94,9 @@ export function parseParentData(raw: string): ParentData | undefined {
   if (value.questionCount !== undefined && (typeof value.questionCount !== 'number'
     || !Number.isSafeInteger(value.questionCount) || value.questionCount < 1 || value.questionCount > 9)) return undefined;
   const units = value.version === 1 ? value.customWords : value.customUnits;
+  if (value.mathExercises !== undefined && (!Array.isArray(value.mathExercises)
+    || !value.mathExercises.every(isMathExerciseDefinition)
+    || new Set(value.mathExercises.map(exercise => exercise.id)).size !== value.mathExercises.length)) return undefined;
   if (value.readingExercises !== undefined && (!Array.isArray(value.readingExercises)
     || !value.readingExercises.every(isReadingExerciseDefinition)
     || value.readingExercises.some(exercise => !exercise.id.startsWith('reading:parent-activity-'))
@@ -124,6 +128,7 @@ export function parseParentData(raw: string): ParentData | undefined {
     && (audio.readingMode === undefined || audio.readingMode === 'whole' || audio.readingMode === 'segmented')
     && (audio.readingSequence == null || isReadingSequence(audio.readingSequence))))) return undefined;
   return { version: 2, activeWeek: value.activeWeek as number | undefined, unitEnabled: value.unitEnabled,
+    ...(value.mathExercises === undefined ? {} : { mathExercises: value.mathExercises }),
     ...(mathematicsOverrides === undefined ? {} : { mathematicsOverrides }),
     ...(value.gameMode === undefined ? {} : { gameMode: value.gameMode as GameMode }),
     ...(value.chainLength === undefined ? {} : { chainLength: value.chainLength as ChainLength }),

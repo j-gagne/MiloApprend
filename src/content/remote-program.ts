@@ -4,6 +4,7 @@ import type { LearningProgram } from './model.ts';
 import { validateProgram } from './validation.ts';
 import { isReadingExerciseDefinition } from './reading-catalog.ts';
 import { isWeeklyMathematics, validateMathematics } from './mathematics.ts';
+import { isMathExerciseDefinition } from './math-validation.ts';
 
 export const REMOTE_PROGRAM_URL = 'https://raw.githubusercontent.com/j-gagne/MiloApprend-Content/refs/heads/main/program.json';
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -18,14 +19,18 @@ function validDefaults(value: unknown, weeks: readonly SeedWeek[]): boolean {
 
 const validReadingExercises = (value: unknown): boolean => value === undefined
   || (Array.isArray(value) && value.every(isReadingExerciseDefinition));
+const validMathExercises = (value: unknown): boolean => value === undefined
+  || (Array.isArray(value) && value.every(isMathExerciseDefinition));
 
 function validPayload(value: unknown): value is { schemaVersion: 1; programId: string; weeks: SeedWeek[];
-  defaults?: LearningProgram['defaults']; readingExercises?: LearningProgram['readingExercises'] } {
+  defaults?: LearningProgram['defaults']; readingExercises?: LearningProgram['readingExercises']; mathExercises?: LearningProgram['mathExercises'] } {
   return object(value) && value.schemaVersion === 1 && typeof value.programId === 'string'
     && value.programId.trim().length > 0 && validReadingExercises(value.readingExercises)
+    && validMathExercises(value.mathExercises)
     && Array.isArray(value.weeks) && value.weeks.length > 0
     && value.weeks.every(week => object(week) && typeof week.number === 'number' && Number.isFinite(week.number)
       && typeof week.label === 'string' && validReadingExercises(week.readingExercises)
+      && validMathExercises(week.mathExercises)
       && (week.mathematics === undefined || isWeeklyMathematics(week.mathematics))
       && ['letters', 'syllables', 'toolWords', 'words', 'sentences', 'graphemes'].every(key => {
         const entries = week[key];
@@ -50,6 +55,9 @@ export async function loadBaseProgram(fetcher: typeof fetch = fetch, timeoutMs =
       if (validateMathematics(payload.weeks).length) throw new Error('Invalid mathematics');
       const built = build(payload.programId, payload.weeks);
       const program: LearningProgram = { ...built,
+        ...(payload.mathExercises === undefined ? {} : { mathExercises: [
+          ...(built.mathExercises ?? []), ...payload.mathExercises,
+        ] }),
         ...(payload.defaults === undefined ? {} : { defaults: payload.defaults }),
         ...(payload.readingExercises === undefined ? {} : { readingExercises: [
           ...(built.readingExercises ?? []), ...payload.readingExercises,

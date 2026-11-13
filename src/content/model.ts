@@ -118,6 +118,7 @@ export interface SchoolWeek {
 }
 export interface WeeklyMathematics { readonly numbers: readonly number[] }
 export interface LearningProgram {
+  readonly mathExercises?: readonly import('./math-model.ts').MathExerciseDefinition[];
   readonly defaults?: { readonly activeWeek: number; readonly exerciseScope: ExerciseScope };
   readonly readingExercises?: readonly import('./reading-model.ts').ReadingExerciseDefinition[];
   readonly id: string;

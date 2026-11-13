@@ -6,6 +6,8 @@ import { validateProgram } from './validation.ts';
 import type { ExerciseScope } from './model.ts';
 import { readingCatalog } from './reading-catalog.ts';
 import { getEligibleMathNumbers } from './mathematics.ts';
+import { mathCatalog } from './math-catalog.ts';
+import type { MathGenerationPolicy } from './math-model.ts';
 
 export function createContentService(repository: ContentRepository,
   week = repository.getProgram().defaults?.activeWeek ?? activeWeek,
@@ -15,6 +17,7 @@ export function createContentService(repository: ContentRepository,
     activeWeek: week,
     getProgram: () => repository.getProgram(),
     getEligibleMathNumbers: () => getEligibleMathNumbers(repository.getProgram(), week, exerciseScope),
+    getMathExercises: (policy: Partial<MathGenerationPolicy> = {}) => mathCatalog(repository.getProgram(), week, exerciseScope, policy),
     getReadingExercises: () => readingCatalog(repository.getProgram(), week, exerciseScope),
     getAvailableLetters: (at = week) => selectors.getAvailableLetters(repository.getProgram(), at),
     getAvailableGraphemes: (at = week) => selectors.getAvailableGraphemes(repository.getProgram(), at),

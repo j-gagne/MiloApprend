@@ -5,6 +5,7 @@ type Entry<T extends LearningUnit> = Pick<T, 'id' | 'display'>
   & { readonly legacyOrder?: number };
 
 export interface SeedWeek extends SchoolWeek {
+  readonly mathExercises?: LearningProgram['mathExercises'];
   readonly readingExercises?: LearningProgram['readingExercises'];
   readonly letters: readonly (string | Entry<Letter>)[];
   readonly graphemes?: readonly (string | Entry<Grapheme>)[];
@@ -57,6 +58,8 @@ export function buildSeedProgram(id: string, bank: readonly SeedWeek[]): Learnin
   ordered.sort((a, b) => a.order - b.order);
   return { id, ...(bank.some(week => week.readingExercises !== undefined)
     ? { readingExercises: bank.flatMap(week => week.readingExercises ?? []) } : {}),
+    ...(bank.some(week => week.mathExercises !== undefined)
+      ? { mathExercises: bank.flatMap(week => week.mathExercises ?? []) } : {}),
     weeks: bank.map(({ number, label, reviewedUnitIds, mathematics }) => ({ number, label,
     ...(mathematics === undefined ? {} : { mathematics }),
     ...(reviewedUnitIds === undefined ? {} : { reviewedUnitIds }) })), units: ordered.map(({ unit }) => unit) };
